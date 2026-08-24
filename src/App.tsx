@@ -1,12 +1,12 @@
-import ColourStrip from './components/ColourStrip'
-import BenefitsSection from './components/BenefitsSection'
-import ContactPage from './components/ContactPage'
-import Header from './components/Header'
-import Hero from './components/Hero'
-import OurTherapistPage from './components/OurTherapistPage'
-import PricingPage from './components/PricingPage'
-import SupportSections from './components/SupportSections'
-import SymptomChecker from './components/SymptomChecker'
+import ColourStrip from './components/ColourStrip/ColourStrip'
+import BenefitsSection from './components/BenefitsSection/BenefitsSection'
+import ContactPage from './components/ContactPage/ContactPage'
+import Header from './components/Header/Header'
+import Hero from './components/Hero/Hero'
+import OurTherapistPage from './components/OurTherapistPage/OurTherapistPage'
+import PricingPage from './components/PricingPage/PricingPage'
+import SupportSections from './components/SupportSections/SupportSections'
+import About from './components/About/About'
 import './App.css'
 
 function App() {
@@ -16,7 +16,7 @@ function App() {
 
   return (
     <main className="page">
-      <ColourStrip /> {/*THis is so useless i doubt anyone notices*/}
+      <ColourStrip />
       <Header />
       {isContactPage ? (
         <ContactPage />
@@ -27,7 +27,7 @@ function App() {
       ) : (
         <>
           <Hero />
-          <SymptomChecker />
+          <About />
           <SupportSections />
           <BenefitsSection />
         </>

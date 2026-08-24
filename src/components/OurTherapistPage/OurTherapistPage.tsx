@@ -1,3 +1,5 @@
+import './OurTherapistPage.css'
+
 const therapists = [
   {
     name: 'Alex Morgan',

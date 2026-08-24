@@ -1,3 +1,5 @@
+import './ArchivedSupportSections.css'
+
 function PicturePlaceholder() {
   return (
     <div className="picture-placeholder" aria-label="Picture placeholder">
@@ -6,7 +8,7 @@ function PicturePlaceholder() {
   )
 }
 
-function SupportSections() {
+function ArchivedSupportSections() {
   return (
     <section className="support-sections" aria-label="Therapy support information">
       <div className="support-wave">
@@ -49,4 +51,4 @@ function SupportSections() {
   )
 }
 
-export default SupportSections
+export default ArchivedSupportSections

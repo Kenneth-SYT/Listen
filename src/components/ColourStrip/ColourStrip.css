@@ -1,0 +1,45 @@
+.colour-strip {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 101;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  width: 100%;
+  height: 10px;
+  background: #252525;
+}
+
+.colour-strip span {
+  height: 3px;
+}
+
+.colour-strip span:nth-child(1) {
+  background: #d85791;
+}
+
+.colour-strip span:nth-child(2) {
+  background: #ef765e;
+}
+
+.colour-strip span:nth-child(3) {
+  background: #8fa45c;
+}
+
+.colour-strip span:nth-child(4) {
+  background: #d65f93;
+}
+
+.colour-strip span:nth-child(5) {
+  background: #7b67a7;
+}
+
+.colour-strip span:nth-child(6) {
+  background: #f4c24f;
+}
+
+@media (max-width: 760px) {
+  .colour-strip {
+    position: static;
+  }
+}

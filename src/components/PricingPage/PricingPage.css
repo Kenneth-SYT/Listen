@@ -1,0 +1,76 @@
+.pricing-page {
+  min-height: calc(100vh - 82px);
+  padding: 58px 26px 96px;
+  background: #eef7ff;
+  color: #000000;
+}
+
+.pricing-container {
+  width: min(1108px, 100%);
+  margin: 0 auto;
+}
+
+.pricing-container h1 {
+  margin: 0 0 34px;
+  color: #000000;
+  font-size: clamp(2.8rem, 5vw, 4.2rem);
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1.08;
+}
+
+.pricing-list {
+  border-top: 1px solid #bfc9d3;
+}
+
+.pricing-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 32px;
+  min-height: 144px;
+  border-bottom: 1px solid #bfc9d3;
+}
+
+.pricing-row h2 {
+  margin: 0 0 14px;
+  color: #000000;
+  font-size: clamp(1.7rem, 3vw, 2.05rem);
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1.15;
+}
+
+.pricing-row a {
+  color: #000000;
+}
+
+.pricing-book-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 151px;
+  min-height: 41px;
+  border: 1px solid #000000;
+  border-radius: 24px;
+  text-decoration: none;
+}
+
+.pricing-book-button:hover,
+.pricing-book-button:focus-visible {
+  background: #003d5c;
+  color: #ffffff;
+}
+
+@media (max-width: 760px) {
+  .pricing-row {
+    grid-template-columns: 1fr;
+    align-items: start;
+    gap: 22px;
+    padding: 28px 0;
+  }
+
+  .pricing-book-button {
+    width: 100%;
+  }
+}

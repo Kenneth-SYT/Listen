@@ -1,0 +1,119 @@
+.support-sections {
+  position: relative;
+  overflow: hidden;
+  background: #eaf7ff;
+}
+
+.support-wave {
+  position: relative;
+  display: grid;
+  gap: 64px;
+  padding: 92px 20px 104px;
+  color: #ffffff;
+}
+
+.support-wave::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(120% 68% at 8% 6%, transparent 0 36%, #0e3a56 36.4% 100%),
+    radial-gradient(112% 70% at 92% 38%, #0e3a56 0 42%, #143f62 42.4% 100%),
+    radial-gradient(120% 74% at 12% 88%, #143f62 0 44%, #0b304a 44.4% 100%);
+}
+
+.support-wave::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(115deg, rgba(111, 168, 168, 0.22), transparent 38%),
+    linear-gradient(245deg, rgba(244, 178, 108, 0.16), transparent 46%);
+}
+
+.support-row {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(260px, 430px) minmax(0, 480px);
+  align-items: center;
+  justify-content: center;
+  gap: clamp(36px, 7vw, 96px);
+  width: min(1120px, 100%);
+  margin: 0 auto;
+}
+
+.support-row.reverse {
+  grid-template-columns: minmax(0, 480px) minmax(260px, 430px);
+}
+
+.picture-placeholder {
+  display: grid;
+  place-items: center;
+  min-height: 275px;
+  border: 2px dashed rgba(255, 255, 255, 0.58);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.05)),
+    rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.86);
+  font-weight: 700;
+}
+
+.support-copy {
+  max-width: 520px;
+}
+
+.support-copy h2 {
+  margin: 0 0 18px;
+  color: #ffffff;
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 1.08;
+}
+
+.support-copy p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 1.08rem;
+  line-height: 1.65;
+}
+
+.support-copy button {
+  min-height: 46px;
+  margin-top: 28px;
+  padding: 0 24px;
+  border: 0;
+  border-radius: 4px;
+  background: #f4b26c;
+  color: #073047;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.support-copy button:hover,
+.support-copy button:focus-visible {
+  background: #f8c488;
+}
+
+@media (max-width: 760px) {
+  .support-wave {
+    gap: 48px;
+    padding: 64px 20px 72px;
+  }
+
+  .support-row,
+  .support-row.reverse {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+
+  .support-row.reverse .picture-placeholder {
+    order: -1;
+  }
+
+  .picture-placeholder {
+    min-height: 220px;
+  }
+}

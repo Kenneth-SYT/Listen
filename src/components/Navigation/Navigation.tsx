@@ -1,5 +1,6 @@
-import AboutDropdown from './AboutDropdown'
-import GetStartedDropdown from './GetStartedDropdown'
+import AboutDropdown from '../AboutDropdown/AboutDropdown'
+import GetStartedDropdown from '../GetStartedDropdown/GetStartedDropdown'
+import './Navigation.css'
 
 function Navigation() {
   return (

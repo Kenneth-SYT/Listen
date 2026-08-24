@@ -1,0 +1,105 @@
+.contact-page {
+  display: flex;
+  justify-content: center;
+  padding: 56px 26px 112px;
+  background: #eef7ff;
+  color: #000000;
+}
+
+.contact-form {
+  width: min(560px, 100%);
+  margin: 0 auto;
+}
+
+.contact-form h2 {
+  margin: 0 0 30px;
+  color: #000000;
+  font-size: clamp(2.7rem, 5vw, 4rem);
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1;
+}
+
+.contact-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 26px 25px;
+}
+
+.contact-grid label {
+  display: grid;
+  gap: 12px;
+  color: #000000;
+  font-size: 0.95rem;
+}
+
+.contact-grid input,
+.contact-grid select,
+.contact-grid textarea {
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid #6f7780;
+  border-radius: 0;
+  background: transparent;
+  color: #000000;
+  font: inherit;
+  outline: 0;
+  padding: 4px 12px 9px;
+}
+
+.contact-grid input::placeholder,
+.contact-grid textarea::placeholder {
+  color: #627285;
+}
+
+.contact-grid select {
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, #000000 50%),
+    linear-gradient(135deg, #000000 50%, transparent 50%);
+  background-position:
+    calc(100% - 18px) 45%,
+    calc(100% - 12px) 45%;
+  background-size:
+    6px 6px,
+    6px 6px;
+  background-repeat: no-repeat;
+}
+
+.contact-grid input:focus,
+.contact-grid select:focus,
+.contact-grid textarea:focus {
+  border-bottom-color: #003d5c;
+}
+
+.message-field {
+  grid-column: 1 / -1;
+}
+
+.message-field textarea {
+  min-height: 100px;
+  resize: vertical;
+}
+
+.contact-form button {
+  width: min(250px, 100%);
+  min-height: 42px;
+  margin-top: 24px;
+  border: 1px solid #000000;
+  border-radius: 24px;
+  background: transparent;
+  color: #000000;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.contact-form button:hover,
+.contact-form button:focus-visible {
+  background: #003d5c;
+  color: #ffffff;
+}
+
+@media (max-width: 760px) {
+  .contact-grid {
+    grid-template-columns: 1fr;
+  }
+}

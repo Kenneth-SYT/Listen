@@ -1,3 +1,5 @@
+import './ContactPage.css'
+
 const topics = ['General', 'Partner', 'Other']
 
 function ContactPage() {

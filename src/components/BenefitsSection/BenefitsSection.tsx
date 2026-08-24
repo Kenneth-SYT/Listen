@@ -1,3 +1,5 @@
+import './BenefitsSection.css'
+
 const benefits = [
   {
     icon: 'smile',

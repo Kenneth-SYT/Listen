@@ -1,3 +1,5 @@
+import './PricingPage.css'
+
 const pricingItems = ['$1 Introduction Session', 'Standard 1 Hour Session']
 
 function PricingPage() {
