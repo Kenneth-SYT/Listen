@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import './SupportSections.css'
 
 const howItWorksSteps = [
@@ -20,8 +21,70 @@ const howItWorksSteps = [
 ]
 
 function SupportSections() {
+  const sectionRef = useRef<HTMLElement>(null)
+  const topPathRef = useRef<SVGPathElement>(null)
+  const lowerPathRef = useRef<SVGPathElement>(null)
+  const movingDotRef = useRef<SVGCircleElement>(null)
+
+  useEffect(() => {
+    let animationFrame = 0
+
+    const updateDotPosition = () => {
+      const section = sectionRef.current
+      const topPath = topPathRef.current
+      const lowerPath = lowerPathRef.current
+      const movingDot = movingDotRef.current
+
+      if (!section || !topPath || !lowerPath || !movingDot) {
+        return
+      }
+
+      const rect = section.getBoundingClientRect()
+      const activeEnd = window.innerHeight * 0.22
+      let progress = 0
+
+      if (rect.top <= 0 && rect.bottom >= activeEnd) {
+        const activeRange = rect.height - activeEnd
+        progress = Math.min(Math.max(-rect.top / activeRange, 0), 1)
+      } else if (rect.bottom < activeEnd) {
+        progress = 1
+      }
+      const topSegmentEnd = 0.22
+      const lowerSegmentStart = 0.34
+      let point: DOMPoint
+
+      if (progress <= topSegmentEnd) {
+        const topProgress = progress / topSegmentEnd
+        point = topPath.getPointAtLength(topPath.getTotalLength() * topProgress)
+      } else if (progress < lowerSegmentStart) {
+        point = lowerPath.getPointAtLength(0)
+      } else {
+        const lowerProgress = (progress - lowerSegmentStart) / (1 - lowerSegmentStart)
+        point = lowerPath.getPointAtLength(lowerPath.getTotalLength() * lowerProgress)
+      }
+
+      movingDot.setAttribute('cx', `${point.x}`)
+      movingDot.setAttribute('cy', `${point.y}`)
+    }
+
+    const requestDotUpdate = () => {
+      window.cancelAnimationFrame(animationFrame)
+      animationFrame = window.requestAnimationFrame(updateDotPosition)
+    }
+
+    updateDotPosition()
+    window.addEventListener('scroll', requestDotUpdate, { passive: true })
+    window.addEventListener('resize', requestDotUpdate)
+
+    return () => {
+      window.cancelAnimationFrame(animationFrame)
+      window.removeEventListener('scroll', requestDotUpdate)
+      window.removeEventListener('resize', requestDotUpdate)
+    }
+  }, [])
+
   return (
-    <section className="how-section" aria-labelledby="how-heading">
+    <section className="how-section" aria-labelledby="how-heading" ref={sectionRef}>
       <div className="how-header">
         <h2 id="how-heading">How it works</h2>
         <p>Start with a quick check-in, then connect with support that feels right for you.</p>
@@ -29,7 +92,17 @@ function SupportSections() {
 
       <div className="how-flow">
         <svg className="how-path" viewBox="0 0 1000 760" aria-hidden="true">
-          <path d="M500 120 C500 215 452 260 360 260 H240 C130 260 90 330 138 392 C186 454 304 440 420 440 H604 C730 440 782 520 724 596 C690 642 626 674 548 760" />
+          <path
+            d="M500 35 V120"
+            className="top-path"
+            ref={topPathRef}
+          />
+          <path
+            d="M500 331 C500 438 450 520 360 526 H240 C130 526 90 570 138 620 C186 670 304 660 420 660 H604 C730 660 782 690 724 724 C690 744 626 752 548 760"
+            ref={lowerPathRef}
+          />
+          <circle className="start-dot" cx="500" cy="35" r="8" />
+          <circle className="moving-dot" cx="500" cy="0" r="8" ref={movingDotRef} />
         </svg>
 
         <article className="how-card how-card-main">
