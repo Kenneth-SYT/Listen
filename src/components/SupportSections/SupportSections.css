@@ -28,10 +28,10 @@
 
 .how-flow {
   position: relative;
-  width: min(1080px, 100%);
-  min-height: 760px;
+  width: min(1280px, 100%);
+  min-height: 2648px;
   margin: 0 auto;
-  padding-top: 120px;
+  padding-top: 150px;
 }
 
 .how-path {
@@ -89,7 +89,7 @@
 .how-card-main {
   width: min(820px, calc(100% - 96px));
   margin: 0 auto;
-  padding: 54px clamp(28px, 5vw, 64px);
+  padding: 48px clamp(28px, 5vw, 64px);
 }
 
 .how-card-main h3 {
@@ -110,6 +110,45 @@
   color: #4a1730;
   font-size: 1.08rem;
   line-height: 1.6;
+}
+
+.how-feature {
+  position: absolute;
+  top: 460px;
+  left: 118px;
+  z-index: 3;
+  display: grid;
+  grid-template-columns: minmax(240px, 320px) minmax(280px, 390px);
+  gap: 34px;
+  align-items: center;
+  text-align: left;
+}
+
+.how-feature img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.how-feature-copy {
+  padding: 24px;
+  border: 1px solid #e2e8ec;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 20px 8px -3px rgb(0 0 0 / 0.08);
+}
+
+.how-feature-copy h3 {
+  margin: 0 0 8px;
+  color: #173142;
+  font-size: 1.45rem;
+  line-height: 1.2;
+}
+
+.how-feature-copy p {
+  margin: 0;
+  color: #4a1730;
+  line-height: 1.45;
 }
 
 .how-steps {
@@ -147,30 +186,26 @@
 }
 
 .step-1 {
-  top: 332px;
-  left: 64px;
+  top: 898px;
+  right: 64px;
 }
 
 .step-2 {
-  top: 410px;
-  right: 58px;
+  top: 1258px;
+  left: 196px;
 }
 
 .step-3 {
-  top: 548px;
-  left: 104px;
-}
-
-.step-4 {
-  right: 168px;
-  bottom: 6px;
+  top: 1668px;
+  right: 108px;
 }
 
 @media (max-width: 820px) {
   .how-flow {
     display: block;
     gap: 22px;
-    min-height: 760px;
+    min-height: 2140px;
+    padding-top: 220px;
   }
 
   .how-card-main {
@@ -181,6 +216,19 @@
   .how-steps {
     position: absolute;
     inset: 0;
+  }
+
+  .how-feature {
+    top: 360px;
+    left: 0;
+    right: 0;
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .how-feature img {
+    max-width: 260px;
+    margin: 0 auto;
   }
 
   .how-step {
@@ -194,22 +242,19 @@
   }
 
   .step-1 {
-    top: 330px;
-    left: 0;
+    top: 780px;
+    right: 0;
   }
 
   .step-2 {
-    top: 424px;
-    right: 0;
+    top: 1100px;
+    left: 0;
+    right: auto;
   }
 
   .step-3 {
-    top: 548px;
-    left: 0;
-  }
-
-  .step-4 {
+    top: 1480px;
     right: 0;
-    bottom: 0;
+    bottom: auto;
   }
 }
