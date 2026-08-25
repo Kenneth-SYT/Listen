@@ -159,8 +159,8 @@
 }
 
 .how-feature-left {
-  top: 1260px;
-  left: 88px;
+  top: 1230px;
+  left: 66px;
   grid-template-columns: minmax(240px, 320px) minmax(280px, 390px);
 }
 
