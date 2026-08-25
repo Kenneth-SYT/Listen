@@ -1,25 +1,9 @@
 import { useEffect, useRef } from 'react'
 import surveyImage from '../../assets/images/Customer Survey-cuate (1).svg'
+import jobHuntImage from '../../assets/images/Job hunt-pana.svg'
+import socialImage from '../../assets/images/Social interaction-pana (1).svg'
+import winnersImage from '../../assets/images/Winners (1).gif'
 import './SupportSections.css'
-
-const howItWorksSteps = [
-  {
-    label: 'Fill out mental quiz',
-    detail: 'Answer a short check-in so we can better understand how you are feeling.',
-  },
-  {
-    label: 'Get matched',
-    detail: 'We suggest a supportive listener who fits what you need right now.',
-  },
-  {
-    label: 'Book into session',
-    detail: 'Choose a time to talk, get heard, and set gentle goals for the week.',
-  },
-  {
-    label: 'Book follow up',
-    detail: 'Keep checking in and work toward your goals one step at a time.',
-  },
-]
 
 function SupportSections() {
   const sectionRef = useRef<HTMLElement>(null)
@@ -92,7 +76,7 @@ function SupportSections() {
       }
 
       const rect = section.getBoundingClientRect()
-      const activeStart = window.innerHeight * 0.68
+      const activeStart = window.innerHeight * 0.50
       const activeEnd = window.innerHeight * 0.18
       let progress = 0
 
@@ -180,20 +164,37 @@ function SupportSections() {
           <img src={surveyImage} alt="" aria-hidden="true" />
           <div className="how-feature-copy">
             <span className="step-dot" aria-hidden="true"></span>
-            <h3>Fill out mental quiz</h3>
+            <h3>Fill out a quiz</h3>
             <p>Answer a short check-in so we can better understand how you are feeling.</p>
           </div>
         </article>
 
-        <div className="how-steps">
-          {howItWorksSteps.slice(1).map((step, index) => (
-            <article className={`how-step step-${index + 1}`} key={step.label}>
-              <span className="step-dot" aria-hidden="true"></span>
-              <h3>{step.label}</h3>
-              <p>{step.detail}</p>
-            </article>
-          ))}
-        </div>
+        <article className="how-feature how-feature-right">
+          <div className="how-feature-copy">
+            <span className="step-dot" aria-hidden="true"></span>
+            <h3>Get matched</h3>
+            <p>We suggest a supportive listener who fits what you need right now.</p>
+          </div>
+          <img src={jobHuntImage} alt="" aria-hidden="true" />
+        </article>
+
+        <article className="how-feature how-feature-left">
+          <img src={socialImage} alt="" aria-hidden="true" />
+          <div className="how-feature-copy">
+            <span className="step-dot" aria-hidden="true"></span>
+            <h3>Book into session</h3>
+            <p>Choose a time to talk, get heard, and set gentle goals for the week.</p>
+          </div>
+        </article>
+
+        <article className="how-feature how-feature-final">
+          <div className="how-feature-copy">
+            <span className="step-dot" aria-hidden="true"></span>
+            <h3>Book follow up</h3>
+            <p>Keep checking in and work toward your goals one step at a time.</p>
+          </div>
+          <img src={winnersImage} alt="" aria-hidden="true" />
+        </article>
       </div>
     </section>
   )
