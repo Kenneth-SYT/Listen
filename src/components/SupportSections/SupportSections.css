@@ -61,8 +61,22 @@
 
 .moving-dot {
   fill: #5a1f38;
-  filter: drop-shadow(5px -8px 0 rgba(90, 31, 56, 0.38))
-    drop-shadow(9px -15px 0 rgba(90, 31, 56, 0.2));
+}
+
+.trail-dot {
+  fill: #5a1f38;
+}
+
+.trail-dot-1 {
+  opacity: 0.48;
+}
+
+.trail-dot-2 {
+  opacity: 0.28;
+}
+
+.trail-dot-3 {
+  opacity: 0.14;
 }
 
 .how-card {
