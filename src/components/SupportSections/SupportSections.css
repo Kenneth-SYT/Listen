@@ -29,7 +29,7 @@
 .how-flow {
   position: relative;
   width: min(1280px, 100%);
-  min-height: 2648px;
+  min-height: 2380px;
   margin: 0 auto;
   padding-top: 150px;
 }
@@ -171,6 +171,67 @@
   grid-template-columns: minmax(260px, 360px) minmax(240px, 320px);
 }
 
+.how-cta {
+  position: absolute;
+  top: 2100px;
+  left: 50%;
+  z-index: 2;
+  width: min(1120px, calc(100% - 48px));
+  min-height: 230px;
+  padding: 42px 28px;
+  overflow: hidden;
+  border-radius: 18px;
+  background: #e4fbf7;
+  color: #4a1730;
+  text-align: center;
+  transform: translateX(-50%);
+}
+
+.how-cta-shape {
+  position: absolute;
+  inset: -28px 0 0;
+  margin: 0 auto;
+  width: min(520px, 70%);
+  height: 330px;
+  border-radius: 45% 55% 42% 58%;
+  background: rgb(212 229 230 / 0.5);
+  transform: rotate(-18deg);
+}
+
+.how-cta h3,
+.how-cta p,
+.how-cta a {
+  position: relative;
+  z-index: 1;
+}
+
+.how-cta h3 {
+  margin: 0 0 20px;
+  color: #4a1730;
+  font-size: clamp(2rem, 4vw, 2.8rem);
+  line-height: 1.1;
+}
+
+.how-cta p {
+  margin: 0 auto 18px;
+  max-width: 620px;
+  line-height: 1.55;
+}
+
+.how-cta a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 142px;
+  min-height: 48px;
+  margin-top: 6px;
+  border-radius: 999px;
+  background: #5a1f38;
+  color: #ffffff;
+  font-weight: 700;
+  text-decoration: none;
+}
+
 .step-dot {
   display: block;
   width: 12px;
@@ -184,7 +245,7 @@
   .how-flow {
     display: block;
     gap: 22px;
-    min-height: 2140px;
+    min-height: 2350px;
     padding-top: 220px;
   }
 
@@ -237,5 +298,12 @@
 
   .how-feature-final .how-feature-copy {
     order: 2;
+  }
+
+  .how-cta {
+    top: 1880px;
+    width: 100%;
+    min-height: 260px;
+    padding: 38px 22px;
   }
 }

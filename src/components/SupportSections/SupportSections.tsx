@@ -127,14 +127,14 @@ function SupportSections() {
       </div>
 
       <div className="how-flow">
-        <svg className="how-path" viewBox="0 0 1265 2648" aria-hidden="true">
+        <svg className="how-path" viewBox="0 0 1265 2380" aria-hidden="true">
           <path
             d="M633 30 V150"
             className="top-path"
             ref={topPathRef}
           />
           <path
-            d="M633 310 V368 C633 440 574 496 488 496 H368 C262.514 496 177 581.514 177 687 C177 792.486 262.514 878 368 878 H927.5 C1016.14 878 1088 949.858 1088 1038.5 C1088 1127.14 1016.14 1199 927.5 1199 H366.5 C261.842 1199 177 1283.84 177 1388.5 C177 1493.16 261.842 1578 366.5 1578 H878 C993.98 1578 1088 1672.02 1088 1788 C1088 1903.98 993.98 1998 878 1998 H373.5 C264.976 1998 177 2085.98 177 2194.5 C177 2303.02 264.976 2391 373.5 2391 H913 C1009.65 2391 1088 2469.35 1088 2566"
+            d="M633 310 V368 C633 440 574 496 488 496 H368 C262.514 496 177 581.514 177 687 C177 792.486 262.514 878 368 878 H927.5 C1016.14 878 1088 949.858 1088 1038.5 C1088 1127.14 1016.14 1199 927.5 1199 H366.5 C261.842 1199 177 1283.84 177 1388.5 C177 1493.16 261.842 1578 366.5 1578 H878 C993.98 1578 1088 1672.02 1088 1788 C1088 1903.98 993.98 1998 878 1998 H680 C620 1998 590 2042 590 2100"
             ref={lowerPathRef}
           />
           <circle className="start-dot" cx="633" cy="30" r="8" />
@@ -194,6 +194,14 @@ function SupportSections() {
             <p>Keep checking in and work toward your goals one step at a time.</p>
           </div>
           <img src={winnersImage} alt="" aria-hidden="true" />
+        </article>
+
+        <article className="how-cta">
+          <div className="how-cta-shape" aria-hidden="true"></div>
+          <h3>Still unsure?</h3>
+          <p><strong>Reach out when you are ready.</strong></p>
+          <p>Our friendly team can help you understand what support might fit you best.</p>
+          <a href="/contact">Contact us</a>
         </article>
       </div>
     </section>
