@@ -1,4 +1,3 @@
-import heroImage from '../../assets/images/LMH.png'
 import './Hero.css'
 
 function Hero() {
@@ -6,14 +5,34 @@ function Hero() {
     <section className="hero-panel" aria-label="Health information and advice">
       <div className="hero-content">
         <div className="hero-copy">
-          <h1>First Chat for only $1</h1>
-          <p>Connect with a supportive listener when university life feels heavy.</p>
-          <a href="/pricing">Book now</a>
+          <h1>Uni life is a lot. You don’t have to carry it alone.</h1>
+          <p>Talk things through with a supportive listener, at your own pace.</p>
+          <a href="/pricing">Find your listener</a>
+          <p className="hero-price-note">Your first chat is $1.</p>
         </div>
-        <img
-          src={heroImage}
-          alt="Listen Mental Health preview"
-        />
+        <div className="hero-preview" aria-hidden="true">
+          <div className="checkin-card">
+            <span className="preview-label">Quick check-in</span>
+            <div className="mood-row">
+              <span></span>
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+            <div className="checkin-lines">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+          </div>
+          <div className="listener-card">
+            <span className="listener-avatar"></span>
+            <div>
+              <span className="preview-label">Matched listener</span>
+              <span className="listener-line"></span>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   )

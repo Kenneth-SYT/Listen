@@ -122,7 +122,7 @@ function SupportSections() {
   return (
     <section className="how-section" aria-labelledby="how-heading" ref={sectionRef}>
       <div className="how-header">
-        <h2 id="how-heading">How it works</h2>
+        <h1 id="how-heading">How it works</h1>
         <p>Start with a quick check-in, then connect with support that feels right for you.</p>
       </div>
 

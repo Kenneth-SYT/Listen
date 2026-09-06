@@ -1,0 +1,90 @@
+.how-summary {
+  padding: 72px 24px;
+  background: #f7fbff;
+  color: #173f52;
+  text-align: center;
+}
+
+.how-summary h2 {
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 1.15;
+}
+
+.how-summary-intro {
+  margin: 18px auto 0;
+  color: #425563;
+  line-height: 1.6;
+}
+
+.how-summary-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  max-width: 1050px;
+  margin: 40px auto 32px;
+  padding: 0;
+  list-style: none;
+}
+
+.how-summary-steps li {
+  position: relative;
+  padding: 0 24px;
+}
+
+.how-summary-steps li:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 27px;
+  left: calc(50% + 40px);
+  width: calc(100% - 80px);
+  border-top: 2px dashed #b6d0e7;
+}
+
+.how-summary-number {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 20px;
+  border-radius: 50%;
+  background: #ffdb8c;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.how-summary-steps h3 {
+  margin: 0 0 10px;
+  font-size: 1.25rem;
+}
+
+.how-summary-steps p {
+  margin: 0;
+  color: #425563;
+  line-height: 1.6;
+}
+
+.how-summary-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  color: #173f52;
+  font-weight: 700;
+  text-underline-offset: 5px;
+}
+
+.how-summary-link:focus-visible {
+  outline: 3px solid #173f52;
+  outline-offset: 5px;
+}
+
+@media (max-width: 760px) {
+  .how-summary-steps {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+
+  .how-summary-steps li:not(:last-child)::after {
+    display: none;
+  }
+}

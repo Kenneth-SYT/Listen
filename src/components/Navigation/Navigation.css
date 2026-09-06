@@ -17,7 +17,7 @@
   padding: 0 14px;
   border: 0;
   border-radius: 999px;
-  color: #10202b;
+  color: #173f52;
   background: transparent;
   font-size: 1rem;
   line-height: 1;
@@ -35,14 +35,14 @@
 .nav-dropdown button:hover,
 .nav-dropdown button:focus-visible {
   background: #ffffff;
-  box-shadow: 0 8px 22px rgba(0, 61, 92, 0.16);
-  color: #d64e4f;
+  box-shadow: 0 8px 22px rgb(23 63 82 / 0.14);
+  color: #5a1f38;
   transform: translateY(-1px);
 }
 
 .primary-nav a:focus-visible,
 .nav-dropdown button:focus-visible {
-  outline: 3px solid #f4a45f;
+  outline: 3px solid #ffdb8c;
   outline-offset: 4px;
 }
 
@@ -67,9 +67,9 @@
   display: grid;
   min-width: 230px;
   padding: 14px 0;
-  border: 1px solid #c8d7e5;
+  border: 1px solid #d8e8f4;
   background: #ffffff;
-  box-shadow: 0 16px 34px rgba(0, 61, 92, 0.16);
+  box-shadow: 0 16px 34px rgb(23 63 82 / 0.14);
   opacity: 0;
   pointer-events: none;
   transform: translateY(-6px);
@@ -81,7 +81,7 @@
 .dropdown-menu a {
   min-height: 44px;
   border-right: 0;
-  color: #2020b8;
+  color: #5a1f38;
 }
 
 .get-started-menu {
@@ -97,18 +97,18 @@
   align-content: start;
   gap: 12px;
   padding-right: 28px;
-  border-right: 1px solid #e6edf2;
+  border-right: 1px solid #d8e8f4;
 }
 
 .started-links p {
   margin: 0 0 4px;
-  color: #a2a8af;
+  color: #6c7b86;
   font-size: 0.95rem;
 }
 
 .started-links a,
 .started-feature a {
-  color: #283642;
+  color: #173f52;
 }
 
 .started-feature {
@@ -120,19 +120,19 @@
   min-height: 118px;
   border-radius: 6px;
   background:
-    linear-gradient(90deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.72)),
-    linear-gradient(135deg, #ccb79f, #f0e4d5 52%, #24313f 52% 72%, #ffffff 72%);
+    linear-gradient(90deg, rgb(255 255 255 / 0.1), rgb(255 255 255 / 0.72)),
+    linear-gradient(135deg, #b6d0e7, #edf6ff 52%, #5a1f38 52% 72%, #ffffff 72%);
 }
 
 .started-feature a {
   min-height: 0;
   padding: 0;
-  color: #b77931;
+  color: #5a1f38;
 }
 
 .started-feature p {
   margin: 0;
-  color: #283642;
+  color: #425563;
   line-height: 1.45;
 }
 

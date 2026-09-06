@@ -5,8 +5,8 @@ import './Navigation.css'
 function Navigation() {
   return (
     <nav className="primary-nav" aria-label="Primary navigation">
+      <a href="/how-it-works" aria-current={window.location.pathname === '/how-it-works' ? 'page' : undefined}>How it works</a>
       <GetStartedDropdown />
-      <a href="/our-therapist">Our therapist</a>
       <a href="/">Services</a>
       <a href="/pricing">Pricing</a>
       <AboutDropdown />

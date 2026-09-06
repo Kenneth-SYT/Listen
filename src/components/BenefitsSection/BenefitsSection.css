@@ -4,7 +4,7 @@
   gap: clamp(48px, 7vw, 96px);
   align-items: start;
   padding: 58px clamp(28px, 6vw, 60px) 118px;
-  background: #ffffff;
+  background: #f7fbff;
   color: #4a1730;
 }
 
@@ -136,6 +136,7 @@
 
 .benefit-item p {
   margin: 0;
+  color: #425563;
   font-size: 1rem;
   line-height: 1.4;
 }

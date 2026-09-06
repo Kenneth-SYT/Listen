@@ -5,25 +5,30 @@ const aboutCards = [
   {
     icon: ClipboardCheck,
     title: 'Easy to start',
-    text: 'Take a quick quiz to check in with your mental health and better understand what kind of support may help right now.',
+    text: 'A quick check-in helps you find a starting point that feels right.',
   },
   {
     icon: UsersRound,
     title: 'Supportive listeners',
-    text: 'Connect with listeners who can understand what you are going through and gently guide you toward your next step.',
+    text: 'Space to talk openly, feel heard, and work through what’s on your mind.',
   },
   {
     icon: ChartNoAxesCombined,
     title: 'Track your progress',
-    text: 'Keep track of your check-ins, mood patterns, and progress over time as you continue your mental health journey.',
+    text: 'Notice your mood patterns and small steps forward over time.',
   },
 ]
 
 function About() {
   return (
-    <section className="about-section">
+    <section className="about-section" aria-labelledby="about-heading">
       <div className="about-heading">
-        <h2>We Provide Peer Support</h2>
+        <h2 id="about-heading">A space to talk. Someone to listen.</h2>
+        <p>
+          Listen Mental Health offers peer support for university students. Whether it’s study
+          pressure, feeling disconnected, or simply a difficult week, you can talk things through
+          with a supportive listener.
+        </p>
       </div>
 
       <div className="about-card-grid">

@@ -1,7 +1,7 @@
 .how-section {
   overflow: hidden;
   padding: 84px 24px 128px;
-  background: #ffffff;
+  background: #f7fbff;
   color: #4a1730;
   text-align: center;
 }
@@ -11,7 +11,7 @@
   margin: 0 auto 50px;
 }
 
-.how-header h2 {
+.how-header h1 {
   margin: 0 0 22px;
   color: #4a1730;
   font-size: clamp(2.4rem, 5vw, 4.2rem);
@@ -46,13 +46,13 @@
 
 .how-path path {
   fill: none;
-  stroke: #d3a5c8;
+  stroke: #d7a8cc;
   stroke-linecap: round;
   stroke-width: 2;
 }
 
 .how-path .top-path {
-  stroke: #d3a5c8;
+  stroke: #d7a8cc;
 }
 
 .start-dot {
@@ -83,7 +83,7 @@
   position: relative;
   z-index: 2;
   border-radius: 16px;
-  background: #e3e8eb;
+  background: #edf6ff;
 }
 
 .how-card-main {
@@ -132,10 +132,10 @@
 
 .how-feature-copy {
   padding: 24px;
-  border: 1px solid #e2e8ec;
+  border: 1px solid #d8e8f4;
   border-radius: 12px;
   background: #ffffff;
-  box-shadow: 0 20px 8px -3px rgb(0 0 0 / 0.08);
+  box-shadow: 0 20px 8px -3px rgb(23 63 82 / 0.08);
 }
 
 .how-feature-copy h3 {

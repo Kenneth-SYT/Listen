@@ -1,4 +1,4 @@
-import logoImage from '../../assets/images/listen-mental-health-logo.png'
+import logoImage from '../../assets/images/listen-ear-nav.png'
 import Navigation from '../Navigation/Navigation'
 import './Header.css'
 

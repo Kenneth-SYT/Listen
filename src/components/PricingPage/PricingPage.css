@@ -1,8 +1,8 @@
 .pricing-page {
   min-height: calc(100vh - 82px);
   padding: 58px 26px 96px;
-  background: #eef7ff;
-  color: #000000;
+  background: #f7fbff;
+  color: #4a1730;
 }
 
 .pricing-container {
@@ -12,7 +12,7 @@
 
 .pricing-container h1 {
   margin: 0 0 34px;
-  color: #000000;
+  color: #173f52;
   font-size: clamp(2.8rem, 5vw, 4.2rem);
   font-weight: 700;
   letter-spacing: 0;
@@ -20,7 +20,7 @@
 }
 
 .pricing-list {
-  border-top: 1px solid #bfc9d3;
+  border-top: 1px solid #d8e8f4;
 }
 
 .pricing-row {
@@ -29,12 +29,12 @@
   align-items: center;
   gap: 32px;
   min-height: 144px;
-  border-bottom: 1px solid #bfc9d3;
+  border-bottom: 1px solid #d8e8f4;
 }
 
 .pricing-row h2 {
   margin: 0 0 14px;
-  color: #000000;
+  color: #173f52;
   font-size: clamp(1.7rem, 3vw, 2.05rem);
   font-weight: 700;
   letter-spacing: 0;
@@ -42,7 +42,7 @@
 }
 
 .pricing-row a {
-  color: #000000;
+  color: #5a1f38;
 }
 
 .pricing-book-button {
@@ -51,14 +51,15 @@
   justify-content: center;
   min-width: 151px;
   min-height: 41px;
-  border: 1px solid #000000;
+  border: 1px solid #5a1f38;
   border-radius: 24px;
+  color: #5a1f38;
   text-decoration: none;
 }
 
 .pricing-book-button:hover,
 .pricing-book-button:focus-visible {
-  background: #003d5c;
+  background: #5a1f38;
   color: #ffffff;
 }
 
