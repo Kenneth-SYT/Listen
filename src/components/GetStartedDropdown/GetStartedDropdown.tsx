@@ -1,15 +1,20 @@
 import { ChevronDown } from 'lucide-react'
 import { useState } from 'react'
 
-function GetStartedDropdown() {
+type GetStartedDropdownProps = {
+  isActive?: boolean
+}
+
+function GetStartedDropdown({ isActive = false }: GetStartedDropdownProps) {
   const [isOpen, setIsOpen] = useState(false)
 
   return (
-    <div className={`nav-dropdown get-started-dropdown${isOpen ? ' open' : ''}`}>
+    <div className={`nav-dropdown get-started-dropdown${isOpen ? ' open' : ''}${isActive ? ' active' : ''}`}>
       <button
         type="button"
         aria-expanded={isOpen}
         aria-haspopup="true"
+        aria-current={isActive ? 'true' : undefined}
         onClick={() => setIsOpen((current) => !current)}
       >
         Get Started

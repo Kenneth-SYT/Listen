@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import surveyImage from '../../assets/images/Customer Survey-cuate (1).svg'
 import jobHuntImage from '../../assets/images/Job hunt-pana.svg'
 import socialImage from '../../assets/images/Social interaction-pana (1).svg'
-import winnersImage from '../../assets/images/Winners (1).gif'
+import winnersImage from '../../assets/images/Winners-cuate.svg'
 import './SupportSections.css'
 
 function SupportSections() {
@@ -75,17 +75,11 @@ function SupportSections() {
         return  
       }
 
-      const rect = section.getBoundingClientRect()
-      const activeStart = window.innerHeight * 0.50
-      const activeEnd = window.innerHeight * 0.18
-      let progress = 0
-
-      if (rect.top <= activeStart && rect.bottom >= activeEnd) {
-        const activeRange = (rect.height + activeStart - activeEnd) * 0.82
-        progress = Math.min(Math.max((activeStart - rect.top) / activeRange, 0), 1)
-      } else if (rect.bottom < activeEnd) {
-        progress = 1
-      }
+      const sectionTop = section.offsetTop
+      const progressStart = Math.max(sectionTop - 120, 0)
+      const progressEnd = sectionTop + section.offsetHeight - window.innerHeight * 0.45
+      const progressRange = Math.max((progressEnd - progressStart) * 0.8, 1)
+      const progress = Math.min(Math.max((window.scrollY - progressStart) / progressRange, 0), 1)
       const point = getPointFromProgress(progress, topPath, lowerPath)
 
       movingDot.setAttribute('cx', `${point.x}`)
@@ -120,7 +114,7 @@ function SupportSections() {
   }, [])
 
   return (
-    <section className="how-section" aria-labelledby="how-heading" ref={sectionRef}>
+    <section className="how-section" id="how-it-works" data-nav-section="how-it-works" aria-labelledby="how-heading" ref={sectionRef}>
       <div className="how-header">
         <h1 id="how-heading">How it works</h1>
         <p>Start with a quick check-in, then connect with support that feels right for you.</p>
@@ -134,7 +128,7 @@ function SupportSections() {
             ref={topPathRef}
           />
           <path
-            d="M633 310 V368 C633 440 574 496 488 496 H368 C262.514 496 177 581.514 177 687 C177 792.486 262.514 878 368 878 H927.5 C1016.14 878 1088 949.858 1088 1038.5 C1088 1127.14 1016.14 1199 927.5 1199 H366.5 C261.842 1199 177 1283.84 177 1388.5 C177 1493.16 261.842 1578 366.5 1578 H878 C993.98 1578 1088 1672.02 1088 1788 C1088 1903.98 993.98 1998 878 1998 H680 C620 1998 590 2042 590 2100"
+            d="M633 310 V368 C633 440 574 496 488 496 H368 C262.514 496 177 581.514 177 687 C177 792.486 262.514 878 368 878 H927.5 C1016.14 878 1088 949.858 1088 1038.5 C1088 1127.14 1016.14 1199 927.5 1199 H366.5 C261.842 1199 177 1283.84 177 1388.5 C177 1493.16 261.842 1578 366.5 1578 H878 C993.98 1578 1088 1672.02 1088 1788 C1088 1903.98 993.98 1998 878 1998 H680 C620 1998 590 2042 590 2100 V2300"
             ref={lowerPathRef}
           />
           <circle className="start-dot" cx="633" cy="30" r="8" />

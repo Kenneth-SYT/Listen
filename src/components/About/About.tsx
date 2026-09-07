@@ -21,7 +21,7 @@ const aboutCards = [
 
 function About() {
   return (
-    <section className="about-section" aria-labelledby="about-heading">
+    <section className="about-section" id="about" data-nav-section="about" aria-labelledby="about-heading">
       <div className="about-heading">
         <h2 id="about-heading">A space to talk. Someone to listen.</h2>
         <p>

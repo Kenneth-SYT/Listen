@@ -9,6 +9,7 @@ import SupportSections from './components/SupportSections/SupportSections'
 import About from './components/About/About'
 import HowItWorksSummary from './components/SupportSections/HowItWorksSummary'
 import './App.css'
+import Footer from './components/Footer/Footer'
 
 function App() {
   const isContactPage = window.location.pathname === '/contact'
@@ -17,6 +18,7 @@ function App() {
   const isHowItWorksPage = window.location.pathname === '/how-it-works'
 
   return (
+    <>
     <main className="page">
       <ColourStrip />
       <Header />
@@ -27,10 +29,7 @@ function App() {
       ) : isOurTherapistPage ? (
         <OurTherapistPage />
       ) : isHowItWorksPage ? (
-        <>
-          <Hero />
-          <SupportSections />
-        </>
+        <SupportSections />
       ) : (
         <>
           <Hero />
@@ -40,6 +39,8 @@ function App() {
         </>
       )}
     </main>
+    <Footer />
+    </>
   )
 }
 

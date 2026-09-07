@@ -1,8 +1,8 @@
 .primary-nav {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
-  gap: clamp(18px, 2vw, 34px);
+  gap: clamp(12px, 1.5vw, 26px);
   margin-top: 0;
   width: fit-content;
   border-left: 0;
@@ -34,6 +34,14 @@
 .primary-nav a:focus-visible,
 .nav-dropdown button:hover,
 .nav-dropdown button:focus-visible {
+  background: #ffffff;
+  box-shadow: 0 8px 22px rgb(23 63 82 / 0.14);
+  color: #5a1f38;
+  transform: translateY(-1px);
+}
+
+.primary-nav a[aria-current],
+.nav-dropdown.active > button {
   background: #ffffff;
   box-shadow: 0 8px 22px rgb(23 63 82 / 0.14);
   color: #5a1f38;

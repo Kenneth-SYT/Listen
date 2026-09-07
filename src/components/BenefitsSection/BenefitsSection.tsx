@@ -25,7 +25,7 @@ const benefits = [
 
 function BenefitsSection() {
   return (
-    <section className="benefits-section" aria-labelledby="benefits-heading">
+    <section className="benefits-section" id="services" data-nav-section="services" aria-labelledby="benefits-heading">
       <div className="benefits-intro">
         <h2 id="benefits-heading">We make it easier to take care of your mental health</h2>
         <p>

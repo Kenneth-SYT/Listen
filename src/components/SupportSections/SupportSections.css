@@ -90,6 +90,7 @@
   width: min(820px, calc(100% - 96px));
   margin: 0 auto;
   padding: 48px clamp(28px, 5vw, 64px);
+  background: #dcecf8;
 }
 
 .how-card-main h3 {
@@ -166,7 +167,7 @@
 
 .how-feature-final {
   top: 1648px;
-  right: 76px;
+  right: 35px;
   left: auto;
   grid-template-columns: minmax(260px, 360px) minmax(240px, 320px);
 }

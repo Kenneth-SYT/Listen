@@ -20,6 +20,10 @@ body {
   background: #eaf7ff;
 }
 
+section[id] {
+  scroll-margin-top: 120px;
+}
+
 button,
 input,
 textarea,

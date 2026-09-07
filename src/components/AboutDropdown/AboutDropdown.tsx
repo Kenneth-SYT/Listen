@@ -3,15 +3,20 @@ import { useState } from 'react'
 
 const aboutItems = ['Who we are', 'Our strategy', 'Our services']
 
-function AboutDropdown() {
+type AboutDropdownProps = {
+  isActive?: boolean
+}
+
+function AboutDropdown({ isActive = false }: AboutDropdownProps) {
   const [isOpen, setIsOpen] = useState(false)
 
   return (
-    <div className={`nav-dropdown${isOpen ? ' open' : ''}`}>
+    <div className={`nav-dropdown${isOpen ? ' open' : ''}${isActive ? ' active' : ''}`}>
       <button
         type="button"
         aria-expanded={isOpen}
         aria-haspopup="true"
+        aria-current={isActive ? 'true' : undefined}
         onClick={() => setIsOpen((current) => !current)}
       >
         About us
@@ -19,7 +24,7 @@ function AboutDropdown() {
       </button>
       <div className="dropdown-menu">
         {aboutItems.map((item) => (
-          <a href="/" key={item}>
+          <a href="/#about" key={item}>
             {item}
           </a>
         ))}

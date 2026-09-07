@@ -1,18 +1,16 @@
 import './Hero.css'
-import TestimonialsColumn from '../ui/testimonial-v2'
 
-function Hero() {
+function HowItWorksHero() {
   return (
-    <section className="hero-panel" id="home" data-nav-section="get-started" aria-label="Health information and advice">
-      <div className="hero-content landing-hero">
+    <section className="hero-panel" aria-label="Health information and advice">
+      <div className="hero-content">
         <div className="hero-copy">
-          <h1>Uni life is a lot. You don’t have to carry it alone.</h1>
-          <p>Talk things through with a supportive listener, at your own pace.</p>
+          <h1>A little check-in. A conversation. Your next step.</h1>
+          <p>See how to find a listener and make space for what’s on your mind.</p>
           <a href="/pricing">Find your listener</a>
           <p className="hero-price-note">Your first chat is $1.</p>
         </div>
-        <TestimonialsColumn />
-        <div className="hero-preview landing-hidden-preview" aria-hidden="true">
+        <div className="hero-preview" aria-hidden="true">
           <div className="checkin-card">
             <span className="preview-label">Quick check-in</span>
             <div className="mood-row">
@@ -40,4 +38,4 @@ function Hero() {
   )
 }
 
-export default Hero
+export default HowItWorksHero
