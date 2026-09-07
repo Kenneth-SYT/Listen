@@ -97,7 +97,7 @@
   margin: 0 0 26px;
   color: #4a1730;
   font-size: clamp(1.9rem, 4vw, 2.5rem);
-  font-weight: 400;
+  font-weight: 700;
   line-height: 1.18;
 }
 
@@ -182,7 +182,7 @@
   padding: 42px 28px;
   overflow: hidden;
   border-radius: 18px;
-  background: #f5efe3;
+  background: linear-gradient(135deg, #e6f1fa 0%, #dcecf8 56%, #fff3d6 100%);
   color: #425563;
   text-align: center;
   transform: translateX(-50%);

@@ -17,7 +17,18 @@ const listeners = [
 
 function LandingSections() {
   const [start, setStart] = useState(0)
+  const [direction, setDirection] = useState<'left' | 'right'>('right')
   const visible = [0, 1, 2].map((offset) => listeners[(start + offset) % listeners.length])
+
+  const showPreviousListeners = () => {
+    setDirection('left')
+    setStart((current) => (current - 1 + listeners.length) % listeners.length)
+  }
+
+  const showNextListeners = () => {
+    setDirection('right')
+    setStart((current) => (current + 1) % listeners.length)
+  }
 
   return (
     <>
@@ -37,21 +48,23 @@ function LandingSections() {
       <section className="listener-showcase" aria-labelledby="listener-heading">
         <div className="listener-showcase-heading">
           <div><span>Meet the people who listen</span><h2 id="listener-heading">Find a listener who feels right for you.</h2></div>
-          <div className="listener-controls" aria-label="Browse listeners">
-            <button type="button" aria-label="Previous listeners" onClick={() => setStart((current) => (current - 1 + listeners.length) % listeners.length)}><ChevronLeft aria-hidden="true" /></button>
-            <button type="button" aria-label="Next listeners" onClick={() => setStart((current) => (current + 1) % listeners.length)}><ChevronRight aria-hidden="true" /></button>
-          </div>
         </div>
-        <div className="listener-preview-grid" aria-live="polite">
-          {visible.map((listener) => (
-            <article className="listener-preview-card" key={`${start}-${listener.name}`}>
-              <div className="listener-preview-photo" aria-hidden="true">{listener.initials}</div>
-              <h3>{listener.name}</h3>
-              <p className="listener-preview-focus">{listener.focus}</p>
-              <p>{listener.description}</p>
-              <a href="/get-matched">Find a match <span aria-hidden="true">→</span></a>
-            </article>
-          ))}
+        <div className="listener-carousel">
+          <button className="listener-arrow" type="button" aria-label="Previous listeners" onClick={showPreviousListeners}><ChevronLeft aria-hidden="true" /></button>
+          <div className="listener-track" aria-live="polite">
+            <div className={`listener-preview-grid slide-${direction}`} key={start}>
+              {visible.map((listener) => (
+                <article className="listener-preview-card" key={listener.name}>
+                  <div className="listener-preview-photo" aria-hidden="true">{listener.initials}</div>
+                  <h3>{listener.name}</h3>
+                  <p className="listener-preview-focus">{listener.focus}</p>
+                  <p>{listener.description}</p>
+                  <a href="/get-matched">Find a match <span aria-hidden="true">→</span></a>
+                </article>
+              ))}
+            </div>
+          </div>
+          <button className="listener-arrow" type="button" aria-label="Next listeners" onClick={showNextListeners}><ChevronRight aria-hidden="true" /></button>
         </div>
         <a className="all-listeners-link" href="/our-therapist">View all our listeners</a>
       </section>

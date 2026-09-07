@@ -11,6 +11,7 @@
   align-items: center;
   width: 100%;
   min-height: 640px;
+  max-height: 655px;
   margin: 0 auto;
   padding: clamp(64px, 8vw, 112px) clamp(44px, 7vw, 84px);
   overflow: hidden;
@@ -242,6 +243,7 @@
   .hero-content {
     grid-template-columns: 1fr;
     min-height: auto;
+    max-height: none;
     padding: 52px 24px;
   }
 
