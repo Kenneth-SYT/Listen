@@ -37,7 +37,7 @@ function HowItWorksSummary() {
             ))}
           </ol>
           <div className="how-summary-actions">
-            <a className="how-summary-primary" href="/pricing">Find your listener</a>
+            <a className="how-summary-primary" href="/get-matched">Find your listener</a>
             <a className="how-summary-link" href="/how-it-works">More about how it works <span aria-hidden="true">→</span></a>
           </div>
         </div>

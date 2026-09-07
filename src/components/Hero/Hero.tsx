@@ -8,7 +8,7 @@ function Hero() {
         <div className="hero-copy">
           <h1>Uni life is a lot. You don’t have to carry it alone.</h1>
           <p>Talk things through with a supportive listener, at your own pace.</p>
-          <a href="/pricing">Find your listener</a>
+          <a href="/get-matched">Find your listener</a>
           <p className="hero-price-note">Your first chat is $1.</p>
         </div>
         <TestimonialsColumn />

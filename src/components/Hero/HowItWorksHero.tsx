@@ -7,7 +7,7 @@ function HowItWorksHero() {
         <div className="hero-copy">
           <h1>A little check-in. A conversation. Your next step.</h1>
           <p>See how to find a listener and make space for what’s on your mind.</p>
-          <a href="/pricing">Find your listener</a>
+          <a href="/get-matched">Find your listener</a>
           <p className="hero-price-note">Your first chat is $1.</p>
         </div>
         <div className="hero-preview" aria-hidden="true">

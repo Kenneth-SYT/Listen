@@ -1,0 +1,39 @@
+.trust-band { position: relative; padding: 118px 24px 126px; overflow: hidden; background: #173f52; color: #fff; text-align: center; clip-path: polygon(0 5%, 100% 0, 100% 94%, 0 100%); }
+.trust-band::before { content: ''; position: absolute; top: 0; left: 0; width: 46%; height: 44px; background: #ffdb8c; clip-path: polygon(0 0, 100% 100%, 0 100%); }
+.trust-band-inner { width: min(980px, 100%); margin: 0 auto; }
+.trust-band h2 { margin: 0; color: #fff7e6; font-size: clamp(2rem, 4vw, 3rem); line-height: 1.15; }
+.trust-band h2::after { content: ''; display: block; width: 100px; height: 6px; margin: 28px auto 0; border-radius: 999px; background: #ffdb8c; }
+.trust-highlights { display: grid; grid-template-columns: repeat(3, 1fr); gap: 42px; margin: 54px 0 48px; }
+.trust-highlights article { display: grid; justify-items: center; }
+.trust-highlights svg { margin-bottom: 14px; color: #ffdb8c; }
+.trust-highlights strong { color: #fff; font-size: 2rem; }
+.trust-highlights p { margin: 10px 0 0; color: #d8e8f4; line-height: 1.5; }
+.trust-band a { display: inline-flex; align-items: center; justify-content: center; min-height: 52px; padding: 0 28px; border-radius: 999px; background: #ffdb8c; color: #173f52; font-weight: 700; text-decoration: none; }
+.trust-band a:hover { background: #fff0cd; }
+.listener-showcase { padding: 94px clamp(24px, 6vw, 84px) 104px; background: #fff; color: #173f52; }
+.listener-showcase-heading { display: flex; justify-content: space-between; gap: 32px; align-items: end; width: min(1160px, 100%); margin: 0 auto 42px; }
+.listener-showcase-heading span { color: #5a1f38; font-size: .84rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.listener-showcase-heading h2 { max-width: 650px; margin: 14px 0 0; font-size: clamp(2.1rem, 4vw, 3.2rem); line-height: 1.12; }
+.listener-controls { display: flex; gap: 12px; }
+.listener-controls button { display: grid; place-items: center; width: 50px; height: 50px; border: 1px solid #b6d0e7; border-radius: 50%; background: #f7fbff; color: #173f52; cursor: pointer; transition: background-color .18s ease, transform .18s ease; }
+.listener-controls button:hover { background: #d8e8f4; transform: translateY(-2px); }
+.listener-preview-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; width: min(1160px, 100%); margin: 0 auto; }
+.listener-preview-card { display: flex; flex-direction: column; align-items: center; min-height: 410px; padding: 30px; border: 1px solid #d8e8f4; border-radius: 26px; background: #f7fbff; text-align: center; transition: transform .2s ease, box-shadow .2s ease; }
+.listener-preview-card:nth-child(2) { background: #fcecef; }
+.listener-preview-card:nth-child(3) { background: #fff7e6; }
+.listener-preview-card:hover { transform: translateY(-6px); box-shadow: 0 18px 36px rgb(23 63 82 / .1); }
+.listener-preview-photo { display: grid; place-items: center; width: 112px; height: 112px; margin-bottom: 24px; border-radius: 50%; background: linear-gradient(135deg, #b6d0e7, #edf6ff); color: #173f52; font-size: 1.7rem; font-weight: 700; box-shadow: 0 0 0 8px rgb(255 255 255 / .7); }
+.listener-preview-card h3 { margin: 0 0 7px; font-size: 1.4rem; }
+.listener-preview-card p { margin: 0; color: #425563; line-height: 1.6; }
+.listener-preview-card .listener-preview-focus { margin-bottom: 18px; color: #5a1f38; font-weight: 700; }
+.listener-preview-card a { margin-top: auto; padding-top: 24px; color: #173f52; font-weight: 700; text-underline-offset: 5px; }
+.all-listeners-link { display: flex; align-items: center; justify-content: center; width: fit-content; min-height: 52px; margin: 42px auto 0; padding: 0 26px; border-radius: 999px; background: #5a1f38; color: #fff; font-weight: 700; text-decoration: none; }
+.all-listeners-link:hover { background: #74304c; }
+@media (max-width: 760px) {
+  .trust-band { padding: 100px 22px; clip-path: polygon(0 2%, 100% 0, 100% 98%, 0 100%); }
+  .trust-highlights { grid-template-columns: 1fr; gap: 34px; }
+  .listener-showcase-heading { align-items: center; }
+  .listener-preview-grid { grid-template-columns: 1fr; }
+  .listener-preview-grid article:not(:first-child) { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .listener-preview-card, .listener-controls button { transition: none; } .listener-preview-card:hover, .listener-controls button:hover { transform: none; } }

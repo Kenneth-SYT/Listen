@@ -12,7 +12,7 @@ function Header() {
 
         <Navigation />
 
-        <a className="match-button" href="/">
+        <a className="match-button" href="/get-matched">
           Get matched
         </a>
       </div>

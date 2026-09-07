@@ -1,20 +1,15 @@
 import { ChevronDown } from 'lucide-react'
 import { useState } from 'react'
 
-type GetStartedDropdownProps = {
-  isActive?: boolean
-}
-
-function GetStartedDropdown({ isActive = false }: GetStartedDropdownProps) {
+function GetStartedDropdown() {
   const [isOpen, setIsOpen] = useState(false)
 
   return (
-    <div className={`nav-dropdown get-started-dropdown${isOpen ? ' open' : ''}${isActive ? ' active' : ''}`}>
+    <div className={`nav-dropdown get-started-dropdown${isOpen ? ' open' : ''}`}>
       <button
         type="button"
         aria-expanded={isOpen}
         aria-haspopup="true"
-        aria-current={isActive ? 'true' : undefined}
         onClick={() => setIsOpen((current) => !current)}
       >
         Get Started
@@ -24,11 +19,11 @@ function GetStartedDropdown({ isActive = false }: GetStartedDropdownProps) {
         <div className="started-links">
           <p>Get Started</p>
           <a href="/our-therapist">Our Listeners</a>
-          <a href="/">Get Matched</a>
+          <a href="/get-matched">Get Matched</a>
         </div>
         <div className="started-feature">
           <div className="started-preview" aria-hidden="true"></div>
-          <a href="/">
+          <a href="/get-matched">
             Check-in with yourself <span aria-hidden="true">&gt;</span>
           </a>
           <p>Get started with a Mental Health Assessment</p>

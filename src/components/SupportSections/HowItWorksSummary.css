@@ -22,7 +22,27 @@
 .how-match-preview strong { font-size: .85rem; }
 .how-match-status { padding: 7px 10px; border-radius: 999px; background: #edf6ff; font-size: .72rem; font-weight: 700; }
 .how-summary-steps { display: grid; gap: 34px; margin: 0; padding: 0; list-style: none; }
-.how-summary-steps li { display: grid; grid-template-columns: 58px 1fr; gap: 22px; align-items: start; }
+.how-summary-steps li {
+  display: grid;
+  grid-template-columns: 58px 1fr;
+  gap: 22px;
+  align-items: start;
+  padding: 18px;
+  border: 1px solid transparent;
+  border-radius: 20px;
+  transition:
+    background-color .2s ease,
+    border-color .2s ease,
+    box-shadow .2s ease,
+    transform .2s ease;
+}
+
+.how-summary-steps li:hover {
+  border-color: #b6d0e7;
+  background: #edf6ff;
+  box-shadow: 0 12px 26px rgb(23 63 82 / .1);
+  transform: translateX(8px);
+}
 .how-summary-number { display: grid; place-items: center; width: 58px; height: 58px; border-radius: 50%; background: #d8e8f4; color: #173f52; font-size: 1.2rem; font-weight: 700; }
 .how-summary-steps li:nth-child(2) .how-summary-number { background: #f6d6db; color: #5a1f38; }
 .how-summary-steps li:nth-child(3) .how-summary-number { background: #ffdb8c; }
@@ -46,4 +66,9 @@
   .how-summary-steps li { grid-template-columns: 48px 1fr; gap: 16px; }
   .how-summary-number { width: 48px; height: 48px; }
   .how-summary-actions { flex-direction: column; align-items: flex-start; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .how-summary-steps li { transition: none; }
+  .how-summary-steps li:hover { transform: none; }
 }

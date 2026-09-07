@@ -1,7 +1,11 @@
 import { ChevronDown } from 'lucide-react'
 import { useState } from 'react'
 
-const aboutItems = ['Who we are', 'Our strategy', 'Our services']
+const aboutItems = [
+  { label: 'Who we are', href: '/about' },
+  { label: 'Our strategy', href: '/strategy' },
+  { label: 'Our services', href: '/services' },
+]
 
 type AboutDropdownProps = {
   isActive?: boolean
@@ -24,8 +28,8 @@ function AboutDropdown({ isActive = false }: AboutDropdownProps) {
       </button>
       <div className="dropdown-menu">
         {aboutItems.map((item) => (
-          <a href="/#about" key={item}>
-            {item}
+          <a href={item.href} key={item.href}>
+            {item.label}
           </a>
         ))}
       </div>

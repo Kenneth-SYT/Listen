@@ -36,7 +36,7 @@ function BenefitsSection() {
           <strong>Our online platform makes it easier and faster</strong> for you to access support
           when you need it.
         </p>
-        <a className="book-button" href="/">
+        <a className="book-button" href="/get-matched">
           Book now
         </a>
       </div>

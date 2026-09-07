@@ -36,7 +36,10 @@ function About() {
           const Icon = card.icon
 
           return (
-            <article className="about-card" key={card.title}>
+            <article
+              className="about-card bg-white border border-[#d8e8f4] shadow-md"
+              key={card.title}
+            >
               <span className={`about-card-icon icon-${index + 1}`} aria-hidden="true">
                 <Icon size={38} strokeWidth={1.8} />
               </span>

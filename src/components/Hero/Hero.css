@@ -16,7 +16,7 @@
   overflow: hidden;
   border-radius: 18px;
   background:
-    linear-gradient(135deg, #f7fbff 0%, #edf6ff 56%, #fff7e6 100%);
+    linear-gradient(135deg, #e6f1fa 0%, #dcecf8 56%, #fff3d6 100%);
 }
 
 .hero-content::before,
