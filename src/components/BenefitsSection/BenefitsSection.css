@@ -4,13 +4,13 @@
   gap: clamp(48px, 7vw, 96px);
   align-items: start;
   padding: 58px clamp(28px, 6vw, 60px) 118px;
-  background: #f7fbff;
-  color: #4a1730;
+  background: var(--color-cream);
+  color: var(--color-ink);
 }
 
 .benefits-intro h2 {
   margin: 0 0 20px;
-  color: #4a1730;
+  color: var(--color-ink);
   font-size: clamp(2rem, 3vw, 2.5rem);
   font-weight: 700;
   letter-spacing: 0;
@@ -32,15 +32,15 @@
   min-height: 54px;
   margin-top: 12px;
   border-radius: 28px;
-  background: #5a1f38;
-  color: #ffffff;
+  background: var(--color-primary);
+  color: var(--color-cream);
   font-weight: 700;
   text-decoration: none;
 }
 
 .book-button:hover,
 .book-button:focus-visible {
-  background: #74304c;
+  background: var(--color-primary-hover);
 }
 
 .benefits-grid {
@@ -61,7 +61,7 @@
   width: 34px;
   height: 34px;
   margin-bottom: 14px;
-  color: #5a1f38;
+  color: var(--color-primary);
 }
 
 .benefit-icon::before,
@@ -127,7 +127,7 @@
 
 .benefit-item h3 {
   margin: 0 0 4px;
-  color: #4a1730;
+  color: var(--color-ink);
   font-size: 1.7rem;
   font-weight: 700;
   letter-spacing: 0;
@@ -136,7 +136,7 @@
 
 .benefit-item p {
   margin: 0;
-  color: #425563;
+  color: var(--color-muted);
   font-size: 1rem;
   line-height: 1.4;
 }

@@ -1,7 +1,7 @@
 .support-sections {
   position: relative;
   overflow: hidden;
-  background: #eaf7ff;
+  background: var(--color-cream);
 }
 
 .support-wave {
@@ -9,7 +9,7 @@
   display: grid;
   gap: 64px;
   padding: 92px 20px 104px;
-  color: #ffffff;
+  color: var(--color-cream);
 }
 
 .support-wave::before {
@@ -17,9 +17,9 @@
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(120% 68% at 8% 6%, transparent 0 36%, #0e3a56 36.4% 100%),
-    radial-gradient(112% 70% at 92% 38%, #0e3a56 0 42%, #143f62 42.4% 100%),
-    radial-gradient(120% 74% at 12% 88%, #143f62 0 44%, #0b304a 44.4% 100%);
+    radial-gradient(120% 68% at 8% 6%, transparent 0 36%, var(--color-ink) 36.4% 100%),
+    radial-gradient(112% 70% at 92% 38%, var(--color-ink) 0 42%, var(--color-ink) 42.4% 100%),
+    radial-gradient(120% 74% at 12% 88%, var(--color-ink) 0 44%, var(--color-ink) 44.4% 100%);
 }
 
 .support-wave::after {
@@ -27,8 +27,8 @@
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(115deg, rgba(111, 168, 168, 0.22), transparent 38%),
-    linear-gradient(245deg, rgba(244, 178, 108, 0.16), transparent 46%);
+    linear-gradient(115deg, rgba(160, 190, 168, 0.22), transparent 38%),
+    linear-gradient(245deg, rgba(235, 201, 173, 0.16), transparent 46%);
 }
 
 .support-row {
@@ -51,12 +51,12 @@
   display: grid;
   place-items: center;
   min-height: 275px;
-  border: 2px dashed rgba(255, 255, 255, 0.58);
+  border: 2px dashed rgba(250, 248, 242, 0.58);
   border-radius: 8px;
   background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.05)),
-    rgba(255, 255, 255, 0.08);
-  color: rgba(255, 255, 255, 0.86);
+    linear-gradient(135deg, rgba(250, 248, 242, 0.18), rgba(250, 248, 242, 0.05)),
+    rgba(250, 248, 242, 0.08);
+  color: rgba(250, 248, 242, 0.86);
   font-weight: 700;
 }
 
@@ -66,7 +66,7 @@
 
 .support-copy h2 {
   margin: 0 0 18px;
-  color: #ffffff;
+  color: var(--color-cream);
   font-size: clamp(2rem, 4vw, 3rem);
   font-weight: 500;
   letter-spacing: 0;
@@ -75,7 +75,7 @@
 
 .support-copy p {
   margin: 0;
-  color: rgba(255, 255, 255, 0.9);
+  color: rgba(250, 248, 242, 0.9);
   font-size: 1.08rem;
   line-height: 1.65;
 }
@@ -86,15 +86,15 @@
   padding: 0 24px;
   border: 0;
   border-radius: 4px;
-  background: #f4b26c;
-  color: #073047;
+  background: var(--color-accent);
+  color: var(--color-ink);
   font-weight: 700;
   cursor: pointer;
 }
 
 .support-copy button:hover,
 .support-copy button:focus-visible {
-  background: #f8c488;
+  background: var(--color-accent);
 }
 
 @media (max-width: 760px) {

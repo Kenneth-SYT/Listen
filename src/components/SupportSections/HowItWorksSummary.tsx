@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import './HowItWorksSummary.css'
 
 const steps = [
@@ -7,6 +8,32 @@ const steps = [
 ]
 
 function HowItWorksSummary() {
+  const stepsRef = useRef<HTMLOListElement>(null)
+
+  useEffect(() => {
+    const items = Array.from(stepsRef.current?.children ?? [])
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)) return
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-revealed')
+          observer.unobserve(entry.target)
+        }
+      })
+    }, { threshold: 0.2 })
+
+    items.forEach((item) => {
+      item.classList.add('reveal-ready')
+      observer.observe(item)
+    })
+
+    return () => {
+      observer.disconnect()
+      items.forEach((item) => item.classList.remove('reveal-ready', 'is-revealed'))
+    }
+  }, [])
+
   return (
     <section className="how-summary" id="how-it-works" data-nav-section="how-it-works" aria-labelledby="how-summary-heading">
       <div className="how-summary-heading">
@@ -28,7 +55,7 @@ function HowItWorksSummary() {
           </div>
         </div>
         <div className="how-summary-content">
-          <ol className="how-summary-steps">
+          <ol className="how-summary-steps" ref={stepsRef}>
             {steps.map((step, index) => (
               <li key={step.title}>
                 <span className="how-summary-number" aria-hidden="true">{index + 1}</span>
@@ -37,8 +64,8 @@ function HowItWorksSummary() {
             ))}
           </ol>
           <div className="how-summary-actions">
-            <a className="how-summary-primary" href="/get-matched">Find your listener</a>
-            <a className="how-summary-link" href="/how-it-works">More about how it works <span aria-hidden="true">→</span></a>
+            <a className="how-summary-primary" href="/get-matched">Find your listener <span aria-hidden="true">→</span></a>
+            <a className="how-summary-link" href="/how-it-works">More info <span aria-hidden="true">→</span></a>
           </div>
         </div>
       </div>

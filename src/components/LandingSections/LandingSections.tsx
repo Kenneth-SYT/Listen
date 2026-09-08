@@ -1,5 +1,5 @@
 import { BadgeDollarSign, CalendarDays, ChevronLeft, ChevronRight, ShieldCheck } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import './LandingSections.css'
 
 const highlights = [
@@ -17,17 +17,68 @@ const listeners = [
 
 function LandingSections() {
   const [start, setStart] = useState(0)
-  const [direction, setDirection] = useState<'left' | 'right'>('right')
-  const visible = [0, 1, 2].map((offset) => listeners[(start + offset) % listeners.length])
+  const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null)
+  const [hovered, setHovered] = useState(false)
+  const [focused, setFocused] = useState(false)
+  const remainingTime = useRef(4000)
+  const paused = hovered || focused
+
+  useEffect(() => {
+    if (paused || slideDirection) return
+
+    const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)')
+    let timer: ReturnType<typeof setTimeout> | undefined
+    let startedAt = 0
+
+    const stopTimer = () => {
+      if (timer === undefined) return
+      clearTimeout(timer)
+      remainingTime.current = Math.max(0, remainingTime.current - (performance.now() - startedAt))
+      timer = undefined
+    }
+    const startTimer = () => {
+      stopTimer()
+      if (motionPreference.matches || document.hidden) return
+      startedAt = performance.now()
+      timer = setTimeout(() => {
+        timer = undefined
+        remainingTime.current = 4000
+        setSlideDirection('left')
+      }, remainingTime.current)
+    }
+
+    startTimer()
+    motionPreference.addEventListener('change', startTimer)
+    document.addEventListener('visibilitychange', startTimer)
+    return () => {
+      stopTimer()
+      motionPreference.removeEventListener('change', startTimer)
+      document.removeEventListener('visibilitychange', startTimer)
+    }
+  }, [paused, slideDirection])
+  const trackStart = slideDirection === 'right'
+    ? (start - 1 + listeners.length) % listeners.length
+    : start
+  const trackListeners = [0, 1, 2, 3].map((offset) => {
+    const index = (trackStart + offset) % listeners.length
+    return { ...listeners[index], index }
+  })
 
   const showPreviousListeners = () => {
-    setDirection('left')
-    setStart((current) => (current - 1 + listeners.length) % listeners.length)
+    if (!slideDirection) setSlideDirection('left')
   }
 
   const showNextListeners = () => {
-    setDirection('right')
-    setStart((current) => (current + 1) % listeners.length)
+    if (!slideDirection) setSlideDirection('right')
+  }
+
+  const finishSlide = () => {
+    if (slideDirection === 'left') {
+      setStart((current) => (current + 1) % listeners.length)
+    } else if (slideDirection === 'right') {
+      setStart((current) => (current - 1 + listeners.length) % listeners.length)
+    }
+    setSlideDirection(null)
   }
 
   return (
@@ -49,12 +100,23 @@ function LandingSections() {
         <div className="listener-showcase-heading">
           <div><span>Meet the people who listen</span><h2 id="listener-heading">Find a listener who feels right for you.</h2></div>
         </div>
-        <div className="listener-carousel">
-          <button className="listener-arrow" type="button" aria-label="Previous listeners" onClick={showPreviousListeners}><ChevronLeft aria-hidden="true" /></button>
-          <div className="listener-track" aria-live="polite">
-            <div className={`listener-preview-grid slide-${direction}`} key={start}>
-              {visible.map((listener) => (
-                <article className="listener-preview-card" key={listener.name}>
+        <div
+          className="listener-carousel"
+          onMouseEnter={() => setHovered(true)}
+          onMouseLeave={() => setHovered(false)}
+          onFocusCapture={() => setFocused(true)}
+          onBlurCapture={(event) => {
+            if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false)
+          }}
+        >
+          <button className="listener-arrow" type="button" aria-label="Slide listeners left" disabled={slideDirection !== null} onClick={showPreviousListeners}><ChevronLeft aria-hidden="true" /></button>
+          <div className="listener-track" aria-live={paused ? 'polite' : 'off'}>
+            <div
+              className={`listener-slider-track${slideDirection ? ` slide-${slideDirection}` : ''}`}
+              onAnimationEnd={finishSlide}
+            >
+              {trackListeners.map((listener) => (
+                <article className={`listener-preview-card listener-color-${(listener.index % 3) + 1}`} key={listener.name}>
                   <div className="listener-preview-photo" aria-hidden="true">{listener.initials}</div>
                   <h3>{listener.name}</h3>
                   <p className="listener-preview-focus">{listener.focus}</p>
@@ -64,7 +126,7 @@ function LandingSections() {
               ))}
             </div>
           </div>
-          <button className="listener-arrow" type="button" aria-label="Next listeners" onClick={showNextListeners}><ChevronRight aria-hidden="true" /></button>
+          <button className="listener-arrow" type="button" aria-label="Slide listeners right" disabled={slideDirection !== null} onClick={showNextListeners}><ChevronRight aria-hidden="true" /></button>
         </div>
         <a className="all-listeners-link" href="/our-therapist">View all our listeners</a>
       </section>

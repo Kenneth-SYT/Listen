@@ -3,14 +3,14 @@
   gap: 40px;
   place-items: center;
   padding: 72px clamp(24px, 6vw, 60px);
-  background: #ffffff;
-  color: #425563;
+  background: var(--color-cream);
+  color: var(--color-muted);
   text-align: center;
 }
 
 .about-heading h2 {
   margin: 0;
-  color: #173f52;
+  color: var(--color-ink);
   font-size: clamp(2rem, 4vw, 3rem);
   font-weight: 700;
   line-height: 1.1;
@@ -31,13 +31,33 @@
 }
 
 .about-card {
+  background: var(--color-sage-light);
+  border-color: var(--color-sage-strong);
   position: relative;
   display: grid;
   justify-items: center;
   align-content: start;
   padding: 30px;
   border-radius: 24px;
+  opacity: 0;
   text-align: center;
+  transform: translateY(28px);
+  transition:
+    opacity 0.65s ease,
+    transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.about-section.cards-visible .about-card {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.about-section.cards-visible .about-card:nth-child(2) {
+  transition-delay: 0.12s;
+}
+
+.about-section.cards-visible .about-card:nth-child(3) {
+  transition-delay: 0.24s;
 }
 
 .about-card-icon {
@@ -47,25 +67,25 @@
   height: 64px;
   margin-bottom: 24px;
   border-radius: 22px 26px 20px 28px;
-  color: #173f52;
+  color: var(--color-ink);
 }
 
 .about-card-icon.icon-1 {
-  background: #d8e8f4;
+  background: var(--color-sage);
 }
 
 .about-card-icon.icon-2 {
-  background: #b6d0e7;
+  background: var(--color-sage-strong);
 }
 
 .about-card-icon.icon-3 {
-  background: #ffdb8c;
-  color: #173f52;
+  background: var(--color-accent);
+  color: var(--color-ink);
 }
 
 .about-card h3 {
   margin: 0 0 12px;
-  color: #173f52;
+  color: var(--color-ink);
   font-size: 1.3rem;
   font-weight: 700;
   line-height: 1.2;
@@ -73,12 +93,20 @@
 
 .about-card p {
   margin: 0;
-  color: #425563;
+  color: var(--color-muted);
   line-height: 1.6;
 }
 
 @media (max-width: 760px) {
   .about-card-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .about-card {
+    opacity: 1;
+    transform: none;
+    transition: none;
   }
 }

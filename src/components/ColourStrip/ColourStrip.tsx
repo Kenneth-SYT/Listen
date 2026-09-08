@@ -2,14 +2,7 @@ import './ColourStrip.css'
 
 function ColourStrip() {
   return (
-    <div className="colour-strip" aria-hidden="true">
-      <span></span>
-      <span></span>
-      <span></span>
-      <span></span>
-      <span></span>
-      <span></span>
-    </div>
+    <div className="colour-strip" aria-hidden="true" />
   )
 }
 

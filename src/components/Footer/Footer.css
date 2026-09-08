@@ -1,8 +1,8 @@
 .site-footer {
   padding: 64px clamp(24px, 6vw, 84px) 24px;
-  border-top: 5px solid #b6d0e7;
-  background: #173f52;
-  color: #edf6ff;
+  border-top: 5px solid var(--color-sage-strong);
+  background: var(--color-ink);
+  color: var(--color-sage-light);
 }
 
 .footer-top {
@@ -24,7 +24,7 @@
 }
 
 .site-footer a:focus-visible {
-  outline: 3px solid #ffdb8c;
+  outline: 3px solid var(--color-accent);
   outline-offset: 5px;
 }
 
@@ -36,7 +36,7 @@
 
 .footer-brand p {
   margin: 24px 0 16px;
-  color: #fff7e6;
+  color: var(--color-cream);
   font-size: clamp(1.7rem, 3vw, 2.4rem);
   line-height: 1.2;
 }
@@ -44,14 +44,14 @@
 .footer-brand > span,
 .footer-contact p,
 .footer-bottom {
-  color: #d8e8f4;
+  color: var(--color-sage);
   line-height: 1.6;
 }
 
 .site-footer h2 {
   margin: 0 0 20px;
   font-size: 1.1rem;
-  color: #fff7e6;
+  color: var(--color-cream);
 }
 
 .footer-links {
@@ -79,8 +79,8 @@
   min-height: 48px;
   padding: 0 24px;
   border-radius: 999px;
-  background: #ffdb8c;
-  color: #173f52;
+  background: var(--color-accent);
+  color: var(--color-ink);
   font-weight: 700;
 }
 
@@ -92,7 +92,7 @@
   max-width: 1320px;
   margin: 48px auto 0;
   padding-top: 24px;
-  border-top: 1px solid rgb(216 232 244 / 0.25);
+  border-top: 1px solid rgb(220 232 222 / 0.25);
   font-size: 0.875rem;
 }
 

@@ -5,8 +5,8 @@
   right: 0;
   z-index: 100;
   min-height: 72px;
-  border-bottom: 1px solid #d8e8f4;
-  background: #ffffff;
+  border-bottom: 1px solid var(--color-sage);
+  background: var(--color-cream);
 }
 
 .header-inner {
@@ -36,8 +36,6 @@
   height: 100%;
   object-fit: contain;
   object-position: left center;
-  mix-blend-mode: multiply;
-  opacity: 0.96;
 }
 
 .match-button {
@@ -48,8 +46,8 @@
   min-height: 48px;
   padding: 0 24px;
   border-radius: 999px;
-  background: #5a1f38;
-  color: #ffffff;
+  background: var(--color-primary);
+  color: var(--color-cream);
   font-weight: 700;
   text-decoration: none;
   white-space: nowrap;
@@ -57,7 +55,7 @@
 
 .match-button:hover,
 .match-button:focus-visible {
-  background: #74304c;
+  background: var(--color-primary-hover);
 }
 
 @media (max-width: 760px) {
