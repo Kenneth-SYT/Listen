@@ -1,4 +1,12 @@
 .how-section {
+  --color-cream: var(--how-color-cream, #f8fafc);
+  --color-sage-light: var(--how-color-sage-light, #e6f0fa);
+  --color-sage: var(--how-color-sage, #e6f0e8);
+  --color-sage-strong: var(--how-color-sage-strong, #9ec1a3);
+  --color-primary: var(--how-color-primary, #065143);
+  --color-accent: var(--how-color-accent, #5c97d9);
+  --color-ink: var(--how-color-ink, #001c55);
+  --color-muted: var(--how-color-muted, #4e6575);
   overflow: hidden;
   padding: 84px 24px 128px;
   background: var(--color-cream);
@@ -136,7 +144,7 @@
   border: 1px solid var(--color-sage);
   border-radius: 12px;
   background: var(--color-cream);
-  box-shadow: 0 20px 8px -3px rgb(36 60 52 / 0.08);
+  box-shadow: 0 20px 8px -3px rgb(0 28 85 / 0.08);
 }
 
 .how-feature-copy h3 {

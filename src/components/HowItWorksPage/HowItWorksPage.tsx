@@ -1,11 +1,11 @@
 import { useEffect, useRef } from 'react'
-import surveyImage from '../../assets/images/Customer Survey-cuate (1).svg'
-import jobHuntImage from '../../assets/images/Job hunt-pana.svg'
-import socialImage from '../../assets/images/Social interaction-pana (1).svg'
-import winnersImage from '../../assets/images/Winners-cuate.svg'
-import './SupportSections.css'
+import surveyImage from './assets/Customer Survey-cuate.svg'
+import jobHuntImage from './assets/Job-hunt-pana.svg'
+import socialImage from './assets/Social-interaction-pana.svg'
+import winnersImage from './assets/Winners-cuate.svg'
+import './HowItWorksPage.css'
 
-function SupportSections() {
+function HowItWorksPage() {
   const sectionRef = useRef<HTMLElement>(null)
   const topPathRef = useRef<SVGPathElement>(null)
   const lowerPathRef = useRef<SVGPathElement>(null)
@@ -202,4 +202,4 @@ function SupportSections() {
   )
 }
 
-export default SupportSections
+export default HowItWorksPage

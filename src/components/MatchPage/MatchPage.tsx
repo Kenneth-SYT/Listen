@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import BookingPage from '../BookingPage/BookingPage'
 import './MatchPage.css'
 
 const questions = [
@@ -37,12 +38,7 @@ function MatchPage() {
           <a href="/our-therapist">Or browse our listeners</a>
         </div>
       ) : complete ? (
-        <div className="match-intro">
-          <span className="match-eyebrow">All done</span>
-          <h1 id="match-heading">Thanks for telling us what you need.</h1>
-          <p>This is the end of the sample flow. You can connect these answers to your matching system when it is ready.</p>
-          <a className="match-button-link" href="/our-therapist">Browse listeners</a>
-        </div>
+        <BookingPage answers={answers} />
       ) : (
         <form className="match-question" onSubmit={(event) => { event.preventDefault(); next() }}>
           <span className="match-eyebrow">Question {step + 1}</span>

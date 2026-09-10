@@ -7,7 +7,7 @@
 
 .footer-top {
   display: grid;
-  grid-template-columns: 1.3fr 1fr 1fr;
+  grid-template-columns: 1.3fr repeat(3, 1fr);
   gap: 48px;
   max-width: 1320px;
   margin: 0 auto;
@@ -92,7 +92,7 @@
   max-width: 1320px;
   margin: 48px auto 0;
   padding-top: 24px;
-  border-top: 1px solid rgb(220 232 222 / 0.25);
+  border-top: 1px solid rgb(158 193 163 / 0.25);
   font-size: 0.875rem;
 }
 

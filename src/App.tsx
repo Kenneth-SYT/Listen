@@ -4,7 +4,7 @@ import Header from './components/Header/Header'
 import Hero from './components/Hero/Hero'
 import OurTherapistPage from './components/OurTherapistPage/OurTherapistPage'
 import PricingPage from './components/PricingPage/PricingPage'
-import SupportSections from './components/SupportSections/SupportSections'
+import HowItWorksPage from './components/HowItWorksPage/HowItWorksPage'
 import About from './components/About/About'
 import HowItWorksSummary from './components/SupportSections/HowItWorksSummary'
 import './App.css'
@@ -12,6 +12,7 @@ import Footer from './components/Footer/Footer'
 import MatchPage from './components/MatchPage/MatchPage'
 import { AboutPage, ServicesPage, StrategyPage } from './components/InfoPages/InfoPages'
 import LandingSections from './components/LandingSections/LandingSections'
+import PaymentPage from './components/PaymentPage/PaymentPage'
 
 function App() {
   const isContactPage = window.location.pathname === '/contact'
@@ -22,6 +23,7 @@ function App() {
   const isServicesPage = window.location.pathname === '/services'
   const isAboutPage = window.location.pathname === '/about'
   const isStrategyPage = window.location.pathname === '/strategy'
+  const isPaymentPage = window.location.pathname === '/payment'
 
   return (
     <>
@@ -30,12 +32,14 @@ function App() {
       <Header />
       {isContactPage ? (
         <ContactPage />
+      ) : isPaymentPage ? (
+        <PaymentPage />
       ) : isPricingPage ? (
         <PricingPage />
       ) : isOurTherapistPage ? (
         <OurTherapistPage />
       ) : isHowItWorksPage ? (
-        <SupportSections />
+        <HowItWorksPage />
       ) : isMatchPage ? (
         <MatchPage />
       ) : isServicesPage ? (

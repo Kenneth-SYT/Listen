@@ -1,4 +1,4 @@
-import logoImage from '../../assets/images/LMH_sideways.png'
+import logoImage from '../../assets/images/LMH_sideways-transparent.png'
 import Navigation from '../Navigation/Navigation'
 import './Header.css'
 
