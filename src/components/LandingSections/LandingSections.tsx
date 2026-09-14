@@ -65,11 +65,11 @@ function LandingSections() {
   })
 
   const showPreviousListeners = () => {
-    if (!slideDirection) setSlideDirection('left')
+    if (!slideDirection) setSlideDirection('right')
   }
 
   const showNextListeners = () => {
-    if (!slideDirection) setSlideDirection('right')
+    if (!slideDirection) setSlideDirection('left')
   }
 
   const finishSlide = () => {
@@ -109,7 +109,7 @@ function LandingSections() {
             if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false)
           }}
         >
-          <button className="listener-arrow" type="button" aria-label="Slide listeners left" disabled={slideDirection !== null} onClick={showPreviousListeners}><ChevronLeft aria-hidden="true" /></button>
+          <button className="listener-arrow" type="button" aria-label="Show previous listeners" disabled={slideDirection !== null} onClick={showPreviousListeners}><ChevronLeft aria-hidden="true" /></button>
           <div className="listener-track" aria-live={paused ? 'polite' : 'off'}>
             <div
               className={`listener-slider-track${slideDirection ? ` slide-${slideDirection}` : ''}`}
@@ -126,7 +126,7 @@ function LandingSections() {
               ))}
             </div>
           </div>
-          <button className="listener-arrow" type="button" aria-label="Slide listeners right" disabled={slideDirection !== null} onClick={showNextListeners}><ChevronRight aria-hidden="true" /></button>
+          <button className="listener-arrow" type="button" aria-label="Show next listeners" disabled={slideDirection !== null} onClick={showNextListeners}><ChevronRight aria-hidden="true" /></button>
         </div>
         <a className="all-listeners-link" href="/our-therapist">View all our listeners</a>
       </section>

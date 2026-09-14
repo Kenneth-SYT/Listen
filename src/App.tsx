@@ -13,6 +13,7 @@ import MatchPage from './components/MatchPage/MatchPage'
 import { AboutPage, ServicesPage, StrategyPage } from './components/InfoPages/InfoPages'
 import LandingSections from './components/LandingSections/LandingSections'
 import PaymentPage from './components/PaymentPage/PaymentPage'
+import ConfirmationPage from './components/ConfirmationPage/ConfirmationPage'
 
 function App() {
   const isContactPage = window.location.pathname === '/contact'
@@ -24,6 +25,7 @@ function App() {
   const isAboutPage = window.location.pathname === '/about'
   const isStrategyPage = window.location.pathname === '/strategy'
   const isPaymentPage = window.location.pathname === '/payment'
+  const isConfirmationPage = window.location.pathname === '/booking-confirmation'
 
   return (
     <>
@@ -32,6 +34,8 @@ function App() {
       <Header />
       {isContactPage ? (
         <ContactPage />
+      ) : isConfirmationPage ? (
+        <ConfirmationPage />
       ) : isPaymentPage ? (
         <PaymentPage />
       ) : isPricingPage ? (

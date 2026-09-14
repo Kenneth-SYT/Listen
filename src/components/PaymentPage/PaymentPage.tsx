@@ -1,4 +1,4 @@
-import { CreditCard, LockKeyhole, ShieldCheck } from 'lucide-react'
+import { ArrowRight, ExternalLink, LockKeyhole, ShieldCheck } from 'lucide-react'
 import { useState } from 'react'
 import './PaymentPage.css'
 
@@ -19,6 +19,12 @@ function PaymentPage() {
     }
 
     const checkoutUrl = new URL(stripePaymentLink)
+    localStorage.setItem('lmhPendingBooking', JSON.stringify({
+      listener,
+      date: rawDate,
+      time,
+      amount,
+    }))
     checkoutUrl.searchParams.set('client_reference_id', `LMH-${Date.now()}`)
     window.location.assign(checkoutUrl.toString())
   }
@@ -31,14 +37,15 @@ function PaymentPage() {
           <h1 id="payment-heading">Complete your booking.</h1>
           <p>You’ll continue to Stripe’s secure checkout to enter your payment details.</p>
 
-          <div className="stripe-preview" aria-hidden="true">
-            <div className="stripe-preview-heading"><CreditCard size={22} /><strong>Payment details</strong></div>
-            <span>Card information is entered securely on Stripe</span>
-            <div className="stripe-field"></div>
-            <div className="stripe-field-row"><div></div><div></div></div>
+          <div className="checkout-handoff">
+            <div className="checkout-handoff-icon"><ExternalLink size={24} aria-hidden="true" /></div>
+            <div>
+              <strong>Next: secure Stripe checkout</strong>
+              <p>Stripe will open in a new secure checkout screen where you can enter your card details and complete payment.</p>
+            </div>
           </div>
 
-          <button className="stripe-button" type="button" onClick={continueToStripe}>Pay ${amount} securely with Stripe <span aria-hidden="true">→</span></button>
+          <button className="stripe-button" type="button" onClick={continueToStripe}>Continue to pay ${amount} AUD <ArrowRight size={19} aria-hidden="true" /></button>
           {setupMessage && <p className="stripe-setup-message" role="status">Add your Stripe Payment Link to <code>VITE_STRIPE_PAYMENT_LINK</code> to enable checkout.</p>}
           <div className="payment-security"><ShieldCheck size={19} aria-hidden="true" /><span>Stripe securely processes your payment. Listen Mental Health does not store card details.</span></div>
         </div>
