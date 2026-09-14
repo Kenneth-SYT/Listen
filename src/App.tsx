@@ -12,8 +12,8 @@ import Footer from './components/Footer/Footer'
 import MatchPage from './components/MatchPage/MatchPage'
 import { AboutPage, ServicesPage, StrategyPage } from './components/InfoPages/InfoPages'
 import LandingSections from './components/LandingSections/LandingSections'
-import PaymentPage from './components/PaymentPage/PaymentPage'
 import ConfirmationPage from './components/ConfirmationPage/ConfirmationPage'
+import LoginPage from './components/LoginPage/LoginPage'
 
 function App() {
   const isContactPage = window.location.pathname === '/contact'
@@ -24,8 +24,8 @@ function App() {
   const isServicesPage = window.location.pathname === '/services'
   const isAboutPage = window.location.pathname === '/about'
   const isStrategyPage = window.location.pathname === '/strategy'
-  const isPaymentPage = window.location.pathname === '/payment'
   const isConfirmationPage = window.location.pathname === '/booking-confirmation'
+  const isLoginPage = window.location.pathname === '/login'
 
   return (
     <>
@@ -34,10 +34,10 @@ function App() {
       <Header />
       {isContactPage ? (
         <ContactPage />
+      ) : isLoginPage ? (
+        <LoginPage />
       ) : isConfirmationPage ? (
         <ConfirmationPage />
-      ) : isPaymentPage ? (
-        <PaymentPage />
       ) : isPricingPage ? (
         <PricingPage />
       ) : isOurTherapistPage ? (

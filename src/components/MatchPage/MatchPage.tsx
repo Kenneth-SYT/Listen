@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import BookingPage from '../BookingPage/BookingPage'
+import DetailsPage, { type CustomerDetails } from '../DetailsPage/DetailsPage'
 import './MatchPage.css'
 
 const questions = [
@@ -8,11 +9,22 @@ const questions = [
   { title: 'When would you like to talk?', options: ['As soon as possible', 'This week', 'I’m just exploring'] },
 ]
 
+const emptyDetails: CustomerDetails = {
+  firstName: '',
+  lastName: '',
+  preferredName: '',
+  dateOfBirth: '',
+  email: '',
+  mobile: '',
+}
+
 function MatchPage() {
   const [started, setStarted] = useState(false)
   const [step, setStep] = useState(0)
   const [answers, setAnswers] = useState<string[]>([])
   const [complete, setComplete] = useState(false)
+  const [detailsComplete, setDetailsComplete] = useState(false)
+  const [customerDetails, setCustomerDetails] = useState<CustomerDetails>(emptyDetails)
 
   const answer = answers[step] ?? ''
   const chooseAnswer = (value: string) => setAnswers((current) => {
@@ -24,10 +36,10 @@ function MatchPage() {
 
   return (
     <section className="match-page" aria-labelledby="match-heading">
-      <div className="match-progress" aria-label={`${complete ? questions.length : step} of ${questions.length} steps completed`}>
-        <span style={{ width: `${complete ? 100 : (step / questions.length) * 100}%` }}></span>
+      <div className="match-progress" aria-label={`${detailsComplete ? 4 : complete ? 3 : step} of 4 steps completed`}>
+        <span style={{ width: `${detailsComplete ? 100 : complete ? 75 : (step / 4) * 100}%` }}></span>
       </div>
-      <p className="match-progress-label">{complete ? questions.length : step}/{questions.length} steps completed</p>
+      <p className="match-progress-label">{detailsComplete ? 4 : complete ? 3 : step}/4 steps completed</p>
 
       {!started ? (
         <div className="match-intro">
@@ -37,8 +49,14 @@ function MatchPage() {
           <button type="button" onClick={() => setStarted(true)}>Let’s start</button>
           <a href="/our-therapist">Or browse our listeners</a>
         </div>
+      ) : detailsComplete ? (
+        <BookingPage answers={answers} customerDetails={customerDetails} />
       ) : complete ? (
-        <BookingPage answers={answers} />
+        <DetailsPage
+          initialDetails={customerDetails}
+          onBack={() => { setComplete(false); setStep(questions.length - 1) }}
+          onContinue={(details) => { setCustomerDetails(details); setDetailsComplete(true) }}
+        />
       ) : (
         <form className="match-question" onSubmit={(event) => { event.preventDefault(); next() }}>
           <span className="match-eyebrow">Question {step + 1}</span>

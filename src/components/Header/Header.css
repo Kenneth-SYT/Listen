@@ -53,6 +53,10 @@
   white-space: nowrap;
 }
 
+.header-actions { display: flex; align-items: center; justify-self: end; gap: 10px; }
+.login-button { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 16px; border-radius: 8px; color: var(--color-ink); font-weight: 700; text-decoration: none; }
+.login-button:hover, .login-button:focus-visible { background: var(--color-accent-light); }
+
 .match-button:hover,
 .match-button:focus-visible {
   background: var(--color-primary-hover);
@@ -72,8 +76,12 @@
     padding: 20px;
   }
 
+  .header-actions { width: 100%; }
+
   .match-button {
     width: 100%;
     margin-left: 0;
   }
+
+  .login-button { flex: 0 0 auto; }
 }

@@ -12,9 +12,10 @@ function Header() {
 
         <Navigation />
 
-        <a className="match-button" href="/get-matched">
-          Get matched
-        </a>
+        <div className="header-actions">
+          <a className="login-button" href="/login">Login</a>
+          <a className="match-button" href="/get-matched">Get matched</a>
+        </div>
       </div>
     </header>
   )
