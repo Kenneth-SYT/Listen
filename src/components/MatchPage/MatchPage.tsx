@@ -14,8 +14,9 @@ const emptyDetails: CustomerDetails = {
   lastName: '',
   preferredName: '',
   dateOfBirth: '',
-  email: '',
   mobile: '',
+  email: '',
+  gender: '',
 }
 
 function MatchPage() {

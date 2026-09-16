@@ -1,0 +1,16 @@
+.account-page { width: min(1100px, calc(100% - 40px)); margin: 55px auto 90px; min-height: 55vh; }
+.account-page h1 { font-size: clamp(2rem, 5vw, 3.2rem); }
+.account-actions { display: flex; flex-wrap: wrap; gap: 18px; align-items: center; margin: 24px 0; }
+.account-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 18px; margin-top: 24px; }
+.account-card { border: 1px solid var(--color-border); border-radius: 16px; background: white; padding: 24px; }
+.account-card h2 { margin-top: 0; }
+.account-card a { display: inline-block; margin: 10px; }
+.account-page button { border: 0; border-radius: 8px; padding: 10px 16px; background: var(--color-primary); color: white; cursor: pointer; font: inherit; }
+.account-page button:disabled { opacity: .5; cursor: not-allowed; }
+.admin-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 310px), 1fr)); gap: 20px; }
+.admin-grid form { display: grid; gap: 14px; align-content: start; }
+.admin-grid label { display: grid; gap: 6px; }
+.admin-grid input, .admin-grid select { padding: 10px; border: 1px solid var(--color-border); border-radius: 7px; width: 100%; box-sizing: border-box; font: inherit; }
+.admin-table { overflow-x: auto; margin: 24px 0; }
+.admin-table table { border-collapse: collapse; width: 100%; text-align: left; }
+.admin-table th, .admin-table td { padding: 12px; border-bottom: 1px solid var(--color-border); }

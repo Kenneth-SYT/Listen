@@ -14,6 +14,8 @@ import { AboutPage, ServicesPage, StrategyPage } from './components/InfoPages/In
 import LandingSections from './components/LandingSections/LandingSections'
 import ConfirmationPage from './components/ConfirmationPage/ConfirmationPage'
 import LoginPage from './components/LoginPage/LoginPage'
+import AccountPage from './components/AccountPage/AccountPage'
+import AdminPage from './components/AdminPage/AdminPage'
 
 function App() {
   const isContactPage = window.location.pathname === '/contact'
@@ -32,7 +34,7 @@ function App() {
     <main className="page">
       <ColourStrip />
       <Header />
-      {isContactPage ? (
+      {window.location.pathname === '/admin' ? <AdminPage /> : window.location.pathname === '/account' ? <AccountPage /> : isContactPage ? (
         <ContactPage />
       ) : isLoginPage ? (
         <LoginPage />

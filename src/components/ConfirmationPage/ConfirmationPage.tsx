@@ -1,72 +1,42 @@
-import { CalendarDays, CheckCircle2, Mail } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { errorMessage, getSupabase, money, type Appointment } from '../../lib/supabase'
+import { useSession } from '../../lib/useSession'
+import LoginPage from '../LoginPage/LoginPage'
 import './ConfirmationPage.css'
-
-type PendingBooking = {
-  listener?: string
-  date?: string | null
-  time?: string
-  amount?: string
-}
-
-function getPendingBooking(): PendingBooking {
-  try {
-    return JSON.parse(localStorage.getItem('lmhPendingBooking') ?? '{}')
-  } catch {
-    return {}
-  }
-}
-
 function ConfirmationPage() {
-  const booking = getPendingBooking()
-  const sessionId = new URLSearchParams(window.location.search).get('session_id')
-  const date = booking.date ? new Date(booking.date) : null
-  const formattedDate = date && !Number.isNaN(date.getTime())
-    ? date.toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
-    : 'Your selected date'
-
-  return (
-    <section className="confirmation-page" aria-labelledby="confirmation-heading">
-      <div className="confirmation-card">
-        <div className="confirmation-icon"><CheckCircle2 size={44} aria-hidden="true" /></div>
-        <span className="confirmation-eyebrow">Payment submitted</span>
-        <h1 id="confirmation-heading">Your booking is on its way.</h1>
-        <p className="confirmation-intro">Thanks for booking with Listen Mental Health. Keep an eye on your inbox for the final appointment details.</p>
-
-        <div className="confirmation-details">
-          <div>
-            <span>Listener</span>
-            <strong>{booking.listener ?? 'Your selected listener'}</strong>
-          </div>
-          <div>
-            <span>Date</span>
-            <strong>{formattedDate}</strong>
-          </div>
-          <div>
-            <span>Time</span>
-            <strong>{booking.time ?? 'Your selected time'}</strong>
-          </div>
-          <div>
-            <span>Amount</span>
-            <strong>${booking.amount ?? '1.00'} AUD</strong>
-          </div>
-        </div>
-
-        <div className="confirmation-note">
-          <Mail size={21} aria-hidden="true" />
-          <p>A receipt will be sent by Stripe to the email address used at checkout.</p>
-        </div>
-
-        {sessionId && <p className="confirmation-reference">Stripe reference: <code>{sessionId}</code></p>}
-
-        <div className="confirmation-actions">
-          <a className="confirmation-primary" href="/">Return home</a>
-          <a className="confirmation-secondary" href="/get-matched"><CalendarDays size={18} /> Book another session</a>
-        </div>
-
-        <p className="confirmation-caveat">This prototype displays the details saved in this browser. Production bookings should be verified by a secure Stripe webhook.</p>
-      </div>
-    </section>
-  )
+  const { session, loading } = useSession()
+  const [booking, setBooking] = useState<Appointment | null>(null)
+  const [message, setMessage] = useState('Checking your payment…')
+  const [refresh, setRefresh] = useState(0)
+  const userId = session?.user.id
+  useEffect(() => {
+    if (!userId) return
+    let active = true
+    let timer: ReturnType<typeof setTimeout>
+    let attempts = 0
+    const id = new URLSearchParams(location.search).get('booking_id')
+    const read = async () => {
+      try {
+        if (!id) throw new Error('No booking reference was provided. View your appointments to check their status.')
+        const { data, error } = await getSupabase().from('appointments').select('*').eq('id', id).eq('user_id', userId).maybeSingle()
+        if (error) throw error
+        if (!data) throw new Error('Booking not found for this account.')
+        if (!active) return
+        setBooking(data as Appointment)
+        setMessage(data.status === 'confirmed' ? 'Payment verified. Your appointment is confirmed.' : data.status === 'expired' ? 'This checkout expired without a confirmed payment.' : 'Payment confirmation is still pending. You can check again or view My appointments.')
+        if (data.status === 'pending' && ++attempts < 12) timer = setTimeout(read, 2500)
+      } catch (error) { if (active) setMessage(errorMessage(error)) }
+    }
+    void read()
+    return () => { active = false; clearTimeout(timer) }
+  }, [userId, refresh])
+  if (loading) return <p role="status">Checking your account…</p>
+  if (!session) return <LoginPage />
+  return <section className="confirmation-page"><div className="confirmation-card">
+    <h1>{booking?.status === 'confirmed' ? 'Your appointment is confirmed.' : 'Your booking status'}</h1>
+    <p role="status">{message}</p>
+    {booking && <div className="confirmation-details"><div><span>Appointment</span><strong>{new Date(booking.starts_at).toLocaleString('en-AU')}</strong></div><div><span>Amount</span><strong>{money(booking.amount_cents)} AUD</strong></div><div><span>Status</span><strong>{booking.status}</strong></div></div>}
+    <div className="confirmation-actions"><a className="confirmation-primary" href="/account">My appointments</a><button type="button" onClick={() => setRefresh(value => value + 1)}>Check again</button></div>
+  </div></section>
 }
-
 export default ConfirmationPage
