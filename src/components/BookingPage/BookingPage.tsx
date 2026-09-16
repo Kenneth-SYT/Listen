@@ -48,7 +48,7 @@ function BookingPage({ answers, customerDetails }: { answers: string[]; customer
     try {
       const { error } = await getSupabase().from('profiles').upsert({
         id: session.user.id, first_name: customerDetails.firstName.trim(), last_name: customerDetails.lastName.trim(),
-        preferred_name: customerDetails.preferredName.trim(), date_of_birth: customerDetails.dateOfBirth, mobile: customerDetails.mobile.trim(), gender: customerDetails.gender,
+        preferred_name: customerDetails.preferredName.trim(), date_of_birth: customerDetails.dateOfBirth, mobile: customerDetails.mobile.trim(), contact_email: customerDetails.email.trim().toLowerCase(), gender: customerDetails.gender,
       })
       if (error) throw error
       window.location.assign(await createCheckout(chosenSlot.id))
