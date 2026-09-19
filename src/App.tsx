@@ -16,8 +16,53 @@ import ConfirmationPage from './components/ConfirmationPage/ConfirmationPage'
 import LoginPage from './components/LoginPage/LoginPage'
 import AccountPage from './components/AccountPage/AccountPage'
 import AdminPage from './components/AdminPage/AdminPage'
+import ListenerPage from './components/ListenerPage/ListenerPage'
+import { useEffect, useState } from 'react'
+import { supabase } from './lib/supabase'
+import { bookingPrivacyAction } from './lib/bookingPrivacy'
+
+let privacyPreparation: Promise<void> | null = null
+function preparePrivateBooking() {
+  if (privacyPreparation) return privacyPreparation
+  privacyPreparation = (async () => {
+    const path = window.location.pathname
+    const bookingPage = path === '/get-matched'
+    const action = bookingPrivacyAction(path, window.location.search, window.location.hash,
+      sessionStorage.getItem('listen-booking-active') === '1', sessionStorage.getItem('listen-checkout-return') === '1')
+    if (action === 'checkout-return') {
+      sessionStorage.removeItem('listen-checkout-return')
+      sessionStorage.removeItem('listen-booking-active')
+      return
+    }
+    sessionStorage.removeItem('listen-checkout-return')
+    if (action === 'clear') {
+      const draft = sessionStorage.getItem('listen-booking-draft')
+      if (draft && supabase) {
+        try {
+          const token = (JSON.parse(draft) as { selection?: { holdToken?: string } }).selection?.holdToken
+          if (token) await supabase.rpc('release_slot_hold', { p_token: token })
+        } catch { /* An expired hold releases itself. */ }
+      }
+      sessionStorage.removeItem('listen-booking-draft')
+      const { error } = await supabase?.auth.signOut({ scope: 'local' }) ?? { error: null }
+      if (error) throw error
+    }
+    sessionStorage.removeItem('listen-booking-active')
+    if (bookingPage) sessionStorage.setItem('listen-booking-active', '1')
+  })()
+  return privacyPreparation
+}
 
 function App() {
+  const [privacyReady, setPrivacyReady] = useState(false)
+  const [privacyError, setPrivacyError] = useState(false)
+  useEffect(() => {
+    let active = true
+    void preparePrivateBooking().then(() => { if (active) setPrivacyReady(true) }).catch(() => { if (active) setPrivacyError(true) })
+    return () => { active = false }
+  }, [])
+  if (privacyError) return <main className="page"><p role="alert">We couldn’t clear the previous booking session. Please close this tab and open a new one before continuing.</p></main>
+  if (!privacyReady) return <main className="page"><p role="status">Preparing your private booking…</p></main>
   const isContactPage = window.location.pathname === '/contact'
   const isPricingPage = window.location.pathname === '/pricing'
   const isOurTherapistPage = window.location.pathname === '/our-therapist'
@@ -34,7 +79,7 @@ function App() {
     <main className="page">
       <ColourStrip />
       <Header />
-      {window.location.pathname === '/admin' ? <AdminPage /> : window.location.pathname === '/account' ? <AccountPage /> : isContactPage ? (
+      {window.location.pathname === '/listener' ? <ListenerPage /> : window.location.pathname === '/admin' ? <AdminPage /> : window.location.pathname === '/account' ? <AccountPage /> : isContactPage ? (
         <ContactPage />
       ) : isLoginPage ? (
         <LoginPage />

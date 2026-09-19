@@ -16,12 +16,13 @@ Restart the dev server after changing environment variables. On your frontend ho
 ## Pages
 
 - `/login`: sign in, create an account, email confirmation and password reset.
-- `/get-matched`: questionnaire, contact details, account verification, live availability and secure checkout.
+- `/get-matched`: five-question intake, public listener/time selection, a 15-minute server-side slot hold, account verification, booking review and secure checkout. Refreshing or leaving the booking flow clears its unfinished answers and signs out the account on this tab, so the next visitor starts privately. A confirmed email remains confirmed; returning members sign in again rather than receiving another confirmation email.
+- `/listener`: assigned listeners can review their upcoming confirmed appointments, topics, notes and K6 results.
 - `/account`: appointment history and pending checkout recovery.
 - `/booking-confirmation?booking_id=...`: reads the authenticated customer's database status; never trusts browser storage as proof of payment.
 - `/admin`: manage listeners, dates and customer/default rates. Requires an administrator entry provisioned through Supabase SQL; customers cannot grant this role to themselves.
 
-Apply the migration and deploy the Edge Functions using the backend README. Configure Stripe secrets/webhooks and Supabase Auth redirect URLs before attempting payment. Add real listeners and future availability through `/admin`; there are no generated fake time slots.
+Apply the migrations and deploy the Edge Functions using the backend README. Configure Stripe secrets/webhooks and Supabase Auth redirect URLs before attempting payment. The temporary Aiden listener has four one-hour test slots per Sydney date for 90 days from 18 September 2026. Aiden's slots are deliberately reusable after a confirmed test payment, but a current hold or pending checkout still blocks another visitor. Disable this test behavior before real bookings. Future real availability can be managed through `/admin`. An administrator can link a listener's verified account to their profile there.
 
 ## Validation
 
