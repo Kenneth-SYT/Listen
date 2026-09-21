@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { ClipboardCheck, ListChecks } from 'lucide-react'
 import BookingPage from '../BookingPage/BookingPage'
 import DetailsPage, { type CustomerDetails } from '../DetailsPage/DetailsPage'
 import {
@@ -94,11 +95,14 @@ function MatchPage() {
       <p>Both options help us match you with a listener. You can choose a time before creating an account.</p>
       <div className="questionnaire-cards">
         <button className="questionnaire-card" type="button" onClick={() => chooseQuestionnaire('short')}>
+          <span className="questionnaire-visual questionnaire-visual-short" aria-hidden="true"><ListChecks color="#006451" /></span>
           <span className="questionnaire-time">About 3 minutes</span><strong>Short check-in</strong>
           <span>Five simple steps covering your preferences, topics and a brief wellbeing check.</span><b>Choose short</b>
         </button>
         <button className="questionnaire-card recommended" type="button" onClick={() => chooseQuestionnaire('long')}>
-          <span className="questionnaire-badge">More detailed</span><span className="questionnaire-time">About 8–10 minutes</span>
+          <span className="questionnaire-badge">More detailed</span>
+          <span className="questionnaire-visual questionnaire-visual-long" aria-hidden="true"><ClipboardCheck color="#ffffff" /></span>
+          <span className="questionnaire-time">About 8–10 minutes</span>
           <strong>Long questionnaire</strong><span>Share more context for a more accurate listener match and a better prepared first conversation.</span>
           <em>A little time for a clearer picture of your wellbeing.</em><b>Choose long</b>
         </button>

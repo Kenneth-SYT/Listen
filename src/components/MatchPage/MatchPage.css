@@ -15,8 +15,14 @@
 .match-intro .questionnaire-card { position: relative; display: flex; flex-direction: column; align-items: flex-start; min-width: 0; min-height: 310px; padding: 32px; border: 2px solid var(--color-sage); border-radius: 24px; background: #fff; color: var(--color-ink); text-align: left; box-shadow: 0 14px 30px rgb(0 28 85 / .06); }
 .match-intro .questionnaire-card:hover { border-color: var(--color-primary); background: #fff; transform: translateY(-3px); }
 .questionnaire-card.recommended { border-color: var(--color-primary); }
-.questionnaire-card strong { margin: 18px 0 12px; font-size: 1.55rem; }
+.questionnaire-visual { display: grid; place-items: center; width: 78px; height: 78px; margin-bottom: 22px; border-radius: 22px; }
+.questionnaire-visual svg { width: 42px; height: 42px; stroke-width: 1.7; }
+.questionnaire-visual-short { background: #e8f3ee; color: var(--color-primary); }
+.questionnaire-visual-long { background: var(--color-primary); color: #fff; box-shadow: 0 10px 24px rgb(0 95 79 / .18); }
+.questionnaire-card strong { margin: 14px 0 12px; font-size: 1.55rem; }
 .questionnaire-card > span:not(.questionnaire-time):not(.questionnaire-badge) { color: var(--color-muted); line-height: 1.55; }
+.questionnaire-card > span.questionnaire-visual-short { color: var(--color-primary); }
+.questionnaire-card > span.questionnaire-visual-long { color: #fff; }
 .questionnaire-card em { margin-top: 14px; color: var(--color-primary); font-size: .92rem; }
 .questionnaire-card b { margin-top: auto; padding-top: 24px; color: var(--color-primary); }
 .questionnaire-time { color: var(--color-muted); font-size: .82rem; font-weight: 700; }
