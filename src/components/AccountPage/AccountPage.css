@@ -4,6 +4,10 @@
 .account-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 18px; margin-top: 24px; }
 .account-card { border: 1px solid var(--color-border); border-radius: 16px; background: white; padding: 24px; }
 .account-card h2 { margin-top: 0; }
+.account-card dl { display: grid; gap: 10px; margin-top: 18px; }
+.account-card dl div { padding-top: 10px; border-top: 1px solid var(--color-border); }
+.account-card dt { color: var(--color-muted); font-size: .8rem; font-weight: 700; }
+.account-card dd { margin: 3px 0 0; line-height: 1.45; }
 .account-card a { display: inline-block; margin: 10px; }
 .account-page button { border: 0; border-radius: 8px; padding: 10px 16px; background: var(--color-primary); color: white; cursor: pointer; font: inherit; }
 .account-page button:disabled { opacity: .5; cursor: not-allowed; }

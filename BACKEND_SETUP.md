@@ -17,7 +17,7 @@ Restart the dev server after changing environment variables. On your frontend ho
 
 - `/login`: sign in, create an account, email confirmation and password reset.
 - `/get-matched`: five-question intake, public listener/time selection, a 15-minute server-side slot hold, account verification, booking review and secure checkout. Refreshing or leaving the booking flow clears its unfinished answers and signs out the account on this tab, so the next visitor starts privately. A confirmed email remains confirmed; returning members sign in again rather than receiving another confirmation email.
-- `/listener`: assigned listeners can review their upcoming confirmed appointments, topics, notes and K6 results.
+- `/listener`: assigned listeners can review their upcoming confirmed appointments, topics, notes, short K6 results, and long K10 questionnaire context.
 - `/account`: appointment history and pending checkout recovery.
 - `/booking-confirmation?booking_id=...`: reads the authenticated customer's database status; never trusts browser storage as proof of payment.
 - `/admin`: manage listeners, dates and customer/default rates. Requires an administrator entry provisioned through Supabase SQL; customers cannot grant this role to themselves.

@@ -1,7 +1,7 @@
 import { ArrowLeft, ArrowRight, CheckCircle2, LockKeyhole, X } from 'lucide-react'
 import { useEffect, useState, type FormEvent } from 'react'
 import { createCheckout, errorMessage, getSupabase, money, supabase, type BookingSelection, type Quote } from '../../lib/supabase'
-import { k6Score, type IntakeAnswers } from '../../lib/intake'
+import { wellbeingScore, wellbeingScoreLabel, type IntakeAnswers } from '../../lib/intake'
 import { useSession } from '../../lib/useSession'
 import './DetailsPage.css'
 
@@ -191,9 +191,12 @@ function DetailsPage({ initialDetails, selection, answers, onBack, onDetailsChan
       const { error: intakeError } = await client.rpc('save_intake', {
         p_slot: selection.slot.id, p_listener_gender: answers.listenerGender,
         p_topics: answers.topics, p_k6: answers.k6, p_note: answers.note.trim(),
+        p_questionnaire_type: answers.questionnaire, p_k10: answers.k10,
+        p_impact_score: answers.long.impact,
+        p_long_answers: answers.questionnaire === 'long' ? answers.long : {},
       })
       if (intakeError) throw intakeError
-      if (k6Score(answers) === null) throw new Error('Complete the wellbeing check-in before payment.')
+      if (wellbeingScore(answers) === null) throw new Error('Complete the wellbeing check-in before payment.')
       const checkoutUrl = await createCheckout(selection.slot.id, selection.holdToken)
       sessionStorage.removeItem('listen-booking-draft')
       sessionStorage.setItem('listen-checkout-return', '1')
@@ -234,7 +237,7 @@ function DetailsPage({ initialDetails, selection, answers, onBack, onDetailsChan
       {retrySeconds > 0 && <p role="status" className="details-message">You can try again in {retrySeconds} seconds.</p>}
       <div className="details-actions"><button type="button" className="details-back" onClick={backToBooking}><ArrowLeft size={18} /> Back to times</button><button type="submit" disabled={busy || loading || !supabase || retrySeconds > 0 || holdSeconds <= 0 || !holdValid || holdChecking || (!session && accountMode === 'signup' && awaitingConfirmation)}>{busy ? 'Please wait…' : session ? 'Continue to Stripe payment' : awaitingConfirmation && accountMode === 'signup' ? 'Check your email to verify' : accountMode === 'signup' ? 'Create account and continue' : 'Sign in and continue'} <ArrowRight size={18} /></button></div>
     </form>
-    <aside className="details-review"><h2>Review your booking</h2><div className="details-hold" role="status"><strong>{holdSeconds > 0 ? holdTime : 'Hold expired'}</strong><span>{holdSeconds > 0 ? holdChecking ? 'Checking your hold…' : holdValid ? 'This time is held for you' : 'Could not verify this hold' : 'Choose a new time to continue'}</span></div><dl><div><dt>Listener</dt><dd>{selection.listener.name}</dd></div><div><dt>Time</dt><dd>{new Date(selection.slot.starts_at).toLocaleString('en-AU')}</dd></div><div><dt>Session</dt><dd>{displayQuote.label} · {displayQuote.duration_minutes} minutes</dd></div><div><dt>Topics</dt><dd>{answers.topics.join(', ')}</dd></div><div><dt>Listener preference</dt><dd>{answers.listenerGender}</dd></div><div><dt>Wellbeing score</dt><dd>{k6Score(answers)} / 24</dd></div>{answers.note && <div><dt>Your note</dt><dd>{answers.note}</dd></div>}</dl><p><strong>Estimated rate: {money(displayQuote.amount_cents)} AUD</strong></p><p>Complete your account within the hold time. After checkout starts, Stripe gives you its own payment window.</p></aside></div>
+    <aside className="details-review"><h2>Review your booking</h2><div className="details-hold" role="status"><strong>{holdSeconds > 0 ? holdTime : 'Hold expired'}</strong><span>{holdSeconds > 0 ? holdChecking ? 'Checking your hold…' : holdValid ? 'This time is held for you' : 'Could not verify this hold' : 'Choose a new time to continue'}</span></div><dl><div><dt>Listener</dt><dd>{selection.listener.name}</dd></div><div><dt>Time</dt><dd>{new Date(selection.slot.starts_at).toLocaleString('en-AU')}</dd></div><div><dt>Session</dt><dd>{displayQuote.label} · {displayQuote.duration_minutes} minutes</dd></div><div><dt>Questionnaire</dt><dd>{answers.questionnaire === 'long' ? 'Long questionnaire' : 'Short check-in'}</dd></div><div><dt>Topics</dt><dd>{answers.topics.join(', ')}</dd></div><div><dt>Listener preference</dt><dd>{answers.listenerGender}</dd></div><div><dt>{wellbeingScoreLabel(answers)}</dt><dd>{wellbeingScore(answers)} / {answers.questionnaire === 'long' ? 50 : 24}</dd></div>{answers.note && <div><dt>Your note</dt><dd>{answers.note}</dd></div>}</dl><p><strong>Estimated rate: {money(displayQuote.amount_cents)} AUD</strong></p><p>Complete your account within the hold time. After checkout starts, Stripe gives you its own payment window.</p></aside></div>
     {phoneVerificationEnabled && pendingPhone && <div className="details-dialog-backdrop" onClick={() => setPendingPhone('')}><section className="details-dialog" role="dialog" aria-modal="true" aria-labelledby="verification-title" onClick={event => event.stopPropagation()}>
       <button type="button" className="details-dialog-close" aria-label="Close" onClick={() => setPendingPhone('')}><X size={20} /></button><h2 id="verification-title">Verify your mobile</h2><p>Enter the code sent to {toLocal(pendingPhone)}. After verification, this number will be locked to your account.</p>
       <form onSubmit={verifyCode}><label htmlFor="verification-code">Verification code</label><input id="verification-code" type="text" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" maxLength={6} value={code} onChange={event => setCode(event.target.value.replace(/\D/g, '').slice(0, 6))} autoFocus required /><button type="submit" disabled={busy || code.length !== 6}>{busy ? 'Checking…' : 'Verify code'}</button></form>
