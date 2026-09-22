@@ -29,6 +29,7 @@ function DetailsPage({ initialDetails, selection, answers, onBack, onDetailsChan
   const [awaitingConfirmation, setAwaitingConfirmation] = useState(false)
   const [emailInUse, setEmailInUse] = useState(false)
   const [duplicateEmail, setDuplicateEmail] = useState('')
+  const [accountCreatedThisVisit, setAccountCreatedThisVisit] = useState(false)
   const [message, setMessage] = useState('')
   const [codeMessage, setCodeMessage] = useState('')
   const [busy, setBusy] = useState(false)
@@ -105,7 +106,7 @@ function DetailsPage({ initialDetails, selection, answers, onBack, onDetailsChan
       if (error) throw error
       const emptyDetails: CustomerDetails = { firstName: '', lastName: '', preferredName: '', dateOfBirth: '', mobile: '', email: '', gender: '' }
       setDetails(emptyDetails); onDetailsChange(emptyDetails)
-      setAccountMode('signin'); setPassword(''); setAwaitingConfirmation(false); setEmailInUse(false); setDuplicateEmail('')
+      setAccountMode('signin'); setPassword(''); setAwaitingConfirmation(false); setEmailInUse(false); setDuplicateEmail(''); setAccountCreatedThisVisit(false)
     } catch (error) { setMessage(errorMessage(error)) }
     finally { setBusy(false) }
   }
@@ -192,6 +193,7 @@ function DetailsPage({ initialDetails, selection, answers, onBack, onDetailsChan
             }
             return
           }
+          setAccountCreatedThisVisit(true)
         } else {
           const { error } = await client.auth.signInWithPassword({ email, password })
           if (error) throw error
@@ -242,10 +244,30 @@ function DetailsPage({ initialDetails, selection, answers, onBack, onDetailsChan
     }
     finally { setBusy(false) }
   }
+  const retryCheckout = async () => {
+    if (busy || holdSeconds <= 0 || !holdValid) return
+    setBusy(true); setMessage('')
+    try {
+      const checkoutUrl = await createCheckout(selection.slot.id, selection.holdToken)
+      sessionStorage.removeItem('listen-booking-draft')
+      sessionStorage.setItem('listen-checkout-return', '1')
+      window.location.assign(checkoutUrl)
+    } catch (error) { setMessage(errorMessage(error)) }
+    finally { setBusy(false) }
+  }
+  if (session && accountCreatedThisVisit) return <div className="details-payment-transition">
+    <div className="details-payment-icon"><LockKeyhole size={25} aria-hidden="true" /></div>
+    <span className="match-eyebrow">Secure checkout</span>
+    <h1>{busy ? 'Opening Stripe payment…' : 'Your account is ready.'}</h1>
+    <p>{busy ? 'Please wait while we securely prepare your payment page.' : 'We couldn’t open Stripe automatically. Your account and booking details are saved, so you can safely try again.'}</p>
+    {message && <p role="alert" className="details-message details-message-error">{message}</p>}
+    {!busy && <button type="button" onClick={retryCheckout} disabled={holdSeconds <= 0 || !holdValid}>Try Stripe payment again <ArrowRight size={18} /></button>}
+    {holdSeconds <= 0 && <p role="status" className="details-message details-message-error">Your booking hold has expired. Return to the available times and select another appointment.</p>}
+  </div>
   return <>
     <div className="details-layout"><form className="details-form" onSubmit={submit}>
       <header className="details-heading"><span className="match-eyebrow">Final step before payment</span><h1 id="match-heading">{signinOnly ? 'Welcome back.' : session ? 'Confirm your details.' : 'Create your account.'}</h1><p>{signinOnly ? 'Sign in to continue with the time you selected.' : 'We’ll use these details to prepare your booking and contact you about your appointment.'}</p>
-        {session && <div className="details-signed-in"><CheckCircle2 size={20} aria-hidden="true" /><span>Already a member — signed in as <strong>{session.user.email}</strong></span><button type="button" onClick={switchAccount} disabled={busy}>Use another account</button></div>}
+        {session && <div className="details-signed-in"><CheckCircle2 size={20} aria-hidden="true" /><span>{accountCreatedThisVisit ? 'Account created' : 'Signed in'} as <strong>{session.user.email}</strong></span><button type="button" onClick={switchAccount} disabled={busy}>Use another account</button></div>}
       </header>
       <div className="details-grid">
         {!signinOnly && <>
@@ -255,7 +277,7 @@ function DetailsPage({ initialDetails, selection, answers, onBack, onDetailsChan
         <label><span>Date of birth</span><input type="date" autoComplete="bday" max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split('T')[0]} value={details.dateOfBirth} onChange={event => update('dateOfBirth', event.target.value)} required /></label>
         <div className="details-mobile-field"><label htmlFor="details-mobile"><span>Mobile</span></label><div className="details-mobile-row"><input id="details-mobile" type="tel" inputMode="numeric" autoComplete="tel" placeholder="04xxxxxxxx" pattern="04[0-9]{8}" title="Enter 10 digits starting with 04" maxLength={10} value={activeVerifiedPhone || details.mobile} onChange={event => update('mobile', event.target.value.replace(/\D/g, '').slice(0, 10))} readOnly={!!activeVerifiedPhone} required />{phoneVerificationEnabled && session && (verifiedPhone ? <span className="details-verified"><CheckCircle2 size={18} /> Verified</span> : <button type="button" onClick={sendCode} disabled={busy || retrySeconds > 0 || !supabase}>{retrySeconds > 0 ? `Retry ${retrySeconds}s` : 'Verify'}</button>)}</div></div>
         </>}
-        <label className={verifiedEmail ? 'details-email-verified' : duplicateEmailEntered ? 'details-email-error' : ''}><span>Email {verifiedEmail && <small><LockKeyhole size={13} aria-hidden="true" /> Verified and locked</small>}</span><span className="details-email-input"><input type="email" autoComplete="email" placeholder="you@example.com" pattern="[^\s@]+@[^\s@]+\.com" title={verifiedEmail ? 'Verified email. Use another account to change it.' : 'Use an email address ending in .com'} value={session?.user.email ?? details.email} onChange={event => update('email', event.target.value)} readOnly={!!session} aria-invalid={duplicateEmailEntered || undefined} aria-describedby={verifiedEmail ? 'details-email-help' : duplicateEmailEntered ? 'details-email-error' : undefined} required />{verifiedEmail && <LockKeyhole size={18} aria-hidden="true" />}</span>{verifiedEmail && <small id="details-email-help" className="details-email-help">This verified email can’t be edited here. <button type="button" onClick={switchAccount} disabled={busy}>Use another account</button> to use a different address.</small>}</label>
+        <label className={verifiedEmail ? 'details-email-verified' : duplicateEmailEntered ? 'details-email-error' : ''}><span>Email {verifiedEmail && <small><LockKeyhole size={13} aria-hidden="true" /> Signed in and locked</small>}</span><span className="details-email-input"><input type="email" autoComplete="email" placeholder="you@example.com" pattern="[^\s@]+@[^\s@]+\.com" title={verifiedEmail ? 'Signed-in email. Use another account to change it.' : 'Use an email address ending in .com'} value={session?.user.email ?? details.email} onChange={event => update('email', event.target.value)} readOnly={!!session} aria-invalid={duplicateEmailEntered || undefined} aria-describedby={verifiedEmail ? 'details-email-help' : duplicateEmailEntered ? 'details-email-error' : undefined} required />{verifiedEmail && <LockKeyhole size={18} aria-hidden="true" />}</span>{verifiedEmail && <small id="details-email-help" className="details-email-help">This signed-in email can’t be edited here. <button type="button" onClick={switchAccount} disabled={busy}>Use another account</button> to use a different address.</small>}</label>
         {!signinOnly &&
         <label><span>Gender <small>Optional</small></span><select value={details.gender} onChange={event => update('gender', event.target.value)}><option value="">Prefer not to say</option><option value="male">Male</option><option value="female">Female</option><option value="other">Other</option></select></label>
         }
