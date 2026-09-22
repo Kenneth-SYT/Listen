@@ -95,7 +95,7 @@ function MatchPage() {
       <p>Both options help us match you with a listener. You can choose a time before creating an account.</p>
       <div className="questionnaire-cards">
         <button className="questionnaire-card" type="button" onClick={() => chooseQuestionnaire('short')}>
-          <span className="questionnaire-visual questionnaire-visual-short" aria-hidden="true"><ListChecks color="#006451" /></span>
+          <span className="questionnaire-visual questionnaire-visual-short" aria-hidden="true"><ListChecks color="#001c55" /></span>
           <span className="questionnaire-time">About 3 minutes</span><strong>Short check-in</strong>
           <span>Five simple steps covering your preferences, topics and a brief wellbeing check.</span><b>Choose short</b>
         </button>

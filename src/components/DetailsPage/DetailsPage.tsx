@@ -12,6 +12,9 @@ export type CustomerDetails = {
 type Props = { initialDetails: CustomerDetails; selection: BookingSelection; answers: IntakeAnswers; onBack: () => void; onDetailsChange: (details: CustomerDetails) => void }
 // Reserved for an optional second factor. Email remains the account identity.
 const phoneVerificationEnabled = import.meta.env.VITE_ENABLE_PHONE_VERIFICATION === 'true'
+// Temporary launch setting. Set VITE_REQUIRE_EMAIL_VERIFICATION=true to restore
+// confirmation-link enforcement without changing this flow.
+const emailVerificationRequired = import.meta.env.VITE_REQUIRE_EMAIL_VERIFICATION === 'true'
 const toInternational = (mobile: string) => '+61' + mobile.slice(1)
 const toLocal = (phone: string) => phone.startsWith('+61') ? '0' + phone.slice(3) : phone
 
@@ -24,6 +27,7 @@ function DetailsPage({ initialDetails, selection, answers, onBack, onDetailsChan
   const [displayQuote, setDisplayQuote] = useState(selection.quote)
   const [accountMode, setAccountMode] = useState<'signup' | 'signin'>('signup')
   const [awaitingConfirmation, setAwaitingConfirmation] = useState(false)
+  const [emailInUse, setEmailInUse] = useState(false)
   const [message, setMessage] = useState('')
   const [codeMessage, setCodeMessage] = useState('')
   const [busy, setBusy] = useState(false)
@@ -99,7 +103,7 @@ function DetailsPage({ initialDetails, selection, answers, onBack, onDetailsChan
       if (error) throw error
       const emptyDetails: CustomerDetails = { firstName: '', lastName: '', preferredName: '', dateOfBirth: '', mobile: '', email: '', gender: '' }
       setDetails(emptyDetails); onDetailsChange(emptyDetails)
-      setAccountMode('signin'); setPassword(''); setAwaitingConfirmation(false)
+      setAccountMode('signin'); setPassword(''); setAwaitingConfirmation(false); setEmailInUse(false)
     } catch (error) { setMessage(errorMessage(error)) }
     finally { setBusy(false) }
   }
@@ -135,6 +139,18 @@ function DetailsPage({ initialDetails, selection, answers, onBack, onDetailsChan
     } catch (error) { setCodeMessage(errorMessage(error)) }
     finally { setBusy(false) }
   }
+  const sendPasswordReset = async () => {
+    const email = details.email.trim().toLowerCase()
+    if (!email || busy || retrySeconds > 0) return
+    setBusy(true); setMessage('')
+    try {
+      const { error } = await getSupabase().auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + '/login?reset=1' })
+      if (error) throw error
+      setRetryUntil(Date.now() + 60_000)
+      setMessage('If an account exists for this email, a password reset link will arrive shortly.')
+    } catch (error) { setMessage(errorMessage(error)) }
+    finally { setBusy(false) }
+  }
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (busy || loading || retrySeconds > 0 || holdSeconds <= 0 || !holdValid || holdChecking || (!session && accountMode === 'signup' && awaitingConfirmation)) return
@@ -151,14 +167,31 @@ function DetailsPage({ initialDetails, selection, answers, onBack, onDetailsChan
       const client = getSupabase()
       if (!session) {
         if (accountMode === 'signup') {
+          setEmailInUse(false)
           const { data, error } = await client.auth.signUp({
             email, password,
             options: { emailRedirectTo: window.location.origin + '/get-matched' },
           })
+          if (error && /already|registered|exists/i.test(error.message)) {
+            setEmailInUse(true)
+            setAccountMode('signin')
+            setMessage('This email is already in use. Sign in with your existing account, or reset your password if you have forgotten it.')
+            return
+          }
           if (error) throw error
+          if (data.user && data.user.identities?.length === 0) {
+            setEmailInUse(true)
+            setAccountMode('signin')
+            setMessage('This email is already in use. Sign in with your existing account, or reset your password if you have forgotten it.')
+            return
+          }
           if (!data.session) {
-            setAwaitingConfirmation(true)
-            setMessage('Check your email for the confirmation link. After confirming, return to this tab and choose “Already a member? Sign in” to continue before your hold expires.')
+            if (emailVerificationRequired) {
+              setAwaitingConfirmation(true)
+              setMessage('Check your email for the confirmation link. After confirming, return to this tab and choose “Already a member? Sign in” to continue before your hold expires.')
+            } else {
+              setMessage('Account creation is waiting for Supabase email confirmation to be disabled. In Supabase, turn off “Confirm email” under Authentication settings, then try again.')
+            }
             return
           }
         } else {
@@ -170,8 +203,8 @@ function DetailsPage({ initialDetails, selection, answers, onBack, onDetailsChan
       }
       // A real Auth user check prevents an unconfirmed email from reaching booking.
       const { data, error } = await client.auth.getUser()
-      if (error || !data.user?.email_confirmed_at || data.user.email?.toLowerCase() !== email) {
-        throw new Error('Please confirm your email address before continuing.')
+      if (error || !data.user || data.user.email?.toLowerCase() !== email || (emailVerificationRequired && !data.user.email_confirmed_at)) {
+        throw new Error(emailVerificationRequired ? 'Please confirm your email address before continuing.' : 'We could not verify the signed-in account. Please sign in again.')
       }
       const { data: currentQuote, error: quoteError } = await client.rpc('booking_quote')
       if (quoteError) throw quoteError
@@ -214,7 +247,7 @@ function DetailsPage({ initialDetails, selection, answers, onBack, onDetailsChan
   return <>
     <div className="details-layout"><form className="details-form" onSubmit={submit}>
       <header className="details-heading"><span className="match-eyebrow">Final step before payment</span><h1 id="match-heading">{signinOnly ? 'Welcome back.' : session ? 'Confirm your details.' : 'Create your account.'}</h1><p>{signinOnly ? 'Sign in to continue with the time you selected.' : 'We’ll use these details to prepare your booking and contact you about your appointment.'}</p>
-        {!session && <button className="details-account-switch" type="button" onClick={() => { setAccountMode(accountMode === 'signup' ? 'signin' : 'signup'); setAwaitingConfirmation(false); setMessage('') }}>{accountMode === 'signup' ? 'Already a member? Sign in' : 'New here? Create an account'}</button>}
+        {!session && <button className="details-account-switch" type="button" onClick={() => { setAccountMode(accountMode === 'signup' ? 'signin' : 'signup'); setAwaitingConfirmation(false); setEmailInUse(false); setMessage('') }}>{accountMode === 'signup' ? 'Already a member? Sign in' : 'New here? Create an account'}</button>}
         {session && <div className="details-signed-in"><CheckCircle2 size={20} aria-hidden="true" /><span>Already a member — signed in as <strong>{session.user.email}</strong></span><button type="button" onClick={switchAccount} disabled={busy}>Use another account</button></div>}
       </header>
       <div className="details-grid">
@@ -231,9 +264,10 @@ function DetailsPage({ initialDetails, selection, answers, onBack, onDetailsChan
         }
         {!session && <label className="details-wide"><span>{accountMode === 'signup' ? 'Create a password' : 'Your password'}</span><input type="password" autoComplete={accountMode === 'signup' ? 'new-password' : 'current-password'} minLength={8} value={password} onChange={event => setPassword(event.target.value)} required /></label>}
       </div>
-      <div className="details-privacy"><LockKeyhole size={17} aria-hidden="true" /><span>A verified email address is required before payment. Your questionnaire is shared with the team supporting your session. Listen provides peer support, not counselling or emergency care.</span></div>
+      <div className="details-privacy"><LockKeyhole size={17} aria-hidden="true" /><span>{emailVerificationRequired ? 'A verified email address is required before payment.' : 'Email confirmation is temporarily disabled during testing.'} Your questionnaire is shared with the team supporting your session. Listen provides peer support, not counselling or emergency care.</span></div>
       {!supabase && <p role="alert" className="details-message">Online accounts are not configured yet.</p>}
       {message && <p role="status" className="details-message">{message}</p>}
+      {emailInUse && <div className="details-existing-account"><button type="button" onClick={() => { setAccountMode('signin'); setEmailInUse(false); setMessage('Enter your password to continue with this account.') }}>Sign in instead</button><button type="button" onClick={sendPasswordReset} disabled={busy || retrySeconds > 0}>Forgot password? Send reset link</button></div>}
       {retrySeconds > 0 && <p role="status" className="details-message">You can try again in {retrySeconds} seconds.</p>}
       <div className="details-actions"><button type="button" className="details-back" onClick={backToBooking}><ArrowLeft size={18} /> Back to times</button><button type="submit" disabled={busy || loading || !supabase || retrySeconds > 0 || holdSeconds <= 0 || !holdValid || holdChecking || (!session && accountMode === 'signup' && awaitingConfirmation)}>{busy ? 'Please wait…' : session ? 'Continue to Stripe payment' : awaitingConfirmation && accountMode === 'signup' ? 'Check your email to verify' : accountMode === 'signup' ? 'Create account and continue' : 'Sign in and continue'} <ArrowRight size={18} /></button></div>
     </form>

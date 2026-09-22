@@ -28,7 +28,7 @@ The component includes fallback colours and works without the Listen Mental Heal
   --how-color-sage-light: #e6f0fa;
   --how-color-sage: #e6f0e8;
   --how-color-sage-strong: #9ec1a3;
-  --how-color-primary: #065143;
+  --how-color-primary: #001c55;
   --how-color-accent: #5c97d9;
   --how-color-ink: #001c55;
   --how-color-muted: #4e6575;
