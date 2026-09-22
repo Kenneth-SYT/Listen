@@ -32,14 +32,13 @@
 .details-grid .details-email-verified input[readonly] { padding-right: 43px; border-color: #8fbcae; background: #edf5f2; color: var(--color-ink); cursor: not-allowed; }
 .details-grid .details-email-verified input[readonly]:focus { border-color: #8fbcae; box-shadow: none; }
 .details-grid .details-email-help { color: var(--color-muted); font-size: .72rem; font-weight: 400; line-height: 1.5; text-transform: none; }
-.details-account-switch { margin-top: 18px; padding: 10px 15px; border: 1px solid var(--color-primary); border-radius: 999px; background: #fff; color: var(--color-primary); font: inherit; font-weight: 700; cursor: pointer; }
-.details-account-switch:hover { background: var(--color-accent-light); }
+.details-grid .details-email-error input { border-color: #bd2c2c; background: #fff8f8; box-shadow: 0 0 0 3px rgb(189 44 44 / .1); }
+.details-grid .details-email-error input:focus { border-color: #a51f1f; box-shadow: 0 0 0 3px rgb(189 44 44 / .16); }
 .details-message { margin-top: 18px; color: var(--color-primary); }
-.details-existing-account { display: flex; flex-wrap: wrap; gap: 18px; align-items: center; margin-top: 14px; }
-.details-existing-account button { min-height: 0; padding: 0; border: 0; border-radius: 0; background: transparent; color: var(--color-primary); font: inherit; font-weight: 700; text-decoration: none; cursor: pointer; }
-.details-existing-account button:first-child { background: transparent; color: var(--color-primary); }
-.details-existing-account button:hover { background: transparent; color: var(--color-primary); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px; }
-.details-existing-account button:disabled { opacity: .5; cursor: not-allowed; }
+.details-message-error { color: #a51f1f; font-weight: 700; }
+.details-existing-account { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; margin-top: 14px; color: var(--color-muted); font-size: .9rem; }
+.details-existing-account a { color: var(--color-primary); font-weight: 700; text-decoration: none; }
+.details-existing-account a:hover { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px; }
 .details-actions button:disabled { opacity: .55; cursor: not-allowed; }
 .details-privacy { display: flex; gap: 9px; align-items: center; margin-top: 24px; color: var(--color-muted); font-size: .78rem; }
 .details-privacy svg { flex: 0 0 auto; color: var(--color-primary); }

@@ -45,6 +45,10 @@ function MatchPage() {
     sessionStorage.setItem(draftKey, JSON.stringify({ savedAt: Date.now(), stage, step, answers, selection, customerDetails }))
   }, [stage, step, answers, selection, customerDetails])
 
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'smooth' })
+  }, [stage, step])
+
   const update = (patch: Partial<IntakeAnswers>) => setAnswers(current => ({ ...current, ...patch }))
   const updateLong = (patch: Partial<LongAnswers>) => setAnswers(current => ({ ...current, long: { ...current.long, ...patch } }))
   const toggle = (values: string[], value: string, exclusive?: string) => values.includes(value)
