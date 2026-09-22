@@ -152,7 +152,7 @@ function DetailsPage({ initialDetails, selection, answers, onBack, onDetailsChan
     const email = (session?.user.email ?? details.email).trim().toLowerCase()
     if (!/^[^\s@]+@[^\s@]+\.com$/i.test(email)) { setMessage('Enter an email address ending in .com.'); return }
     if (!session && accountMode === 'signup' && emailInUse && email === duplicateEmail) {
-      setMessage('This email is already in use. Enter a different email to create a new account, or reset your password if you have forgotten it.')
+      setMessage('Email already exists. Try signing in, or enter a different email to create a new account.')
       return
     }
     if (session || accountMode === 'signup') {
@@ -173,14 +173,14 @@ function DetailsPage({ initialDetails, selection, answers, onBack, onDetailsChan
           if (error && /already|registered|exists/i.test(error.message)) {
             setEmailInUse(true)
             setDuplicateEmail(email)
-            setMessage('This email is already in use. Enter a different email to create a new account, or reset your password if you have forgotten it.')
+            setMessage('Email already exists. Try signing in, or enter a different email to create a new account.')
             return
           }
           if (error) throw error
           if (data.user && data.user.identities?.length === 0) {
             setEmailInUse(true)
             setDuplicateEmail(email)
-            setMessage('This email is already in use. Enter a different email to create a new account, or reset your password if you have forgotten it.')
+            setMessage('Email already exists. Try signing in, or enter a different email to create a new account.')
             return
           }
           if (!data.session) {
@@ -261,7 +261,6 @@ function DetailsPage({ initialDetails, selection, answers, onBack, onDetailsChan
         }
         {!session && <label className="details-wide"><span>{accountMode === 'signup' ? 'Create a password' : 'Your password'}</span><input type="password" autoComplete={accountMode === 'signup' ? 'new-password' : 'current-password'} minLength={8} value={password} onChange={event => setPassword(event.target.value)} required /></label>}
       </div>
-      <div className="details-privacy"><LockKeyhole size={17} aria-hidden="true" /><span>{emailVerificationRequired ? 'A verified email address is required before payment.' : 'Email confirmation is temporarily disabled during testing.'} Your questionnaire is shared with the team supporting your session. Listen provides peer support, not counselling or emergency care.</span></div>
       {!supabase && <p role="alert" className="details-message">Online accounts are not configured yet.</p>}
       {message && <p id={duplicateEmailEntered ? 'details-email-error' : undefined} role={duplicateEmailEntered ? 'alert' : 'status'} className={'details-message' + (duplicateEmailEntered ? ' details-message-error' : '')}>{message}</p>}
       {!session && <div className="details-existing-account"><span>Already have an account?</span><a href="/login">Sign in</a></div>}

@@ -40,8 +40,6 @@
 .details-existing-account a { color: var(--color-primary); font-weight: 700; text-decoration: none; }
 .details-existing-account a:hover { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px; }
 .details-actions button:disabled { opacity: .55; cursor: not-allowed; }
-.details-privacy { display: flex; gap: 9px; align-items: center; margin-top: 24px; color: var(--color-muted); font-size: .78rem; }
-.details-privacy svg { flex: 0 0 auto; color: var(--color-primary); }
 .details-actions { display: flex; justify-content: space-between; gap: 14px; margin-top: 30px; }
 .details-actions button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 50px; padding: 0 22px; border: 0; border-radius: 999px; background: var(--color-primary); color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
 .details-actions .details-back { border: 1px solid var(--color-border); background: #fff; color: var(--color-ink); }
