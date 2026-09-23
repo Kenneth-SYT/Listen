@@ -142,7 +142,7 @@ function MatchPage() {
     if (intakeError) throw intakeError
     const returningDraft: Draft = { savedAt: Date.now(), stage: 'booking', step, answers, selection: value, customerDetails }
     sessionStorage.setItem(draftKey, JSON.stringify(returningDraft))
-    const checkoutUrl = await createCheckout(value.slot.id, value.holdToken)
+    const checkoutUrl = await createCheckout(value.slot.id, value.holdToken, value.quote.rate_code)
     sessionStorage.setItem('listen-checkout-return', '1')
     window.location.assign(checkoutUrl)
   }

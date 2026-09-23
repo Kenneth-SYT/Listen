@@ -12,7 +12,8 @@ function BookingPage({ answers, onBack, onContinue }: { answers: IntakeAnswers; 
   const { session, loading: authLoading } = useSession()
   const [listeners, setListeners] = useState<Listener[]>([])
   const [slots, setSlots] = useState<Slot[]>([])
-  const [quote, setQuote] = useState<Quote | null>(null)
+  const [quotes, setQuotes] = useState<Quote[]>([])
+  const [selectedRate, setSelectedRate] = useState('')
   const [selectedListener, setSelectedListener] = useState('')
   const [selectedDay, setSelectedDay] = useState('')
   const [viewedMonth, setViewedMonth] = useState('')
@@ -28,22 +29,26 @@ function BookingPage({ answers, onBack, onContinue }: { answers: IntakeAnswers; 
     let active = true
     void Promise.all([
       getSupabase().from('listeners').select('*').eq('active', true).order('name'),
-      getSupabase().rpc('available_slots'), getSupabase().rpc('booking_quote'),
+      getSupabase().rpc('available_slots'), getSupabase().rpc('booking_options'),
     ]).then(([people, availability, pricing]) => {
       if (!active) return
       if (people.error || availability.error || pricing.error) throw people.error || availability.error || pricing.error
       const list = people.data as Listener[]
       const available = availability.data as Slot[]
-      const rate = pricing.data as Quote
+      const rates = pricing.data as Quote[]
+      const rate = rates[0]
+      if (!rate) throw new Error('No session prices are currently available.')
       const ranked = rankListeners(list, available, topics.split('|'), rate.duration_minutes)
       const suggested = recommendedListener(ranked)
-      setListeners(list); setSlots(available); setQuote(rate)
+      setListeners(list); setSlots(available); setQuotes(rates)
+      setSelectedRate(current => rates.some(option => option.rate_code === current) ? current : rate.rate_code)
       setSelectedListener(current => list.some(person => person.id === current) ? current : suggested?.listener.id || ranked[0]?.listener.id || '')
       setMessage('')
     }).catch(error => { if (active) setMessage(errorMessage(error)) }).finally(() => { if (active) setLoading(false) })
     return () => { active = false }
   }, [session?.user.id, authLoading, topics, refresh])
 
+  const quote = quotes.find(option => option.rate_code === selectedRate) || quotes[0] || null
   const rankedListeners = rankListeners(listeners, slots, answers.topics, quote?.duration_minutes ?? 0)
   const suggested = recommendedListener(rankedListeners)
   const usableSlots = slots.filter(slot => slot.listener_id === selectedListener && quote && Date.parse(slot.ends_at) - Date.parse(slot.starts_at) >= quote.duration_minutes * 60000)
@@ -114,7 +119,10 @@ function BookingPage({ answers, onBack, onContinue }: { answers: IntakeAnswers; 
         </section>
       </div>
       <aside className="booking-summary"><CalendarDays size={25} /><h2>Your booking</h2>
-        <dl><div><dt>Listener</dt><dd>{listener?.name || 'Select a listener'}</dd></div><div><dt>Appointment</dt><dd>{chosenSlot ? new Date(chosenSlot.starts_at).toLocaleString('en-AU') : 'Select a time'}</dd></div><div><dt>Session</dt><dd>{quote ? quote.label + ', ' + quote.duration_minutes + ' min' : 'Unavailable'}</dd></div></dl>
+        {quotes.length > 1 && <div className="booking-summary-session"><span>Choose your session</span><div role="group" aria-label="Session length">{quotes.map(option => <button key={option.rate_code} type="button" className={option.rate_code === quote?.rate_code ? 'selected' : ''} aria-pressed={option.rate_code === quote?.rate_code} onClick={() => { setSelectedRate(option.rate_code); setSelectedDay(''); setSelectedSlot(''); setViewedMonth('') }}>
+          <strong>{option.duration_minutes === 120 ? '2 hours' : `${option.duration_minutes} min`}</strong><small>{money(option.amount_cents)}</small>
+        </button>)}</div></div>}
+        <dl><div><dt>Listener</dt><dd>{listener?.name || 'Select a listener'}</dd></div><div><dt>Appointment</dt><dd>{chosenSlot ? new Date(chosenSlot.starts_at).toLocaleString('en-AU') : 'Select a time'}</dd></div><div><dt>Session</dt><dd>{quote ? `${quote.label}, ${quote.duration_minutes === 120 ? '2 hours' : `${quote.duration_minutes} min`}` : 'Unavailable'}</dd></div></dl>
         <div className="booking-total"><span>Estimated rate</span><strong>{quote ? money(quote.amount_cents) + ' AUD' : '—'}</strong></div>
         <button className="booking-continue" type="button" disabled={holding || !chosenSlot || !quote || !listener} onClick={holdSelectedSlot}>{holding ? session ? 'Opening secure payment…' : 'Holding your time…' : session ? 'Proceed to payment' : 'Continue to account details'}</button>
         <p className="booking-reassurance">Your time is confirmed only after checkout. Your rate is checked again before payment.</p>

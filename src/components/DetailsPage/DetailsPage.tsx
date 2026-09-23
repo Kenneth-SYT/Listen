@@ -72,11 +72,11 @@ function DetailsPage({ initialDetails, selection, answers, onBack, onDetailsChan
   useEffect(() => {
     if (!session?.user.id) return
     let active = true
-    void getSupabase().rpc('booking_quote').then(({ data, error }) => {
+    void getSupabase().rpc('booking_quote', { p_rate_code: selection.quote.rate_code }).then(({ data, error }) => {
       if (active && !error && data) setDisplayQuote(data as Quote)
     })
     return () => { active = false }
-  }, [session?.user.id])
+  }, [session?.user.id, selection.quote.rate_code])
   useEffect(() => {
     if (!session?.user.id) return
     let active = true
@@ -208,7 +208,7 @@ function DetailsPage({ initialDetails, selection, answers, onBack, onDetailsChan
       if (error || !data.user || data.user.email?.toLowerCase() !== email || (emailVerificationRequired && !data.user.email_confirmed_at)) {
         throw new Error(emailVerificationRequired ? 'Please confirm your email address before continuing.' : 'We could not verify the signed-in account. Please sign in again.')
       }
-      const { data: currentQuote, error: quoteError } = await client.rpc('booking_quote')
+      const { data: currentQuote, error: quoteError } = await client.rpc('booking_quote', { p_rate_code: selection.quote.rate_code })
       if (quoteError) throw quoteError
       if (!currentQuote) throw new Error('Could not check your current rate.')
       if (currentQuote.amount_cents !== displayQuote.amount_cents || currentQuote.duration_minutes !== displayQuote.duration_minutes) {
@@ -233,7 +233,7 @@ function DetailsPage({ initialDetails, selection, answers, onBack, onDetailsChan
       if (intakeError) throw intakeError
       if (wellbeingScore(answers) === null) throw new Error('Complete the wellbeing check-in before payment.')
       openingCheckout = true
-      const checkoutUrl = await createCheckout(selection.slot.id, selection.holdToken)
+      const checkoutUrl = await createCheckout(selection.slot.id, selection.holdToken, selection.quote.rate_code)
       sessionStorage.setItem('listen-checkout-return', '1')
       window.location.assign(checkoutUrl)
     } catch (error) {

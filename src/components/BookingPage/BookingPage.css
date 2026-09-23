@@ -49,6 +49,14 @@
 .booking-summary { position: sticky; top: 112px; padding: 28px; }
 .summary-icon { display: grid; place-items: center; width: 52px; height: 52px; border-radius: 17px; background: var(--color-accent-light); color: var(--color-primary); }
 .booking-summary h2 { margin: 18px 0 20px; font-size: 1.55rem; }
+.booking-summary-session { margin: 0 0 22px; }
+.booking-summary-session > span { display: block; margin-bottom: 9px; color: var(--color-muted); font-size: .8rem; font-weight: 700; }
+.booking-summary-session > div { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 5px; border-radius: 14px; background: #eef3f8; }
+.booking-summary-session button { display: grid; gap: 2px; justify-items: center; padding: 10px 7px; border: 1px solid transparent; border-radius: 10px; background: transparent; color: var(--color-muted); cursor: pointer; font: inherit; }
+.booking-summary-session button:hover { color: var(--color-primary); }
+.booking-summary-session button.selected { border-color: var(--color-primary); background: #fff; color: var(--color-primary); box-shadow: 0 4px 12px rgb(0 28 85 / .1); }
+.booking-summary-session button strong { font-size: .9rem; }
+.booking-summary-session button small { font-size: .76rem; font-weight: 700; }
 .booking-summary dl { display: grid; gap: 15px; margin: 0; }
 .booking-summary dl div { display: grid; gap: 3px; padding-bottom: 14px; border-bottom: 1px solid var(--color-sage); }
 .booking-summary dt { color: var(--color-muted); font-size: .8rem; }

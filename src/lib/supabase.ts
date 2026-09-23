@@ -25,8 +25,8 @@ export type Appointment = {
   amount_cents: number; rate_code: string; status: 'pending' | 'confirmed' | 'expired'; created_at: string
   checkout_expires_at: string
 }
-export async function createCheckout(slotId: string, holdToken?: string) {
-  const { data, error } = await getSupabase().functions.invoke('create-checkout', { body: { slot_id: slotId, hold_token: holdToken } })
+export async function createCheckout(slotId: string, holdToken?: string, rateCode?: string) {
+  const { data, error } = await getSupabase().functions.invoke('create-checkout', { body: { slot_id: slotId, hold_token: holdToken, rate_code: rateCode } })
   if (error) {
     let message = error.message
     if ('context' in error && error.context instanceof Response) {
@@ -37,4 +37,17 @@ export async function createCheckout(slotId: string, holdToken?: string) {
   }
   if (!data?.url) throw new Error('Checkout could not be opened. Please try again.')
   return data.url as string
+}
+
+export async function cancelCheckout(bookingId: string) {
+  const { data, error } = await getSupabase().functions.invoke('cancel-checkout', { body: { booking_id: bookingId } })
+  if (error) {
+    let message = error.message
+    if ('context' in error && error.context instanceof Response) {
+      const body = await error.context.json().catch(() => null)
+      message = body?.error || message
+    }
+    throw new Error(message)
+  }
+  return data
 }

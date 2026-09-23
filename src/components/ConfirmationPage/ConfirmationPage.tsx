@@ -1,3 +1,4 @@
+import { AlertCircle, ArrowRight, CalendarDays, CheckCircle2, Clock3, CreditCard, UserRound } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { errorMessage, getSupabase, money, type Appointment } from '../../lib/supabase'
 import { useSession } from '../../lib/useSession'
@@ -6,6 +7,7 @@ import './ConfirmationPage.css'
 function ConfirmationPage() {
   const { session, loading } = useSession()
   const [booking, setBooking] = useState<Appointment | null>(null)
+  const [listenerName, setListenerName] = useState('Your listener')
   const [message, setMessage] = useState('Checking your payment…')
   const [refresh, setRefresh] = useState(0)
   const userId = session?.user.id
@@ -23,6 +25,8 @@ function ConfirmationPage() {
         if (!data) throw new Error('Booking not found for this account.')
         if (!active) return
         setBooking(data as Appointment)
+        const { data: listener } = await getSupabase().from('listeners').select('name').eq('id', data.listener_id).maybeSingle()
+        if (active && listener?.name) setListenerName(listener.name)
         setMessage(data.status === 'confirmed' ? 'Payment verified. Your appointment is confirmed.' : data.status === 'expired' ? 'This checkout expired without a confirmed payment.' : 'Payment confirmation is still pending. You can check again or view My appointments.')
         if (data.status === 'pending' && ++attempts < 12) timer = setTimeout(read, 2500)
       } catch (error) { if (active) setMessage(errorMessage(error)) }
@@ -32,11 +36,27 @@ function ConfirmationPage() {
   }, [userId, refresh])
   if (loading) return <p role="status">Checking your account…</p>
   if (!session) return <LoginPage />
+  const confirmed = booking?.status === 'confirmed'
+  const expired = booking?.status === 'expired'
+  const startsAt = booking ? new Date(booking.starts_at) : null
+  const duration = booking ? Math.round((Date.parse(booking.ends_at) - Date.parse(booking.starts_at)) / 60000) : 0
   return <section className="confirmation-page"><div className="confirmation-card">
-    <h1>{booking?.status === 'confirmed' ? 'Your appointment is confirmed.' : 'Your booking status'}</h1>
-    <p role="status">{message}</p>
-    {booking && <div className="confirmation-details"><div><span>Appointment</span><strong>{new Date(booking.starts_at).toLocaleString('en-AU')}</strong></div><div><span>Amount</span><strong>{money(booking.amount_cents)} AUD</strong></div><div><span>Status</span><strong>{booking.status}</strong></div></div>}
-    <div className="confirmation-actions"><a className="confirmation-primary" href="/account">My appointments</a><button type="button" onClick={() => setRefresh(value => value + 1)}>Check again</button></div>
+    <div className={`confirmation-icon ${confirmed ? 'confirmed' : expired ? 'expired' : 'pending'}`}>{confirmed ? <CheckCircle2 /> : <AlertCircle />}</div>
+    <span className="confirmation-eyebrow">{confirmed ? 'Booking confirmed' : expired ? 'Booking expired' : 'Confirming payment'}</span>
+    <h1>{confirmed ? 'You’re all booked in.' : expired ? 'This booking has expired.' : 'We’re confirming your booking.'}</h1>
+    <p className="confirmation-intro" role="status">{message}</p>
+    {booking && <>
+      <div className="confirmation-details">
+        <div><CalendarDays aria-hidden="true" /><span>Date</span><strong>{startsAt?.toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</strong></div>
+        <div><Clock3 aria-hidden="true" /><span>Time and duration</span><strong>{startsAt?.toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })} · {duration === 120 ? '2 hours' : `${duration} minutes`}</strong></div>
+        <div><UserRound aria-hidden="true" /><span>Listener</span><strong>{listenerName}</strong></div>
+        <div><CreditCard aria-hidden="true" /><span>{confirmed ? 'Paid' : 'Amount'}</span><strong>{money(booking.amount_cents)} AUD</strong></div>
+      </div>
+      {confirmed && <div className="confirmation-note"><CheckCircle2 aria-hidden="true" /><p>Your session now appears in My appointments. We’ll use your saved contact details if we need to reach you.</p></div>}
+      <p className="confirmation-reference">Booking reference: {booking.id}</p>
+    </>}
+    <div className="confirmation-actions"><a className="confirmation-primary" href="/account">View my appointments <ArrowRight size={17} /></a>{confirmed ? <a className="confirmation-secondary" href="/get-matched?repeat=previous">Book another session</a> : !expired && <button type="button" className="confirmation-secondary" onClick={() => setRefresh(value => value + 1)}>Check payment again</button>}</div>
+    <p className="confirmation-caveat">Listen provides peer support and is not an emergency or crisis service.</p>
   </div></section>
 }
 export default ConfirmationPage
