@@ -23,6 +23,7 @@ export type BookingSelection = { listener: Listener; slot: Slot; quote: Quote; h
 export type Appointment = {
   id: string; user_id: string; slot_id: string; listener_id: string; starts_at: string; ends_at: string
   amount_cents: number; rate_code: string; status: 'pending' | 'confirmed' | 'expired'; created_at: string
+  checkout_expires_at: string
 }
 export async function createCheckout(slotId: string, holdToken?: string) {
   const { data, error } = await getSupabase().functions.invoke('create-checkout', { body: { slot_id: slotId, hold_token: holdToken } })

@@ -3,16 +3,21 @@ import { ClipboardCheck, ListChecks } from 'lucide-react'
 import BookingPage from '../BookingPage/BookingPage'
 import DetailsPage, { type CustomerDetails } from '../DetailsPage/DetailsPage'
 import {
-  emptyIntake, k6Options, k6Questions, k6Score, k10Options, k10Questions, k10Score,
+  emptyIntake, emptyLongAnswers, k6Options, k6Questions, k6Score, k10Options, k10Questions, k10Score,
   longSupportTopics, sharedExperiences, supportStyles, supportTopics, type IntakeAnswers,
   type LongAnswers, type QuestionnaireType,
 } from '../../lib/intake'
-import type { BookingSelection } from '../../lib/supabase'
+import { createCheckout, errorMessage, getSupabase, type BookingSelection } from '../../lib/supabase'
 import './MatchPage.css'
 
 const emptyDetails: CustomerDetails = { firstName: '', lastName: '', preferredName: '', dateOfBirth: '', mobile: '', email: '', gender: '' }
 const draftKey = 'listen-booking-draft'
 type Draft = { savedAt: number; stage: 'questions' | 'booking' | 'account'; step: number; answers: IntakeAnswers; selection: BookingSelection | null; customerDetails: CustomerDetails }
+type SavedIntake = {
+  listener_gender_preference: string; topics: string[]; k6_answers: number[] | null
+  k10_answers: number[] | null; listener_note: string; questionnaire_type: QuestionnaireType
+  impact_score: number | null; long_answers: Partial<LongAnswers> | null
+}
 
 function readDraft(): Draft | null {
   try {
@@ -33,12 +38,51 @@ function readDraft(): Draft | null {
 }
 
 function MatchPage() {
+  const entryParams = new URLSearchParams(window.location.search)
+  const repeatRequested = entryParams.has('repeat')
+  const restorePrevious = repeatRequested || (!entryParams.has('resume') && !entryParams.has('code') && !entryParams.has('token_hash'))
   const [draft] = useState(readDraft)
   const [stage, setStage] = useState<'intro' | 'questions' | 'booking' | 'account'>(draft?.stage ?? 'intro')
   const [step, setStep] = useState(draft?.step ?? 0)
   const [answers, setAnswers] = useState<IntakeAnswers>(draft?.answers ?? emptyIntake)
   const [selection, setSelection] = useState<BookingSelection | null>(draft?.selection ?? null)
   const [customerDetails, setCustomerDetails] = useState<CustomerDetails>(draft?.customerDetails ?? emptyDetails)
+  const [restoringPrevious, setRestoringPrevious] = useState(restorePrevious)
+  const [restoreMessage, setRestoreMessage] = useState('')
+
+  useEffect(() => {
+    if (!restorePrevious) return
+    let active = true
+    void (async () => {
+      const client = getSupabase()
+      const { data: auth, error: authError } = await client.auth.getUser()
+      if (authError || !auth.user) return
+      const { data, error } = await client.from('intake_responses')
+        .select('listener_gender_preference,topics,k6_answers,k10_answers,listener_note,questionnaire_type,impact_score,long_answers')
+        .eq('user_id', auth.user.id).order('updated_at', { ascending: false }).limit(1).maybeSingle()
+      if (error) throw error
+      if (!data) {
+        if (repeatRequested) throw new Error('Complete a questionnaire before booking from previous answers.')
+        return
+      }
+      const saved = data as SavedIntake
+      if (!active) return
+      setAnswers({
+        questionnaire: saved.questionnaire_type,
+        adult: true,
+        listenerGender: saved.listener_gender_preference,
+        topics: saved.topics,
+        k6: saved.k6_answers?.length === 6 ? saved.k6_answers : Array(6).fill(null),
+        k10: saved.k10_answers?.length === 10 ? saved.k10_answers : Array(10).fill(null),
+        note: saved.listener_note,
+        long: { ...emptyLongAnswers, ...(saved.long_answers || {}), impact: saved.impact_score },
+      })
+      setSelection(null)
+      setStage('booking')
+    })().catch(error => { if (active) setRestoreMessage(errorMessage(error)) })
+      .finally(() => { if (active) setRestoringPrevious(false) })
+    return () => { active = false }
+  }, [repeatRequested, restorePrevious])
 
   useEffect(() => {
     if (stage === 'intro') return
@@ -73,7 +117,35 @@ function MatchPage() {
           : step === 3 ? k6Score(answers) !== null
             : true
   const next = () => step === totalSteps - 1 ? setStage('booking') : setStep(value => value + 1)
-  const progress = stage === 'intro' ? 0 : stage === 'questions' ? (step + 1) / (totalSteps + 2) : stage === 'booking' ? (totalSteps + 1) / (totalSteps + 2) : 1
+  const continueFromBooking = async (value: BookingSelection) => {
+    const client = getSupabase()
+    const { data: auth, error: authError } = await client.auth.getUser()
+    if (authError || !auth.user) {
+      setSelection(value)
+      setStage('account')
+      return
+    }
+    const { data: profile, error: profileError } = await client.from('profiles').select('id').eq('id', auth.user.id).maybeSingle()
+    if (profileError) throw profileError
+    if (!profile) {
+      setSelection(value)
+      setStage('account')
+      return
+    }
+    const { error: intakeError } = await client.rpc('save_intake', {
+      p_slot: value.slot.id, p_listener_gender: answers.listenerGender,
+      p_topics: answers.topics, p_k6: answers.k6, p_note: answers.note.trim(),
+      p_questionnaire_type: answers.questionnaire, p_k10: answers.k10,
+      p_impact_score: answers.long.impact,
+      p_long_answers: answers.questionnaire === 'long' ? answers.long : {},
+    })
+    if (intakeError) throw intakeError
+    const returningDraft: Draft = { savedAt: Date.now(), stage: 'booking', step, answers, selection: value, customerDetails }
+    sessionStorage.setItem(draftKey, JSON.stringify(returningDraft))
+    const checkoutUrl = await createCheckout(value.slot.id, value.holdToken)
+    sessionStorage.setItem('listen-checkout-return', '1')
+    window.location.assign(checkoutUrl)
+  }
 
   const choices = (name: string, values: readonly string[], selected: string, onChange: (value: string) => void) => <fieldset>
     <legend className="sr-only">{name}</legend>{values.map(value => <label key={value} className={selected === value ? 'selected' : ''}>
@@ -91,8 +163,10 @@ function MatchPage() {
       : <input value={String(answers.long[key] ?? '')} onChange={event => updateLong({ [key]: event.target.value })} maxLength={200} required={required} />}
   </label>
 
+  if (restoringPrevious) return <section className="match-page match-restoring" aria-busy="true"><span className="sr-only" role="status">Loading</span></section>
+
   return <section className="match-page" aria-labelledby="match-heading">
-    <div className="match-progress" aria-label={`${Math.round(progress * 100)}% complete`}><span style={{ width: `${progress * 100}%` }} /></div>
+    {restoreMessage && <p className="match-restore-message" role="alert">{restoreMessage} You can start a new questionnaire below.</p>}
     {stage === 'intro' ? <div className="match-intro match-choice-intro">
       <span className="match-eyebrow">Find your listener</span>
       <h1 id="match-heading">Choose the check-in that suits you.</h1>
@@ -160,7 +234,7 @@ function MatchPage() {
       </div></>}
 
       <div className="match-actions"><button type="button" className="match-back" onClick={() => step === 0 ? setStage('intro') : setStep(value => value - 1)}>Back</button><button type="submit" disabled={!canContinue}>{step === totalSteps - 1 ? 'Choose a listener' : 'Continue'}</button></div>
-    </form> : stage === 'booking' ? <BookingPage answers={answers} onBack={() => { setStep(totalSteps - 1); setStage('questions') }} onContinue={value => { setSelection(value); setStage('account') }} />
+    </form> : stage === 'booking' ? <BookingPage answers={answers} onBack={() => { setStep(totalSteps - 1); setStage('questions') }} onContinue={continueFromBooking} />
       : selection && <DetailsPage initialDetails={customerDetails} selection={selection} answers={answers} onBack={() => setStage('booking')} onDetailsChange={setCustomerDetails} />}
   </section>
 }

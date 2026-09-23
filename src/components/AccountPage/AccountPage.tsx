@@ -4,6 +4,24 @@ import { useSession } from '../../lib/useSession'
 import LoginPage from '../LoginPage/LoginPage'
 import './AccountPage.css'
 
+const secondsUntil = (expiresAt: string) => Math.max(0, Math.ceil((Date.parse(expiresAt) - Date.now()) / 1000))
+
+function PendingCountdown({ expiresAt, onExpired }: { expiresAt: string; onExpired: () => void }) {
+  const [seconds, setSeconds] = useState(() => secondsUntil(expiresAt))
+  useEffect(() => {
+    const tick = () => {
+      const next = secondsUntil(expiresAt)
+      setSeconds(next)
+      if (next === 0) onExpired()
+    }
+    tick()
+    const timer = window.setInterval(tick, 1000)
+    return () => window.clearInterval(timer)
+  }, [expiresAt, onExpired])
+  const time = `${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`
+  return <span className="account-countdown" aria-label={`Time remaining ${time}`}>{time}</span>
+}
+
 function AccountPage() {
   const { session, loading } = useSession()
   const [appointments, setAppointments] = useState<Appointment[]>([])
@@ -43,12 +61,13 @@ function AccountPage() {
     }
     catch (error) { setMessage(errorMessage(error)); setBusy(false) }
   }
+  const removeExpired = (bookingId: string) => setAppointments(current => current.filter(booking => booking.id !== bookingId))
   return <section className="account-page"><h1>My appointments</h1><p>Signed in as {session.user.email}</p>
-    <nav className="account-actions"><a href="/get-matched">Book a session</a>{admin === userId && <a href="/admin">Manage appointments and rates</a>}<button onClick={async () => { const { error } = await getSupabase().auth.signOut(); if (error) setMessage(error.message) }}>Sign out</button></nav>
+    <nav className="account-actions"><a href="/get-matched?repeat=previous">Book a session</a>{admin === userId && <a href="/admin">Manage appointments and rates</a>}<button onClick={async () => { const { error } = await getSupabase().auth.signOut(); if (error) setMessage(error.message) }}>Sign out</button></nav>
     {new URLSearchParams(location.search).has('checkout') && <div className="account-checkout-return" role="status"><h2>Your payment wasn’t completed</h2><p>Your account, questionnaire and contact details are saved. Your selected time remains reserved until the checkout expires.</p>{hasBookingDraft && <a href="/get-matched?resume=checkout">Review or edit my details</a>}</div>}
     {message && <p role="status">{message}</p>}
     {!message && !appointments.length && <p>You haven’t booked any appointments yet.</p>}
-    <div className="account-list">{appointments.filter(booking => booking.user_id === userId).map(booking => <article key={booking.id} className="account-card"><h2>{names[booking.listener_id] || 'Your listener'}</h2><p>{new Date(booking.starts_at).toLocaleString('en-AU')} · {Math.round((Date.parse(booking.ends_at) - Date.parse(booking.starts_at)) / 60000)} minutes</p><p>{money(booking.amount_cents)} AUD · <strong>{booking.status}</strong></p>{booking.status === 'pending' && <div className="account-card-actions"><button disabled={busy} onClick={() => resume(booking.slot_id)}>{busy ? 'Opening Stripe…' : 'Continue payment'}</button>{hasBookingDraft && <a href="/get-matched?resume=checkout">Edit my details</a>}</div>}<a href={'/booking-confirmation?booking_id=' + booking.id}>View booking status</a></article>)}</div>
+    <div className="account-list">{appointments.filter(booking => booking.user_id === userId).map(booking => <article key={booking.id} className="account-card"><h2>{names[booking.listener_id] || 'Your listener'}</h2><p>{new Date(booking.starts_at).toLocaleString('en-AU')} · {Math.round((Date.parse(booking.ends_at) - Date.parse(booking.starts_at)) / 60000)} minutes</p><p>{money(booking.amount_cents)} AUD · <strong>{booking.status}</strong>{booking.status === 'pending' && <PendingCountdown expiresAt={booking.checkout_expires_at} onExpired={() => removeExpired(booking.id)} />}</p>{booking.status === 'pending' && <div className="account-card-actions"><button disabled={busy} onClick={() => resume(booking.slot_id)}>{busy ? 'Opening Stripe…' : 'Continue payment'}</button>{hasBookingDraft && <a href="/get-matched?resume=checkout">Edit my details</a>}</div>}</article>)}</div>
   </section>
 }
 export default AccountPage

@@ -63,3 +63,4 @@
 @media (max-width: 700px) { .questionnaire-cards, .match-fields { grid-template-columns: 1fr; } .match-field-wide { grid-column: auto; } }
 @media (max-width: 600px) { .match-page { padding-right: 14px; padding-left: 14px; } .match-intro { margin-top: 58px; } .match-question { margin-top: 32px; padding: 26px 18px; border-radius: 22px; } .match-question fieldset { grid-template-columns: 1fr; } .match-actions { flex-direction: column-reverse; } .match-actions button { width: 100%; } .match-intro .questionnaire-card { min-height: 280px; padding: 27px 22px; } }
 @media (max-width: 600px) { .match-k6-options { grid-template-columns: 1fr; } .match-k6-options label { display: flex; justify-content: flex-start; min-height: 48px; padding: 8px 12px; text-align: left; } .match-k6-options input { margin: 0 10px 0 0; } }
+.match-restoring { min-height: 65vh; }

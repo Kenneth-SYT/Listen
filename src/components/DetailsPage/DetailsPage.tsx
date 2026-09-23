@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowRight, CheckCircle2, LockKeyhole, X } from 'lucide-react'
+import { ArrowLeft, ArrowRight, CheckCircle2, LoaderCircle, LockKeyhole, X } from 'lucide-react'
 import { useEffect, useState, type FormEvent } from 'react'
 import { createCheckout, errorMessage, getSupabase, money, supabase, type BookingSelection, type Quote } from '../../lib/supabase'
 import { wellbeingScore, wellbeingScoreLabel, type IntakeAnswers } from '../../lib/intake'
@@ -31,6 +31,7 @@ function DetailsPage({ initialDetails, selection, answers, onBack, onDetailsChan
   const [duplicateEmail, setDuplicateEmail] = useState('')
   const [accountCreatedThisVisit, setAccountCreatedThisVisit] = useState(false)
   const [message, setMessage] = useState('')
+  const [checkoutError, setCheckoutError] = useState('')
   const [codeMessage, setCodeMessage] = useState('')
   const [busy, setBusy] = useState(false)
   const [retryUntil, setRetryUntil] = useState(0)
@@ -100,7 +101,7 @@ function DetailsPage({ initialDetails, selection, answers, onBack, onDetailsChan
   }
   const switchAccount = async () => {
     if (busy) return
-    setBusy(true); setMessage('')
+    setBusy(true); setMessage(''); setCheckoutError('')
     try {
       const { error } = await getSupabase().auth.signOut({ scope: 'local' })
       if (error) throw error
@@ -162,7 +163,8 @@ function DetailsPage({ initialDetails, selection, answers, onBack, onDetailsChan
       eighteenthBirthday.setFullYear(eighteenthBirthday.getFullYear() + 18)
       if (!details.dateOfBirth || eighteenthBirthday > new Date()) { setMessage('You must be at least 18 to book a session.'); return }
     }
-    setBusy(true); setMessage('')
+    setBusy(true); setMessage(''); setCheckoutError('')
+    let openingCheckout = false
     try {
       const client = getSupabase()
       if (!session) {
@@ -230,6 +232,7 @@ function DetailsPage({ initialDetails, selection, answers, onBack, onDetailsChan
       })
       if (intakeError) throw intakeError
       if (wellbeingScore(answers) === null) throw new Error('Complete the wellbeing check-in before payment.')
+      openingCheckout = true
       const checkoutUrl = await createCheckout(selection.slot.id, selection.holdToken)
       sessionStorage.setItem('listen-checkout-return', '1')
       window.location.assign(checkoutUrl)
@@ -239,29 +242,11 @@ function DetailsPage({ initialDetails, selection, answers, onBack, onDetailsChan
         const seconds = Number(authError.message?.match(/(\d+)\s*seconds?/i)?.[1] ?? 60)
         setRetryUntil(Date.now() + seconds * 1000)
         setMessage('Supabase is temporarily limiting email requests. Check your inbox first in case the account was created, then try again after the timer.')
-      } else setMessage(errorMessage(error))
+      } else if (openingCheckout) setCheckoutError(errorMessage(error))
+      else setMessage(errorMessage(error))
     }
     finally { setBusy(false) }
   }
-  const retryCheckout = async () => {
-    if (busy || holdSeconds <= 0 || !holdValid) return
-    setBusy(true); setMessage('')
-    try {
-      const checkoutUrl = await createCheckout(selection.slot.id, selection.holdToken)
-      sessionStorage.setItem('listen-checkout-return', '1')
-      window.location.assign(checkoutUrl)
-    } catch (error) { setMessage(errorMessage(error)) }
-    finally { setBusy(false) }
-  }
-  if (session && accountCreatedThisVisit) return <div className="details-payment-transition">
-    <div className="details-payment-icon"><LockKeyhole size={25} aria-hidden="true" /></div>
-    <span className="match-eyebrow">Secure checkout</span>
-    <h1>{busy ? 'Opening Stripe payment…' : 'Your account is ready.'}</h1>
-    <p>{busy ? 'Please wait while we securely prepare your payment page.' : 'We couldn’t open Stripe automatically. Your account and booking details are saved, so you can safely try again.'}</p>
-    {message && <p role="alert" className="details-message details-message-error">{message}</p>}
-    {!busy && <button type="button" onClick={retryCheckout} disabled={holdSeconds <= 0 || !holdValid}>Try Stripe payment again <ArrowRight size={18} /></button>}
-    {holdSeconds <= 0 && <p role="status" className="details-message details-message-error">Your booking hold has expired. Return to the available times and select another appointment.</p>}
-  </div>
   return <>
     <div className="details-layout"><form className="details-form" onSubmit={submit}>
       <header className="details-heading"><span className="match-eyebrow">Final step before payment</span><h1 id="match-heading">{signinOnly ? 'Welcome back.' : session ? 'Confirm your details.' : 'Create your account.'}</h1><p>{signinOnly ? 'Sign in to continue with the time you selected.' : 'We’ll use these details to prepare your booking and contact you about your appointment.'}</p>
@@ -282,10 +267,11 @@ function DetailsPage({ initialDetails, selection, answers, onBack, onDetailsChan
         {!session && <label className="details-wide"><span>{accountMode === 'signup' ? 'Create a password' : 'Your password'}</span><input type="password" autoComplete={accountMode === 'signup' ? 'new-password' : 'current-password'} minLength={8} value={password} onChange={event => setPassword(event.target.value)} required /></label>}
       </div>
       {!supabase && <p role="alert" className="details-message">Online accounts are not configured yet.</p>}
-      {message && <p id={duplicateEmailEntered ? 'details-email-error' : undefined} role={duplicateEmailEntered ? 'alert' : 'status'} className={'details-message' + (duplicateEmailEntered ? ' details-message-error' : '')}>{message}</p>}
       {!session && <div className="details-existing-account"><span>Already have an account?</span><a href="/login">Sign in</a></div>}
       {retrySeconds > 0 && <p role="status" className="details-message">You can try again in {retrySeconds} seconds.</p>}
-      <div className="details-actions"><button type="button" className="details-back" onClick={backToBooking}><ArrowLeft size={18} /> Back to times</button><button type="submit" disabled={busy || loading || !supabase || retrySeconds > 0 || holdSeconds <= 0 || !holdValid || holdChecking || duplicateEmailEntered || (!session && accountMode === 'signup' && awaitingConfirmation)}>{busy ? 'Please wait…' : session ? 'Continue to Stripe payment' : awaitingConfirmation && accountMode === 'signup' ? 'Check your email to verify' : accountMode === 'signup' ? 'Create account and continue' : 'Sign in and continue'} <ArrowRight size={18} /></button></div>
+      <div className="details-actions"><button type="button" className="details-back" onClick={backToBooking} disabled={busy}><ArrowLeft size={18} /> Back to times</button><button type="submit" disabled={busy || loading || !supabase || retrySeconds > 0 || holdSeconds <= 0 || !holdValid || holdChecking || duplicateEmailEntered || (!session && accountMode === 'signup' && awaitingConfirmation)}>{busy ? <><LoaderCircle className="details-button-spinner" size={18} aria-hidden="true" /> Opening secure payment…</> : <>{session ? 'Continue to Stripe payment' : awaitingConfirmation && accountMode === 'signup' ? 'Check your email to verify' : accountMode === 'signup' ? 'Create account and continue' : 'Sign in and continue'} <ArrowRight size={18} /></>}</button></div>
+      {message && <p id={duplicateEmailEntered ? 'details-email-error' : undefined} role={duplicateEmailEntered ? 'alert' : 'status'} className={'details-message details-action-message' + (duplicateEmailEntered ? ' details-message-error' : '')}>{message}</p>}
+      {checkoutError && <p role="alert" className="details-message details-message-error details-action-message">{checkoutError} Please try again. If the problem continues, <a href="/contact">contact support</a>.</p>}
     </form>
     <aside className="details-review"><h2>Review your booking</h2><div className="details-hold" role="status"><strong>{holdSeconds > 0 ? holdTime : 'Hold expired'}</strong><span>{holdSeconds > 0 ? holdChecking ? 'Checking your hold…' : holdValid ? 'This time is held for you' : 'Could not verify this hold' : 'Choose a new time to continue'}</span></div><dl><div><dt>Listener</dt><dd>{selection.listener.name}</dd></div><div><dt>Time</dt><dd>{new Date(selection.slot.starts_at).toLocaleString('en-AU')}</dd></div><div><dt>Session</dt><dd>{displayQuote.label} · {displayQuote.duration_minutes} minutes</dd></div><div><dt>Questionnaire</dt><dd>{answers.questionnaire === 'long' ? 'Long questionnaire' : 'Short check-in'}</dd></div><div><dt>Topics</dt><dd>{answers.topics.join(', ')}</dd></div><div><dt>Listener preference</dt><dd>{answers.listenerGender}</dd></div><div><dt>{wellbeingScoreLabel(answers)}</dt><dd>{wellbeingScore(answers)} / {answers.questionnaire === 'long' ? 50 : 24}</dd></div>{answers.note && <div><dt>Your note</dt><dd>{answers.note}</dd></div>}</dl><p><strong>Estimated rate: {money(displayQuote.amount_cents)} AUD</strong></p><p>Complete your account within the hold time. After checkout starts, Stripe gives you its own payment window.</p></aside></div>
     {phoneVerificationEnabled && pendingPhone && <div className="details-dialog-backdrop" onClick={() => setPendingPhone('')}><section className="details-dialog" role="dialog" aria-modal="true" aria-labelledby="verification-title" onClick={event => event.stopPropagation()}>

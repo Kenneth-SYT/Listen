@@ -7,7 +7,7 @@ export function bookingPrivacyAction(path: string, search: string, hash: string,
     const query = new URLSearchParams(search)
     const fragment = new URLSearchParams(hash.replace(/^#/, ''))
     if (query.has('code') || query.has('token_hash') || fragment.has('access_token')) return 'email-confirmation'
-    if (query.has('resume')) return 'checkout-return'
+    if (query.has('resume') || query.has('repeat')) return 'checkout-return'
     return 'clear'
   }
   return bookingActive ? 'clear' : 'none'

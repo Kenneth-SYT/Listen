@@ -14,6 +14,7 @@
 .account-checkout-return p { margin: 0 0 12px; color: var(--color-muted); }
 .account-checkout-return a, .account-card-actions a { color: var(--color-primary); font-weight: 700; text-underline-offset: 4px; }
 .account-card-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-top: 14px; }
+.account-countdown { display: inline-flex; min-width: 58px; justify-content: center; margin-left: 8px; padding: 3px 8px; border-radius: 999px; background: var(--color-accent-light); color: var(--color-primary); font-size: .82rem; font-weight: 800; font-variant-numeric: tabular-nums; }
 .account-page button { border: 0; border-radius: 8px; padding: 10px 16px; background: var(--color-primary); color: white; cursor: pointer; font: inherit; }
 .account-page button:disabled { opacity: .5; cursor: not-allowed; }
 .admin-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 310px), 1fr)); gap: 20px; }

@@ -8,7 +8,7 @@ import './BookingPage.css'
 
 const dayKey = (value: string) => new Date(value).toLocaleDateString('en-CA')
 const localDayKey = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-function BookingPage({ answers, onBack, onContinue }: { answers: IntakeAnswers; onBack: () => void; onContinue: (selection: BookingSelection) => void }) {
+function BookingPage({ answers, onBack, onContinue }: { answers: IntakeAnswers; onBack: () => void; onContinue: (selection: BookingSelection) => void | Promise<void> }) {
   const { session, loading: authLoading } = useSession()
   const [listeners, setListeners] = useState<Listener[]>([])
   const [slots, setSlots] = useState<Slot[]>([])
@@ -74,7 +74,7 @@ function BookingPage({ answers, onBack, onContinue }: { answers: IntakeAnswers; 
       const holdToken = crypto.randomUUID()
       const { data, error } = await getSupabase().rpc('claim_slot_hold', { p_slot: chosenSlot.id, p_token: holdToken })
       if (error) throw error
-      onContinue({ listener, slot: chosenSlot, quote, holdToken, holdExpiresAt: data as string })
+      await onContinue({ listener, slot: chosenSlot, quote, holdToken, holdExpiresAt: data as string })
     } catch (error) {
       setMessage(errorMessage(error))
       setRefresh(value => value + 1)
@@ -116,7 +116,7 @@ function BookingPage({ answers, onBack, onContinue }: { answers: IntakeAnswers; 
       <aside className="booking-summary"><CalendarDays size={25} /><h2>Your booking</h2>
         <dl><div><dt>Listener</dt><dd>{listener?.name || 'Select a listener'}</dd></div><div><dt>Appointment</dt><dd>{chosenSlot ? new Date(chosenSlot.starts_at).toLocaleString('en-AU') : 'Select a time'}</dd></div><div><dt>Session</dt><dd>{quote ? quote.label + ', ' + quote.duration_minutes + ' min' : 'Unavailable'}</dd></div></dl>
         <div className="booking-total"><span>Estimated rate</span><strong>{quote ? money(quote.amount_cents) + ' AUD' : '—'}</strong></div>
-        <button className="booking-continue" type="button" disabled={holding || !chosenSlot || !quote || !listener} onClick={holdSelectedSlot}>{holding ? 'Holding your time…' : 'Continue to account details'}</button>
+        <button className="booking-continue" type="button" disabled={holding || !chosenSlot || !quote || !listener} onClick={holdSelectedSlot}>{holding ? session ? 'Opening secure payment…' : 'Holding your time…' : session ? 'Proceed to payment' : 'Continue to account details'}</button>
         <p className="booking-reassurance">Your time is confirmed only after checkout. Your rate is checked again before payment.</p>
       </aside>
     </div>}

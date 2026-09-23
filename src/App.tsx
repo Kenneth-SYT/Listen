@@ -76,7 +76,6 @@ function App() {
   return (
     <>
     <main className="page">
-      <ColourStrip />
       <Header />
       {window.location.pathname === '/listener' ? <ListenerPage /> : window.location.pathname === '/admin' ? <AdminPage /> : window.location.pathname === '/account' ? <AccountPage /> : isContactPage ? (
         <ContactPage />
