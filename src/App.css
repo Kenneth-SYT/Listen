@@ -1,11 +1,11 @@
 .page {
     min-height: 100vh;
     background: var(--color-cream);
-    padding-top: 82px;
+    padding-top: 72px;
 }
 
 @media (max-width: 760px) {
   .page {
-    padding-top: 10px;
+    padding-top: 0;
   }
 }

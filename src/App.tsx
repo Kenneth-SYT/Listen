@@ -1,4 +1,3 @@
-import ColourStrip from './components/ColourStrip/ColourStrip'
 import ContactPage from './components/ContactPage/ContactPage'
 import Header from './components/Header/Header'
 import Hero from './components/Hero/Hero'
