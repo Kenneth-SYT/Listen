@@ -12,6 +12,12 @@ function AccountPage() {
   const [message, setMessage] = useState('Loading appointments…')
   const [busy, setBusy] = useState(false)
   const userId = session?.user.id
+  const hasBookingDraft = (() => {
+    try {
+      const draft = JSON.parse(sessionStorage.getItem('listen-booking-draft') || 'null') as { selection?: { slot?: { id?: string } } } | null
+      return Boolean(draft?.selection?.slot?.id)
+    } catch { return false }
+  })()
   useEffect(() => {
     if (!userId) return
     let active = true
@@ -30,15 +36,19 @@ function AccountPage() {
   if (!session) return <LoginPage />
   const resume = async (slotId: string) => {
     setBusy(true)
-    try { window.location.assign(await createCheckout(slotId)) }
+    try {
+      const checkoutUrl = await createCheckout(slotId)
+      sessionStorage.setItem('listen-checkout-return', '1')
+      window.location.assign(checkoutUrl)
+    }
     catch (error) { setMessage(errorMessage(error)); setBusy(false) }
   }
   return <section className="account-page"><h1>My appointments</h1><p>Signed in as {session.user.email}</p>
     <nav className="account-actions"><a href="/get-matched">Book a session</a>{admin === userId && <a href="/admin">Manage appointments and rates</a>}<button onClick={async () => { const { error } = await getSupabase().auth.signOut(); if (error) setMessage(error.message) }}>Sign out</button></nav>
-    {new URLSearchParams(location.search).has('checkout') && <p>Your checkout was closed. Your time remains reserved until checkout expires. You can resume payment below.</p>}
+    {new URLSearchParams(location.search).has('checkout') && <div className="account-checkout-return" role="status"><h2>Your payment wasn’t completed</h2><p>Your account, questionnaire and contact details are saved. Your selected time remains reserved until the checkout expires.</p>{hasBookingDraft && <a href="/get-matched?resume=checkout">Review or edit my details</a>}</div>}
     {message && <p role="status">{message}</p>}
     {!message && !appointments.length && <p>You haven’t booked any appointments yet.</p>}
-    <div className="account-list">{appointments.filter(booking => booking.user_id === userId).map(booking => <article key={booking.id} className="account-card"><h2>{names[booking.listener_id] || 'Your listener'}</h2><p>{new Date(booking.starts_at).toLocaleString('en-AU')} · {Math.round((Date.parse(booking.ends_at) - Date.parse(booking.starts_at)) / 60000)} minutes</p><p>{money(booking.amount_cents)} AUD · <strong>{booking.status}</strong></p>{booking.status === 'pending' && <button disabled={busy} onClick={() => resume(booking.slot_id)}>Resume / check checkout</button>}<a href={'/booking-confirmation?booking_id=' + booking.id}>View booking status</a></article>)}</div>
+    <div className="account-list">{appointments.filter(booking => booking.user_id === userId).map(booking => <article key={booking.id} className="account-card"><h2>{names[booking.listener_id] || 'Your listener'}</h2><p>{new Date(booking.starts_at).toLocaleString('en-AU')} · {Math.round((Date.parse(booking.ends_at) - Date.parse(booking.starts_at)) / 60000)} minutes</p><p>{money(booking.amount_cents)} AUD · <strong>{booking.status}</strong></p>{booking.status === 'pending' && <div className="account-card-actions"><button disabled={busy} onClick={() => resume(booking.slot_id)}>{busy ? 'Opening Stripe…' : 'Continue payment'}</button>{hasBookingDraft && <a href="/get-matched?resume=checkout">Edit my details</a>}</div>}<a href={'/booking-confirmation?booking_id=' + booking.id}>View booking status</a></article>)}</div>
   </section>
 }
 export default AccountPage

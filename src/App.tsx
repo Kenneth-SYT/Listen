@@ -31,7 +31,8 @@ function preparePrivateBooking() {
       sessionStorage.getItem('listen-booking-active') === '1', sessionStorage.getItem('listen-checkout-return') === '1')
     if (action === 'checkout-return') {
       sessionStorage.removeItem('listen-checkout-return')
-      sessionStorage.removeItem('listen-booking-active')
+      if (bookingPage) sessionStorage.setItem('listen-booking-active', '1')
+      else sessionStorage.removeItem('listen-booking-active')
       return
     }
     sessionStorage.removeItem('listen-checkout-return')
@@ -44,8 +45,6 @@ function preparePrivateBooking() {
         } catch { /* An expired hold releases itself. */ }
       }
       sessionStorage.removeItem('listen-booking-draft')
-      const { error } = await supabase?.auth.signOut({ scope: 'local' }) ?? { error: null }
-      if (error) throw error
     }
     sessionStorage.removeItem('listen-booking-active')
     if (bookingPage) sessionStorage.setItem('listen-booking-active', '1')
@@ -61,7 +60,7 @@ function App() {
     void preparePrivateBooking().then(() => { if (active) setPrivacyReady(true) }).catch(() => { if (active) setPrivacyError(true) })
     return () => { active = false }
   }, [])
-  if (privacyError) return <main className="page"><p role="alert">We couldn’t clear the previous booking session. Please close this tab and open a new one before continuing.</p></main>
+  if (privacyError) return <main className="page"><p role="alert">We couldn’t clear the previous booking draft. Please close this tab and open a new one before continuing.</p></main>
   if (!privacyReady) return <main className="page"><p role="status">Preparing your private booking…</p></main>
   const isContactPage = window.location.pathname === '/contact'
   const isPricingPage = window.location.pathname === '/pricing'

@@ -9,6 +9,11 @@
 .account-card dt { color: var(--color-muted); font-size: .8rem; font-weight: 700; }
 .account-card dd { margin: 3px 0 0; line-height: 1.45; }
 .account-card a { display: inline-block; margin: 10px; }
+.account-checkout-return { margin: 24px 0; padding: 20px 22px; border: 1px solid var(--color-border); border-radius: 14px; background: white; }
+.account-checkout-return h2 { margin: 0 0 8px; font-size: 1.25rem; }
+.account-checkout-return p { margin: 0 0 12px; color: var(--color-muted); }
+.account-checkout-return a, .account-card-actions a { color: var(--color-primary); font-weight: 700; text-underline-offset: 4px; }
+.account-card-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-top: 14px; }
 .account-page button { border: 0; border-radius: 8px; padding: 10px 16px; background: var(--color-primary); color: white; cursor: pointer; font: inherit; }
 .account-page button:disabled { opacity: .5; cursor: not-allowed; }
 .admin-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 310px), 1fr)); gap: 20px; }

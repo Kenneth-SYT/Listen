@@ -231,7 +231,6 @@ function DetailsPage({ initialDetails, selection, answers, onBack, onDetailsChan
       if (intakeError) throw intakeError
       if (wellbeingScore(answers) === null) throw new Error('Complete the wellbeing check-in before payment.')
       const checkoutUrl = await createCheckout(selection.slot.id, selection.holdToken)
-      sessionStorage.removeItem('listen-booking-draft')
       sessionStorage.setItem('listen-checkout-return', '1')
       window.location.assign(checkoutUrl)
     } catch (error) {
@@ -249,7 +248,6 @@ function DetailsPage({ initialDetails, selection, answers, onBack, onDetailsChan
     setBusy(true); setMessage('')
     try {
       const checkoutUrl = await createCheckout(selection.slot.id, selection.holdToken)
-      sessionStorage.removeItem('listen-booking-draft')
       sessionStorage.setItem('listen-checkout-return', '1')
       window.location.assign(checkoutUrl)
     } catch (error) { setMessage(errorMessage(error)) }
