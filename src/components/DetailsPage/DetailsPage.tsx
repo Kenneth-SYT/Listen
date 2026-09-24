@@ -12,9 +12,9 @@ export type CustomerDetails = {
 type Props = { initialDetails: CustomerDetails; selection: BookingSelection; answers: IntakeAnswers; onBack: () => void; onDetailsChange: (details: CustomerDetails) => void }
 // Reserved for an optional second factor. Email remains the account identity.
 const phoneVerificationEnabled = import.meta.env.VITE_ENABLE_PHONE_VERIFICATION === 'true'
-// Temporary launch setting. Set VITE_REQUIRE_EMAIL_VERIFICATION=true to restore
-// confirmation-link enforcement without changing this flow.
-const emailVerificationRequired = import.meta.env.VITE_REQUIRE_EMAIL_VERIFICATION === 'true'
+// Verification is required by default. Set the flag to false only for a
+// deliberate local testing session.
+const emailVerificationRequired = import.meta.env.VITE_REQUIRE_EMAIL_VERIFICATION !== 'false'
 const toInternational = (mobile: string) => '+61' + mobile.slice(1)
 const toLocal = (phone: string) => phone.startsWith('+61') ? '0' + phone.slice(3) : phone
 
@@ -24,6 +24,8 @@ function DetailsPage({ initialDetails, selection, answers, onBack, onDetailsChan
   const [code, setCode] = useState('')
   const [pendingPhone, setPendingPhone] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [emailOtp, setEmailOtp] = useState('')
   const [displayQuote, setDisplayQuote] = useState(selection.quote)
   const [accountMode, setAccountMode] = useState<'signup' | 'signin'>('signup')
   const [awaitingConfirmation, setAwaitingConfirmation] = useState(false)
@@ -44,7 +46,9 @@ function DetailsPage({ initialDetails, selection, answers, onBack, onDetailsChan
   const verifiedEmail = session?.user.email_confirmed_at ? session.user.email?.toLowerCase() : ''
   const signinOnly = !session && accountMode === 'signin'
   const duplicateEmailEntered = emailInUse && details.email.trim().toLowerCase() === duplicateEmail
+  const passwordMismatch = !session && accountMode === 'signup' && !!confirmPassword && password !== confirmPassword
   const holdTime = `${String(Math.floor(holdSeconds / 60)).padStart(2, '0')}:${String(holdSeconds % 60).padStart(2, '0')}`
+  const visibleMessage = verifiedEmail && /confirm your email|check your email/i.test(message) ? '' : message
 
   useEffect(() => {
     const tick = () => setHoldSeconds(Math.max(0, Math.ceil((Date.parse(selection.holdExpiresAt) - Date.now()) / 1000)))
@@ -107,7 +111,7 @@ function DetailsPage({ initialDetails, selection, answers, onBack, onDetailsChan
       if (error) throw error
       const emptyDetails: CustomerDetails = { firstName: '', lastName: '', preferredName: '', dateOfBirth: '', mobile: '', email: '', gender: '' }
       setDetails(emptyDetails); onDetailsChange(emptyDetails)
-      setAccountMode('signin'); setPassword(''); setAwaitingConfirmation(false); setEmailInUse(false); setDuplicateEmail(''); setAccountCreatedThisVisit(false)
+      setAccountMode('signin'); setPassword(''); setConfirmPassword(''); setAwaitingConfirmation(false); setEmailInUse(false); setDuplicateEmail(''); setAccountCreatedThisVisit(false)
     } catch (error) { setMessage(errorMessage(error)) }
     finally { setBusy(false) }
   }
@@ -148,6 +152,31 @@ function DetailsPage({ initialDetails, selection, answers, onBack, onDetailsChan
     } catch (error) { setCodeMessage(errorMessage(error)) }
     finally { setBusy(false) }
   }
+  const verifyEmailCode = async () => {
+    if (busy || emailOtp.length < 6) return
+    setBusy(true); setMessage(''); setCheckoutError('')
+    try {
+      const email = details.email.trim().toLowerCase()
+      const { data, error } = await getSupabase().auth.verifyOtp({ email, token: emailOtp, type: 'email' })
+      if (error) throw error
+      if (!data.session || !data.user?.email_confirmed_at) throw new Error('We could not verify that code. Please request a new code and try again.')
+      setAwaitingConfirmation(false); setEmailOtp(''); setAccountCreatedThisVisit(true)
+      setMessage('Email verified. You can now continue to payment.')
+    } catch (error) { setMessage(errorMessage(error)) }
+    finally { setBusy(false) }
+  }
+  const resendEmailCode = async () => {
+    if (busy || retrySeconds > 0) return
+    setBusy(true); setMessage('')
+    try {
+      const email = details.email.trim().toLowerCase()
+      const { error } = await getSupabase().auth.resend({ type: 'signup', email, options: { emailRedirectTo: window.location.origin + '/get-matched' } })
+      if (error) throw error
+      setRetryUntil(Date.now() + 60_000)
+      setMessage('A new verification code has been sent to your email.')
+    } catch (error) { setMessage(errorMessage(error)) }
+    finally { setBusy(false) }
+  }
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (busy || loading || retrySeconds > 0 || holdSeconds <= 0 || !holdValid || holdChecking || (!session && accountMode === 'signup' && awaitingConfirmation)) return
@@ -155,6 +184,9 @@ function DetailsPage({ initialDetails, selection, answers, onBack, onDetailsChan
     if (!/^[^\s@]+@[^\s@]+\.com$/i.test(email)) { setMessage('Enter an email address ending in .com.'); return }
     if (!session && accountMode === 'signup' && emailInUse && email === duplicateEmail) {
       setMessage('Email already exists. Try signing in, or enter a different email to create a new account.')
+      return
+    }
+    if (!session && accountMode === 'signup' && password !== confirmPassword) {
       return
     }
     if (session || accountMode === 'signup') {
@@ -186,12 +218,20 @@ function DetailsPage({ initialDetails, selection, answers, onBack, onDetailsChan
             setMessage('Email already exists. Try signing in, or enter a different email to create a new account.')
             return
           }
+          // With Confirm email disabled, Supabase signs a new user in and marks
+          // the address confirmed immediately. Fail closed so a dashboard
+          // configuration mistake cannot bypass ownership verification.
+          if (emailVerificationRequired && data.session) {
+            await client.auth.signOut({ scope: 'local' })
+            setMessage('Email verification is not enabled in Supabase. Turn on Confirm email under Authentication → Sign In / Providers → Email, then create the account again.')
+            return
+          }
           if (!data.session) {
             if (emailVerificationRequired) {
               setAwaitingConfirmation(true)
-              setMessage('Check your email for the confirmation link. After confirming, return to this tab and choose “Already a member? Sign in” to continue before your hold expires.')
+              setMessage('Enter the verification code sent to your email. Your selected time remains held until the timer ends.')
             } else {
-              setMessage('Account creation is waiting for Supabase email confirmation to be disabled. In Supabase, turn off “Confirm email” under Authentication settings, then try again.')
+              setMessage('Your account was created, but no signed-in session was returned. Please sign in to continue.')
             }
             return
           }
@@ -205,9 +245,9 @@ function DetailsPage({ initialDetails, selection, answers, onBack, onDetailsChan
       }
       // A real Auth user check prevents an unconfirmed email from reaching booking.
       const { data, error } = await client.auth.getUser()
-      if (error || !data.user || data.user.email?.toLowerCase() !== email || (emailVerificationRequired && !data.user.email_confirmed_at)) {
-        throw new Error(emailVerificationRequired ? 'Please confirm your email address before continuing.' : 'We could not verify the signed-in account. Please sign in again.')
-      }
+      if (error || !data.user) throw new Error('We could not verify the signed-in account. Please sign in again.')
+      if (data.user.email?.toLowerCase() !== email) throw new Error('The signed-in account does not match this booking email. Please use the correct account.')
+      if (emailVerificationRequired && !data.user.email_confirmed_at) throw new Error('Please verify your email address before continuing.')
       const { data: currentQuote, error: quoteError } = await client.rpc('booking_quote', { p_rate_code: selection.quote.rate_code })
       if (quoteError) throw quoteError
       if (!currentQuote) throw new Error('Could not check your current rate.')
@@ -264,13 +304,23 @@ function DetailsPage({ initialDetails, selection, answers, onBack, onDetailsChan
         {!signinOnly &&
         <label><span>Gender <small>Optional</small></span><select value={details.gender} onChange={event => update('gender', event.target.value)}><option value="">Prefer not to say</option><option value="male">Male</option><option value="female">Female</option><option value="other">Other</option></select></label>
         }
-        {!session && <label className="details-wide"><span>{accountMode === 'signup' ? 'Create a password' : 'Your password'}</span><input type="password" autoComplete={accountMode === 'signup' ? 'new-password' : 'current-password'} minLength={8} value={password} onChange={event => setPassword(event.target.value)} required /></label>}
+        {!session && accountMode === 'signup' && <>
+          <label><span>Create a password</span><input type="password" autoComplete="new-password" minLength={8} value={password} onChange={event => setPassword(event.target.value)} required /></label>
+          <label className={passwordMismatch ? 'details-password-error' : ''}><span>Confirm password</span><input type="password" autoComplete="new-password" minLength={8} value={confirmPassword} onChange={event => setConfirmPassword(event.target.value)} aria-invalid={passwordMismatch || undefined} aria-describedby={passwordMismatch ? 'details-password-error' : undefined} required /></label>
+        </>}
+        {!session && accountMode === 'signin' && <label className="details-wide"><span>Your password</span><input type="password" autoComplete="current-password" minLength={8} value={password} onChange={event => setPassword(event.target.value)} required /></label>}
       </div>
       {!supabase && <p role="alert" className="details-message">Online accounts are not configured yet.</p>}
+      {passwordMismatch && <p id="details-password-error" role="alert" className="details-message details-message-error">Passwords do not match. Please enter the same password in both fields.</p>}
+      {!session && awaitingConfirmation && <section className="details-email-otp" aria-labelledby="email-code-heading">
+        <div><strong id="email-code-heading">Verify your email</strong><span>Enter the code sent to {details.email}.</span></div>
+        <div className="details-email-otp-row"><input aria-label="Email verification code" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6,8}" maxLength={8} placeholder="Verification code" value={emailOtp} onChange={event => setEmailOtp(event.target.value.replace(/\D/g, '').slice(0, 8))} /><button type="button" onClick={verifyEmailCode} disabled={busy || emailOtp.length < 6}>{busy ? 'Checking…' : 'Verify email'}</button></div>
+        <button type="button" className="details-email-resend" onClick={resendEmailCode} disabled={busy || retrySeconds > 0}>{retrySeconds > 0 ? `Send again in ${retrySeconds}s` : 'Send a new code'}</button>
+      </section>}
       {!session && <div className="details-existing-account"><span>Already have an account?</span><a href="/login">Sign in</a></div>}
       {retrySeconds > 0 && <p role="status" className="details-message">You can try again in {retrySeconds} seconds.</p>}
       <div className="details-actions"><button type="button" className="details-back" onClick={backToBooking} disabled={busy}><ArrowLeft size={18} /> Back to times</button><button type="submit" disabled={busy || loading || !supabase || retrySeconds > 0 || holdSeconds <= 0 || !holdValid || holdChecking || duplicateEmailEntered || (!session && accountMode === 'signup' && awaitingConfirmation)}>{busy ? <><LoaderCircle className="details-button-spinner" size={18} aria-hidden="true" /> Opening secure payment…</> : <>{session ? 'Continue to Stripe payment' : awaitingConfirmation && accountMode === 'signup' ? 'Check your email to verify' : accountMode === 'signup' ? 'Create account and continue' : 'Sign in and continue'} <ArrowRight size={18} /></>}</button></div>
-      {message && <p id={duplicateEmailEntered ? 'details-email-error' : undefined} role={duplicateEmailEntered ? 'alert' : 'status'} className={'details-message details-action-message' + (duplicateEmailEntered ? ' details-message-error' : '')}>{message}</p>}
+      {visibleMessage && <p id={duplicateEmailEntered ? 'details-email-error' : undefined} role={duplicateEmailEntered ? 'alert' : 'status'} className={'details-message details-action-message' + (duplicateEmailEntered ? ' details-message-error' : '')}>{visibleMessage}</p>}
       {checkoutError && <p role="alert" className="details-message details-message-error details-action-message">{checkoutError} Please try again. If the problem continues, <a href="/contact">contact support</a>.</p>}
     </form>
     <aside className="details-review"><h2>Review your booking</h2><div className="details-hold" role="status"><strong>{holdSeconds > 0 ? holdTime : 'Hold expired'}</strong><span>{holdSeconds > 0 ? holdChecking ? 'Checking your hold…' : holdValid ? 'This time is held for you' : 'Could not verify this hold' : 'Choose a new time to continue'}</span></div><dl><div><dt>Listener</dt><dd>{selection.listener.name}</dd></div><div><dt>Time</dt><dd>{new Date(selection.slot.starts_at).toLocaleString('en-AU')}</dd></div><div><dt>Session</dt><dd>{displayQuote.label} · {displayQuote.duration_minutes} minutes</dd></div><div><dt>Questionnaire</dt><dd>{answers.questionnaire === 'long' ? 'Long questionnaire' : 'Short check-in'}</dd></div><div><dt>Topics</dt><dd>{answers.topics.join(', ')}</dd></div><div><dt>Listener preference</dt><dd>{answers.listenerGender}</dd></div><div><dt>{wellbeingScoreLabel(answers)}</dt><dd>{wellbeingScore(answers)} / {answers.questionnaire === 'long' ? 50 : 24}</dd></div>{answers.note && <div><dt>Your note</dt><dd>{answers.note}</dd></div>}</dl><p><strong>Estimated rate: {money(displayQuote.amount_cents)} AUD</strong></p><p>Complete your account within the hold time. After checkout starts, Stripe gives you its own payment window.</p></aside></div>
