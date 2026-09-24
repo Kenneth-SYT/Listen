@@ -18,7 +18,7 @@ function GetStartedDropdown() {
       <div className="dropdown-menu get-started-menu">
         <div className="started-links">
           <p>Get Started</p>
-          <a href="/our-therapist">Our Listeners</a>
+          <a href="/our-listeners">Our Listeners</a>
           <a href="/get-matched">Get Matched</a>
         </div>
         <div className="started-feature">

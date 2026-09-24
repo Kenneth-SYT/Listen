@@ -8,6 +8,7 @@ import {
   type LongAnswers, type QuestionnaireType,
 } from '../../lib/intake'
 import { createCheckout, errorMessage, getSupabase, type BookingSelection } from '../../lib/supabase'
+import { useSession } from '../../lib/useSession'
 import './MatchPage.css'
 
 const emptyDetails: CustomerDetails = { firstName: '', lastName: '', preferredName: '', dateOfBirth: '', mobile: '', email: '', gender: '' }
@@ -32,12 +33,12 @@ function readDraft(): Draft | null {
       k10: Array.isArray(draft.answers.k10) ? draft.answers.k10 : emptyIntake.k10,
       long: { ...emptyIntake.long, ...draft.answers.long },
     }
-    if (draft.stage === 'account' && (!draft.selection?.holdToken || !draft.selection?.holdExpiresAt)) draft.stage = 'booking'
     return draft
   } catch { return null }
 }
 
 function MatchPage() {
+  const { session } = useSession()
   const entryParams = new URLSearchParams(window.location.search)
   const repeatRequested = entryParams.has('repeat')
   const restorePrevious = repeatRequested || (!entryParams.has('resume') && !entryParams.has('code') && !entryParams.has('token_hash'))
@@ -116,19 +117,26 @@ function MatchPage() {
         : step === 2 ? answers.topics.length > 0
           : step === 3 ? k6Score(answers) !== null
             : true
-  const next = () => step === totalSteps - 1 ? setStage('booking') : setStep(value => value + 1)
+  const next = async () => {
+    if (step !== totalSteps - 1) { setStep(value => value + 1); return }
+    if (session) { setStage('booking'); return }
+    const { data } = await getSupabase().auth.getUser()
+    setStage(data.user ? 'booking' : 'account')
+  }
   const continueFromBooking = async (value: BookingSelection) => {
     const client = getSupabase()
     const { data: auth, error: authError } = await client.auth.getUser()
     if (authError || !auth.user) {
-      setSelection(value)
+      await client.rpc('release_slot_hold', { p_token: value.holdToken })
+      setSelection(null)
       setStage('account')
       return
     }
     const { data: profile, error: profileError } = await client.from('profiles').select('id').eq('id', auth.user.id).maybeSingle()
     if (profileError) throw profileError
     if (!profile) {
-      setSelection(value)
+      await client.rpc('release_slot_hold', { p_token: value.holdToken })
+      setSelection(null)
       setStage('account')
       return
     }
@@ -170,7 +178,7 @@ function MatchPage() {
     {stage === 'intro' ? <div className="match-intro match-choice-intro">
       <span className="match-eyebrow">Find your listener</span>
       <h1 id="match-heading">Choose the check-in that suits you.</h1>
-      <p>Both options help us match you with a listener. You can choose a time before creating an account.</p>
+      <p>Both options help us match you with a listener. After the questionnaire, create your account before choosing an available listener and time.</p>
       <div className="questionnaire-cards">
         <button className="questionnaire-card" type="button" onClick={() => chooseQuestionnaire('short')}>
           <span className="questionnaire-visual questionnaire-visual-short" aria-hidden="true"><ListChecks color="#001c55" /></span>
@@ -185,8 +193,8 @@ function MatchPage() {
           <em>A little time for a clearer picture of your wellbeing.</em><b>Choose long</b>
         </button>
       </div>
-      <a href="/our-therapist">Or browse our listeners</a>
-    </div> : stage === 'questions' ? <form className={`match-question ${isLong ? 'match-question-long' : ''}`} onSubmit={event => { event.preventDefault(); if (canContinue) next() }}>
+      <a href="/our-listeners">Or browse our listeners</a>
+    </div> : stage === 'questions' ? <form className={`match-question ${isLong ? 'match-question-long' : ''}`} onSubmit={event => { event.preventDefault(); if (canContinue) void next() }}>
       <span className="match-eyebrow">{isLong ? 'Long questionnaire' : 'Short check-in'} · Step {step + 1} of {totalSteps}</span>
 
       {step === 0 && <><h1 id="match-heading">Are you 18 or older?</h1><p>Listen currently supports adults aged 18 and over.</p>
@@ -233,9 +241,9 @@ function MatchPage() {
         {field('Is there anything else you would like your listener to know?', 'anythingElse')}
       </div></>}
 
-      <div className="match-actions"><button type="button" className="match-back" onClick={() => step === 0 ? setStage('intro') : setStep(value => value - 1)}>Back</button><button type="submit" disabled={!canContinue}>{step === totalSteps - 1 ? 'Choose a listener' : 'Continue'}</button></div>
-    </form> : stage === 'booking' ? <BookingPage answers={answers} onBack={() => { setStep(totalSteps - 1); setStage('questions') }} onContinue={continueFromBooking} />
-      : selection && <DetailsPage initialDetails={customerDetails} selection={selection} answers={answers} onBack={() => setStage('booking')} onDetailsChange={setCustomerDetails} />}
+      <div className="match-actions"><button type="button" className="match-back" onClick={() => step === 0 ? setStage('intro') : setStep(value => value - 1)}>Back</button><button type="submit" disabled={!canContinue}>{step === totalSteps - 1 ? session ? 'Choose a listener and time' : 'Create your account' : 'Continue'}</button></div>
+    </form> : stage === 'booking' ? <BookingPage answers={answers} onContinue={continueFromBooking} />
+      : <DetailsPage initialDetails={customerDetails} answers={answers} onBack={() => { setStep(totalSteps - 1); setStage('questions') }} onDetailsChange={setCustomerDetails} onAccountReady={() => { setSelection(null); setStage('booking') }} />}
   </section>
 }
 export default MatchPage

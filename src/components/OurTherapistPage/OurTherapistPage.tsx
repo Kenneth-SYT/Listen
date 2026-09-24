@@ -1,35 +1,10 @@
 import './OurTherapistPage.css'
 
-const therapists = [
+const listeners = [
   {
-    name: 'Alex Morgan',
-    role: 'Anxiety and stress support',
-    details: 'Offers calm, practical sessions for everyday pressure, burnout, and life transitions.',
-  },
-  {
-    name: 'Jamie Lee',
-    role: 'Relationship counselling',
-    details: 'Supports clients with communication, boundaries, family stress, and connection.',
-  },
-  {
-    name: 'Sam Taylor',
-    role: 'Youth mental health',
-    details: 'Works with young people and families to build confidence, routines, and coping tools.',
-  },
-  {
-    name: 'Casey Nguyen',
-    role: 'Trauma-informed care',
-    details: 'Provides gentle, paced support focused on safety, trust, and emotional regulation.',
-  },
-  {
-    name: 'Riley Patel',
-    role: 'Depression support',
-    details: 'Helps clients explore mood, motivation, self-care, and small steps toward change.',
-  },
-  {
-    name: 'Jordan Smith',
-    role: 'Workplace wellbeing',
-    details: 'Supports professionals navigating workload, conflict, confidence, and career stress.',
+    name: 'Aiden',
+    role: 'General peer support',
+    details: 'Available to listen and offer peer support around study pressure, feeling overwhelmed, loneliness and relationships.',
   },
 ]
 
@@ -38,25 +13,25 @@ function OurTherapistPage() {
     <section className="therapist-page" aria-labelledby="therapist-heading">
       <div className="therapist-container">
         <div className="therapist-heading">
-          <h1 id="therapist-heading">Our therapists</h1>
-          <p>Meet our listeners and therapists, then choose the kind of support that feels right.</p>
+          <h1 id="therapist-heading">Our listeners</h1>
+          <p>Meet the people available to listen, learn what they support and find someone who feels right for you.</p>
         </div>
 
         <div className="therapist-grid">
-          {therapists.map((therapist) => (
-            <article className="therapist-card" key={therapist.name}>
+          {listeners.map((listener) => (
+            <article className="therapist-card" key={listener.name}>
               <div className="therapist-photo" aria-hidden="true">
-                {therapist.name
+                {listener.name
                   .split(' ')
                   .map((part) => part[0])
                   .join('')}
               </div>
               <div>
-                <h2>{therapist.name}</h2>
-                <p className="therapist-role">{therapist.role}</p>
-                <p>{therapist.details}</p>
+                <h2>{listener.name}</h2>
+                <p className="therapist-role">{listener.role}</p>
+                <p>{listener.details}</p>
               </div>
-              <a href="/">View profile</a>
+              <a href="/get-matched">Find a time with {listener.name}</a>
             </article>
           ))}
         </div>

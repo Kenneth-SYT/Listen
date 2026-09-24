@@ -63,7 +63,7 @@ function App() {
   if (!privacyReady) return <main className="page"><p role="status">Preparing your private booking…</p></main>
   const isContactPage = window.location.pathname === '/contact'
   const isPricingPage = window.location.pathname === '/pricing'
-  const isOurTherapistPage = window.location.pathname === '/our-therapist'
+  const isOurTherapistPage = window.location.pathname === '/our-listeners' || window.location.pathname === '/our-therapist'
   const isHowItWorksPage = window.location.pathname === '/how-it-works'
   const isMatchPage = window.location.pathname === '/get-matched'
   const isServicesPage = window.location.pathname === '/services'

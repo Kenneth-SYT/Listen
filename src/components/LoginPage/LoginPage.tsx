@@ -1,4 +1,4 @@
-import { LockKeyhole } from 'lucide-react'
+import { LoaderCircle, LockKeyhole } from 'lucide-react'
 import { useEffect, useState, type FormEvent } from 'react'
 import { errorMessage, getSupabase, supabase } from '../../lib/supabase'
 import { useSession } from '../../lib/useSession'
@@ -21,12 +21,21 @@ function LoginPage({ embedded = false }: { embedded?: boolean }) {
   const [password, setPassword] = useState('')
   const [message, setMessage] = useState('')
   const [busy, setBusy] = useState(false)
+  const [redirectError, setRedirectError] = useState('')
   useEffect(() => {
     const subscription = supabase?.auth.onAuthStateChange((event) => {
       if (event === 'PASSWORD_RECOVERY') setMode('update')
     }).data.subscription
     return () => subscription?.unsubscribe()
   }, [])
+  useEffect(() => {
+    if (!session || embedded || mode === 'update') return
+    let active = true
+    void signedInDestination()
+      .then(destination => { if (active) window.location.replace(destination) })
+      .catch(error => { if (active) setRedirectError(errorMessage(error)) })
+    return () => { active = false }
+  }, [session, embedded, mode])
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault(); setBusy(true); setMessage('')
     try {
@@ -39,7 +48,6 @@ function LoginPage({ embedded = false }: { embedded?: boolean }) {
       } else if (mode === 'code') {
         const { error } = await client.auth.verifyOtp({ phone: '+61' + mobile.slice(1), token: code, type: 'sms' })
         if (error) throw error
-        if (!embedded) window.location.assign(await signedInDestination())
       } else if (mode === 'reset') {
         const { error } = await client.auth.resetPasswordForEmail(email, { redirectTo: location.origin + '/login?reset=1' })
         if (error) throw error
@@ -52,12 +60,12 @@ function LoginPage({ embedded = false }: { embedded?: boolean }) {
         const { data, error } = await client.auth.signInWithPassword({ email, password })
         if (error) throw error
         if (!data.session) throw new Error('Sign-in did not complete. Please try again.')
-        if (!embedded) window.location.assign(await signedInDestination())
       }
     } catch (error) { setMessage(errorMessage(error)) }
     finally { setBusy(false) }
   }
   if (loading) return <p role="status">Checking your account…</p>
+  if (session && !embedded && mode !== 'update') return <section className="login-page"><div className="login-redirect" role="status"><LoaderCircle aria-hidden="true" /><p>{redirectError || 'Opening your account…'}</p>{redirectError && <a href="/account">Open my account</a>}</div></section>
   if (session && mode !== 'update') return <section className="login-page"><div className="login-panel"><h1>You’re signed in.</h1><p>{session.user.email || session.user.phone}</p><a href="/account">View my appointments</a><a href="/get-matched">Book a session</a><button onClick={async () => { try { const { error } = await getSupabase().auth.signOut(); if (error) throw error } catch (error) { setMessage(errorMessage(error)) } }}>Sign out</button>{message && <p role="status">{message}</p>}</div></section>
   return <section className={embedded ? 'login-embedded' : 'login-page'} aria-labelledby="login-heading">
     <form className="login-panel" onSubmit={submit}>

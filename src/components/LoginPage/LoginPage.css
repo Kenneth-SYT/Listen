@@ -13,3 +13,8 @@
 .login-panel .login-secondary { background: #fff; color: var(--color-primary); font-size: .85rem; text-decoration: none; }
 .login-panel .login-secondary:hover { background: #fff; color: var(--color-primary); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 4px; }
 .login-panel button:disabled { opacity: .55; cursor: not-allowed; }
+.login-redirect { display: grid; justify-items: center; gap: 14px; color: var(--color-primary); }
+.login-redirect svg { width: 34px; height: 34px; animation: login-spin .8s linear infinite; }
+.login-redirect p { margin: 0; font-weight: 700; }
+.login-redirect a { color: var(--color-primary); font-weight: 700; text-underline-offset: 4px; }
+@keyframes login-spin { to { transform: rotate(360deg); } }

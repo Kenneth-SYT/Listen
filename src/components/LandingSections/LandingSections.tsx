@@ -128,7 +128,7 @@ function LandingSections() {
           </div>
           <button className="listener-arrow" type="button" aria-label="Show next listeners" disabled={slideDirection !== null} onClick={showNextListeners}><ChevronRight aria-hidden="true" /></button>
         </div>
-        <a className="all-listeners-link" href="/our-therapist">View all our listeners</a>
+        <a className="all-listeners-link" href="/our-listeners">View all our listeners</a>
       </section>
     </>
   )

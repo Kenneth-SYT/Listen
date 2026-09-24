@@ -8,7 +8,7 @@ import './BookingPage.css'
 
 const dayKey = (value: string) => new Date(value).toLocaleDateString('en-CA')
 const localDayKey = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-function BookingPage({ answers, onBack, onContinue }: { answers: IntakeAnswers; onBack: () => void; onContinue: (selection: BookingSelection) => void | Promise<void> }) {
+function BookingPage({ answers, onContinue }: { answers: IntakeAnswers; onContinue: (selection: BookingSelection) => void | Promise<void> }) {
   const { session, loading: authLoading } = useSession()
   const [listeners, setListeners] = useState<Listener[]>([])
   const [slots, setSlots] = useState<Slot[]>([])
@@ -128,7 +128,6 @@ function BookingPage({ answers, onBack, onContinue }: { answers: IntakeAnswers; 
         <p className="booking-reassurance">Your time is confirmed only after checkout. Your rate is checked again before payment.</p>
       </aside>
     </div>}
-    <button className="booking-back" type="button" onClick={onBack}>Back to questions</button>
     {message && <p role="alert" className="booking-payment-error">{message}</p>}
   </div>
 }

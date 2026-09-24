@@ -4,7 +4,7 @@ import './Navigation.css'
 const getRouteActiveSection = () => {
   const path = window.location.pathname
 
-  if (path === '/our-therapist') {
+  if (path === '/our-listeners' || path === '/our-therapist') {
     return 'get-started'
   }
 
