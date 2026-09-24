@@ -5,6 +5,13 @@ import { useSession } from '../../lib/useSession'
 import './LoginPage.css'
 const phoneVerificationEnabled = import.meta.env.VITE_ENABLE_PHONE_VERIFICATION === 'true'
 
+async function signedInDestination() {
+  const client = getSupabase()
+  const { data: admin, error: adminError } = await client.rpc('is_admin')
+  if (adminError) throw adminError
+  return admin === true ? '/admin' : '/account'
+}
+
 function LoginPage({ embedded = false }: { embedded?: boolean }) {
   const { session, loading } = useSession()
   const [mode, setMode] = useState<'phone' | 'code' | 'login' | 'reset' | 'update'>(() => new URLSearchParams(location.search).has('reset') ? 'update' : 'login')
@@ -32,7 +39,7 @@ function LoginPage({ embedded = false }: { embedded?: boolean }) {
       } else if (mode === 'code') {
         const { error } = await client.auth.verifyOtp({ phone: '+61' + mobile.slice(1), token: code, type: 'sms' })
         if (error) throw error
-        if (!embedded) window.location.assign('/account')
+        if (!embedded) window.location.assign(await signedInDestination())
       } else if (mode === 'reset') {
         const { error } = await client.auth.resetPasswordForEmail(email, { redirectTo: location.origin + '/login?reset=1' })
         if (error) throw error
@@ -45,7 +52,7 @@ function LoginPage({ embedded = false }: { embedded?: boolean }) {
         const { data, error } = await client.auth.signInWithPassword({ email, password })
         if (error) throw error
         if (!data.session) throw new Error('Sign-in did not complete. Please try again.')
-        if (!embedded) window.location.assign('/account')
+        if (!embedded) window.location.assign(await signedInDestination())
       }
     } catch (error) { setMessage(errorMessage(error)) }
     finally { setBusy(false) }
