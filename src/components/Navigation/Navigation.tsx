@@ -23,7 +23,7 @@ function Navigation() {
   const activeSection = getRouteActiveSection()
 
   return (
-    <nav className="primary-nav" aria-label="Primary navigation">
+    <nav id="primary-navigation" className="primary-nav" aria-label="Primary navigation">
       <GetStartedDropdown />
       <a href="/pricing" aria-current={activeSection === 'pricing' ? 'page' : undefined}>Pricing</a>
       <a href="/contact" aria-current={activeSection === 'contact' ? 'page' : undefined}>Contact us</a>

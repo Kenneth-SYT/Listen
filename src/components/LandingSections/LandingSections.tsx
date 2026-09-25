@@ -21,6 +21,7 @@ function LandingSections() {
   const [hovered, setHovered] = useState(false)
   const [focused, setFocused] = useState(false)
   const remainingTime = useRef(4000)
+  const touchStartX = useRef<number | null>(null)
   const paused = hovered || focused
 
   useEffect(() => {
@@ -110,7 +111,19 @@ function LandingSections() {
           }}
         >
           <button className="listener-arrow" type="button" aria-label="Show previous listeners" disabled={slideDirection !== null} onClick={showPreviousListeners}><ChevronLeft aria-hidden="true" /></button>
-          <div className="listener-track" aria-live={paused ? 'polite' : 'off'}>
+          <div
+            className="listener-track"
+            aria-live={paused ? 'polite' : 'off'}
+            onTouchStart={(event) => { touchStartX.current = event.touches[0]?.clientX ?? null }}
+            onTouchEnd={(event) => {
+              if (touchStartX.current === null || slideDirection) return
+              const distance = event.changedTouches[0]?.clientX - touchStartX.current
+              touchStartX.current = null
+              if (Math.abs(distance) < 45) return
+              if (distance < 0) showNextListeners()
+              else showPreviousListeners()
+            }}
+          >
             <div
               className={`listener-slider-track${slideDirection ? ` slide-${slideDirection}` : ''}`}
               onAnimationEnd={finishSlide}
@@ -125,6 +138,9 @@ function LandingSections() {
                 </article>
               ))}
             </div>
+          </div>
+          <div className="listener-pagination" aria-hidden="true">
+            {listeners.map((listener, index) => <span className={index === start ? 'active' : ''} key={listener.name} />)}
           </div>
           <button className="listener-arrow" type="button" aria-label="Show next listeners" disabled={slideDirection !== null} onClick={showNextListeners}><ChevronRight aria-hidden="true" /></button>
         </div>
