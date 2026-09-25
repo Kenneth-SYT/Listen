@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react'
 import { ClipboardCheck, ListChecks } from 'lucide-react'
 import BookingPage from '../BookingPage/BookingPage'
 import DetailsPage, { type CustomerDetails } from '../DetailsPage/DetailsPage'
+import SafetySupportPage from '../SafetySupportPage/SafetySupportPage'
 import {
   emptyIntake, emptyLongAnswers, k6Options, k6Questions, k6Score, k10Options, k10Questions, k10Score,
-  longSupportTopics, sharedExperiences, supportStyles, supportTopics, type IntakeAnswers,
+  longSupportTopics, requiresProfessionalSupport, sharedExperiences, supportStyles, supportTopics, type IntakeAnswers,
   type LongAnswers, type QuestionnaireType,
 } from '../../lib/intake'
 import { createCheckout, errorMessage, getSupabase, type BookingSelection } from '../../lib/supabase'
@@ -13,7 +14,7 @@ import './MatchPage.css'
 
 const emptyDetails: CustomerDetails = { firstName: '', lastName: '', preferredName: '', dateOfBirth: '', mobile: '', email: '', gender: '' }
 const draftKey = 'listen-booking-draft'
-type Draft = { savedAt: number; stage: 'questions' | 'booking' | 'account'; step: number; answers: IntakeAnswers; selection: BookingSelection | null; customerDetails: CustomerDetails }
+type Draft = { savedAt: number; stage: 'questions' | 'booking' | 'account' | 'safety'; step: number; answers: IntakeAnswers; selection: BookingSelection | null; customerDetails: CustomerDetails }
 type SavedIntake = {
   listener_gender_preference: string; topics: string[]; k6_answers: number[] | null
   k10_answers: number[] | null; listener_note: string; questionnaire_type: QuestionnaireType
@@ -33,6 +34,7 @@ function readDraft(): Draft | null {
       k10: Array.isArray(draft.answers.k10) ? draft.answers.k10 : emptyIntake.k10,
       long: { ...emptyIntake.long, ...draft.answers.long },
     }
+    if (requiresProfessionalSupport(draft.answers)) draft.stage = 'safety'
     return draft
   } catch { return null }
 }
@@ -43,7 +45,7 @@ function MatchPage() {
   const repeatRequested = entryParams.has('repeat')
   const restorePrevious = repeatRequested || (!entryParams.has('resume') && !entryParams.has('code') && !entryParams.has('token_hash'))
   const [draft] = useState(readDraft)
-  const [stage, setStage] = useState<'intro' | 'questions' | 'booking' | 'account'>(draft?.stage ?? 'intro')
+  const [stage, setStage] = useState<'intro' | 'questions' | 'booking' | 'account' | 'safety'>(draft?.stage ?? 'intro')
   const [step, setStep] = useState(draft?.step ?? 0)
   const [answers, setAnswers] = useState<IntakeAnswers>(draft?.answers ?? emptyIntake)
   const [selection, setSelection] = useState<BookingSelection | null>(draft?.selection ?? null)
@@ -68,7 +70,7 @@ function MatchPage() {
       }
       const saved = data as SavedIntake
       if (!active) return
-      setAnswers({
+      const restoredAnswers: IntakeAnswers = {
         questionnaire: saved.questionnaire_type,
         adult: true,
         listenerGender: saved.listener_gender_preference,
@@ -77,9 +79,10 @@ function MatchPage() {
         k10: saved.k10_answers?.length === 10 ? saved.k10_answers : Array(10).fill(null),
         note: saved.listener_note,
         long: { ...emptyLongAnswers, ...(saved.long_answers || {}), impact: saved.impact_score },
-      })
+      }
+      setAnswers(restoredAnswers)
       setSelection(null)
-      setStage('booking')
+      setStage(requiresProfessionalSupport(restoredAnswers) ? 'safety' : 'booking')
     })().catch(error => { if (active) setRestoreMessage(errorMessage(error)) })
       .finally(() => { if (active) setRestoringPrevious(false) })
     return () => { active = false }
@@ -118,6 +121,7 @@ function MatchPage() {
           : step === 3 ? k6Score(answers) !== null
             : true
   const next = async () => {
+    if (requiresProfessionalSupport(answers)) { setSelection(null); setStage('safety'); return }
     if (step !== totalSteps - 1) { setStep(value => value + 1); return }
     if (session) { setStage('booking'); return }
     const { data } = await getSupabase().auth.getUser()
@@ -242,7 +246,8 @@ function MatchPage() {
       </div></>}
 
       <div className="match-actions"><button type="button" className="match-back" onClick={() => step === 0 ? setStage('intro') : setStep(value => value - 1)}>Back</button><button type="submit" disabled={!canContinue}>{step === totalSteps - 1 ? session ? 'Choose a listener and time' : 'Create your account' : 'Continue'}</button></div>
-    </form> : stage === 'booking' ? <BookingPage answers={answers} onContinue={continueFromBooking} />
+    </form> : stage === 'safety' ? <SafetySupportPage />
+      : stage === 'booking' ? <BookingPage answers={answers} onContinue={continueFromBooking} />
       : <DetailsPage initialDetails={customerDetails} answers={answers} onBack={() => { setStep(totalSteps - 1); setStage('questions') }} onDetailsChange={setCustomerDetails} onAccountReady={() => { setSelection(null); setStage('booking') }} />}
   </section>
 }

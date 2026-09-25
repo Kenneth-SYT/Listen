@@ -48,6 +48,10 @@ export const k10Questions = [
 export const k10Options = ['Never', 'Rarely', 'Sometimes', 'Often', 'Almost always'] as const
 
 export type QuestionnaireType = 'short' | 'long'
+export const HIGH_DISTRESS_THRESHOLDS: Record<QuestionnaireType, number> = {
+  short: 13,
+  long: 30,
+}
 export type LongAnswers = {
   course: string; courseYear: string; studentType: string; timeInAustralia: string
   languages: string; preferredLanguage: string; culturalContext: string
@@ -87,6 +91,10 @@ export function k10Score(answers: IntakeAnswers): number | null {
 }
 export function wellbeingScore(answers: IntakeAnswers) {
   return answers.questionnaire === 'long' ? k10Score(answers) : k6Score(answers)
+}
+export function requiresProfessionalSupport(answers: IntakeAnswers) {
+  const score = wellbeingScore(answers)
+  return score !== null && score >= HIGH_DISTRESS_THRESHOLDS[answers.questionnaire]
 }
 export function wellbeingScoreLabel(answers: IntakeAnswers) {
   return answers.questionnaire === 'long' ? 'K10 wellbeing score' : 'K6 distress score'

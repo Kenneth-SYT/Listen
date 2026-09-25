@@ -1,0 +1,64 @@
+.safety-support {
+  width: min(960px, 100%);
+  margin: 0 auto;
+  padding: 12px 0 32px;
+  text-align: center;
+}
+
+.safety-support-icon {
+  display: grid;
+  place-items: center;
+  width: 68px;
+  height: 68px;
+  margin: 0 auto 18px;
+  border-radius: 22px;
+  background: var(--color-accent-light);
+  color: var(--color-primary);
+}
+
+.safety-support-icon svg { width: 34px; height: 34px; }
+.match-page .safety-support h1 {
+  width: 100%;
+  max-width: 720px;
+  margin: 12px auto 18px;
+  font-size: clamp(2.2rem, 5vw, 4rem);
+  text-align: center;
+}
+.safety-support-lead { max-width: 760px; margin: 0 auto 34px; color: var(--color-muted); font-size: 1.08rem; line-height: 1.7; }
+.safety-support-grid {
+  display: flex;
+  flex-direction: column;
+  width: min(820px, 100%);
+  margin: 0 auto;
+  gap: 18px;
+}
+
+.safety-support-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  min-height: 240px;
+  padding: 30px 34px;
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 12px 28px rgb(0 28 85 / .07);
+  text-align: center;
+}
+
+.safety-support-card > span { display: grid; place-items: center; width: 48px; height: 48px; border-radius: 15px; background: var(--color-accent-light); color: var(--color-primary); }
+.safety-support-card > div { display: flex; flex: 1; flex-direction: column; align-items: center; justify-content: center; width: 100%; gap: 10px; }
+.safety-support-card h2 { margin: 0; font-size: 1.2rem; }
+.safety-support-card p { max-width: 660px; margin: 0; color: var(--color-muted); }
+.safety-support-card a { display: inline-flex; margin: 3px 8px; color: var(--color-primary); font-weight: 700; text-underline-offset: 4px; }
+.safety-support-urgent { border-color: #b94343; background: #fff8f7; }
+.safety-support-urgent > span { background: #f8dfdc; color: #8f2727; }
+.safety-support-card .safety-primary-action { padding: 10px 22px; border-radius: 999px; background: #8f2727; color: #fff; text-decoration: none; }
+.safety-support-note { max-width: 760px; margin: 26px auto 0; color: var(--color-muted); font-size: .9rem; }
+
+@media (max-width: 620px) {
+  .safety-support { padding: 0 0 28px; }
+  .safety-support-card { min-height: 0; padding: 26px 20px; }
+}
