@@ -77,6 +77,10 @@
     padding: 20px;
   }
 
+  .logo {
+    width: min(190px, 58vw);
+  }
+
   .header-actions { width: 100%; }
 
   .match-button {
@@ -85,4 +89,11 @@
   }
 
   .login-button { flex: 0 0 auto; }
+}
+
+@media (max-width: 420px) {
+  .header-inner { padding: 16px; }
+  .header-actions { gap: 8px; }
+  .login-button { padding: 0 10px; }
+  .match-button { padding: 0 16px; }
 }

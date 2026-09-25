@@ -27,11 +27,56 @@
   box-sizing: border-box;
 }
 
+html,
+body,
+#root {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: clip;
+}
+
 body {
   margin: 0;
-  min-width: 320px;
+  min-width: 0;
   background: var(--color-cream);
   font-weight: 400;
+}
+
+img,
+svg,
+video,
+canvas {
+  max-width: 100%;
+}
+
+img,
+video {
+  height: auto;
+}
+
+main,
+section,
+article,
+aside,
+header,
+footer,
+nav,
+form,
+fieldset,
+div {
+  min-width: 0;
+}
+
+a,
+button,
+p,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  overflow-wrap: break-word;
 }
 
 h1,
@@ -70,5 +115,13 @@ button,
 input,
 textarea,
 select {
+  max-width: 100%;
+  min-width: 0;
   font: inherit;
+}
+
+@media (max-width: 600px) {
+  :root {
+    font-size: 15px;
+  }
 }
