@@ -16,7 +16,11 @@ export function getSupabase() {
 }
 export const money = (cents: number) => new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD' }).format(cents / 100)
 export const errorMessage = (error: unknown) => error instanceof Error ? error.message : 'Something went wrong. Please try again.'
-export type Listener = { id: string; name: string; focus: string; matches: string[] }
+export type Listener = {
+  id: string; name: string; focus: string; matches: string[]; active?: boolean
+  bio?: string; gender?: string; pronouns?: string; languages?: string[]
+  profile_image_url?: string | null; profile_status?: 'draft' | 'pending' | 'published' | 'suspended'
+}
 export type Slot = { id: string; listener_id: string; starts_at: string; ends_at: string }
 export type Quote = { rate_code: string; label: string; amount_cents: number; duration_minutes: number }
 export type BookingSelection = { listener: Listener; slot: Slot; quote: Quote; holdToken: string; holdExpiresAt: string }
