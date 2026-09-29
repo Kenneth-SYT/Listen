@@ -105,7 +105,7 @@ function LandingSections() {
   return (
     <>
       <section className="trust-band" aria-labelledby="trust-heading">
-        <div className="trust-band-inner">
+        <div className="trust-band-inner" data-home-reveal="scale">
           <h2 id="trust-heading">Support designed around student life.</h2>
           <div className="trust-highlights">
             {highlights.map((item) => {
@@ -118,11 +118,12 @@ function LandingSections() {
       </section>
 
       <section className="listener-showcase" aria-labelledby="listener-heading">
-        <div className="listener-showcase-heading">
+        <div className="listener-showcase-heading" data-home-reveal>
           <div><span>Meet the people who listen</span><h2 id="listener-heading">Find a listener who feels right for you.</h2></div>
         </div>
-        {listenerMessage ? <p className="listener-showcase-status" role="status">{listenerMessage}</p> : listeners.length ? <div
+        {listenerMessage ? <p className="listener-showcase-status" role="status" data-home-reveal>{listenerMessage}</p> : listeners.length ? <div
           className={`listener-carousel${canAnimate ? '' : ' static-listeners'}`}
+          data-home-reveal="scale"
           onMouseEnter={() => setHovered(true)}
           onMouseLeave={() => setHovered(false)}
           onFocusCapture={() => setFocused(true)}
@@ -166,7 +167,7 @@ function LandingSections() {
           </div>}
           {canAnimate && <button className="listener-arrow" type="button" aria-label="Show next listeners" disabled={slideDirection !== null} onClick={showNextListeners}><ChevronRight aria-hidden="true" /></button>}
         </div> : <p className="listener-showcase-status">Our listener profiles will appear here once they are available.</p>}
-        <a className="all-listeners-link" href="/our-listeners">View all our listeners</a>
+        <a className="all-listeners-link" href="/our-listeners" data-home-reveal>View all our listeners</a>
       </section>
     </>
   )

@@ -1,5 +1,4 @@
 import { ChartNoAxesCombined, ClipboardCheck, UsersRound } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
 import './About.css'
 
 const aboutCards = [
@@ -21,38 +20,14 @@ const aboutCards = [
 ]
 
 function About() {
-  const cardGridRef = useRef<HTMLDivElement>(null)
-  const [cardsVisible, setCardsVisible] = useState(false)
-
-  useEffect(() => {
-    const cardGrid = cardGridRef.current
-    if (!cardGrid || !('IntersectionObserver' in window)) {
-      setCardsVisible(true)
-      return
-    }
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setCardsVisible(true)
-          observer.disconnect()
-        }
-      },
-      { threshold: 0.25, rootMargin: '0px 0px -18% 0px' },
-    )
-
-    observer.observe(cardGrid)
-    return () => observer.disconnect()
-  }, [])
-
   return (
     <section
-      className={`about-section${cardsVisible ? ' cards-visible' : ''}`}
+      className="about-section cards-visible"
       id="about"
       data-nav-section="about"
       aria-labelledby="about-heading"
     >
-      <div className="about-heading">
+      <div className="about-heading" data-home-reveal>
         <h2 id="about-heading">A space to talk. Someone to listen.</h2>
         <p>
           Listen Mental Health offers peer support for university students. Whether it’s study
@@ -61,7 +36,7 @@ function About() {
         </p>
       </div>
 
-      <div className="about-card-grid" ref={cardGridRef}>
+      <div className="about-card-grid" data-home-reveal="scale">
         {aboutCards.map((card, index) => {
           const Icon = card.icon
 

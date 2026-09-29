@@ -5,7 +5,7 @@ function Hero() {
   return (
     <section className="hero-panel" id="home" data-nav-section="get-started" aria-label="Health information and advice">
       <div className="hero-content landing-hero">
-        <div className="hero-copy">
+        <div className="hero-copy" data-home-reveal="left">
           <h1>Uni life is a lot. You don’t have to carry it alone.</h1>
           <p>Talk things through with a supportive listener, at your own pace.</p>
           <a href="/get-matched">Find your listener</a>

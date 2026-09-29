@@ -1,7 +1,7 @@
 import './Navigation.css'
 
 const getRouteActiveSection = () => {
-  const path = window.location.pathname
+  const path = window.location.pathname.replace(/\/+$/, '') || '/'
 
   if (path === '/') {
     return 'home'

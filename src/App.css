@@ -4,6 +4,14 @@
     padding-top: 72px;
 }
 
+@media (prefers-reduced-motion: no-preference) {
+  [data-home-reveal].home-reveal-ready { opacity: 0; translate: 0 42px; scale: .985; transition: opacity .7s ease, translate .75s cubic-bezier(.22, 1, .36, 1), scale .75s cubic-bezier(.22, 1, .36, 1); transition-delay: var(--home-reveal-delay, 0ms); }
+  [data-home-reveal="left"].home-reveal-ready { translate: -48px 0; }
+  [data-home-reveal="right"].home-reveal-ready { translate: 48px 0; }
+  [data-home-reveal="scale"].home-reveal-ready { translate: 0 18px; scale: .94; }
+  [data-home-reveal].home-reveal-ready.home-reveal-visible { opacity: 1; translate: 0 0; scale: 1; }
+}
+
 @media (max-width: 760px) {
   .page {
     padding-top: 0;

@@ -10,7 +10,7 @@ const examples = [
 
 export default function TestimonialsColumn() {
   return (
-    <aside className="hero-testimonials" aria-labelledby="testimonials-title">
+    <aside className="hero-testimonials" aria-labelledby="testimonials-title" data-home-reveal="right">
       <h2 id="testimonials-title">Their words. Their experience.</h2>
       <div className="testimonials-scroll" tabIndex={0} role="region" aria-label="Sample testimonials">
         <div className="testimonials-track">

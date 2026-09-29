@@ -22,10 +22,11 @@ import { bookingPrivacyAction } from './lib/bookingPrivacy'
 import Seo from './components/Seo/Seo'
 
 let privacyPreparation: Promise<void> | null = null
+const normalizedPath = () => window.location.pathname.replace(/\/+$/, '') || '/'
 function preparePrivateBooking() {
   if (privacyPreparation) return privacyPreparation
   privacyPreparation = (async () => {
-    const path = window.location.pathname
+    const path = normalizedPath()
     const bookingPage = path === '/get-matched'
     const action = bookingPrivacyAction(path, window.location.search, window.location.hash,
       sessionStorage.getItem('listen-booking-active') === '1', sessionStorage.getItem('listen-checkout-return') === '1')
@@ -52,6 +53,31 @@ function preparePrivateBooking() {
   return privacyPreparation
 }
 
+function HomeMotion({ children }: { children: React.ReactNode }) {
+  useEffect(() => {
+    const elements = Array.from(document.querySelectorAll<HTMLElement>('[data-home-reveal]'))
+    if (!elements.length || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    elements.forEach(element => element.classList.add('home-reveal-ready'))
+    let frame = 0
+    const update = () => {
+      frame = 0
+      const lowerBoundary = window.innerHeight * .9
+      elements.forEach(element => element.classList.toggle('home-reveal-visible', element.getBoundingClientRect().top <= lowerBoundary))
+    }
+    const requestUpdate = () => { if (!frame) frame = window.requestAnimationFrame(update) }
+    update()
+    window.addEventListener('scroll', requestUpdate, { passive: true })
+    window.addEventListener('resize', requestUpdate)
+    return () => {
+      if (frame) window.cancelAnimationFrame(frame)
+      window.removeEventListener('scroll', requestUpdate)
+      window.removeEventListener('resize', requestUpdate)
+      elements.forEach(element => element.classList.remove('home-reveal-ready', 'home-reveal-visible'))
+    }
+  }, [])
+  return <div className="home-motion">{children}</div>
+}
+
 function App() {
   const [privacyReady, setPrivacyReady] = useState(false)
   const [privacyError, setPrivacyError] = useState(false)
@@ -62,23 +88,24 @@ function App() {
   }, [])
   if (privacyError) return <main className="page"><p role="alert">We couldn’t clear the previous booking draft. Please close this tab and open a new one before continuing.</p></main>
   if (!privacyReady) return <main className="page"><p role="status">Preparing your private booking…</p></main>
-  const isContactPage = window.location.pathname === '/contact'
-  const isPricingPage = window.location.pathname === '/pricing'
-  const isOurTherapistPage = window.location.pathname === '/our-listeners' || window.location.pathname === '/our-therapist'
-  const isHowItWorksPage = window.location.pathname === '/how-it-works'
-  const isMatchPage = window.location.pathname === '/get-matched'
-  const isServicesPage = window.location.pathname === '/services'
-  const isAboutPage = window.location.pathname === '/about'
-  const isStrategyPage = window.location.pathname === '/strategy'
-  const isConfirmationPage = window.location.pathname === '/booking-confirmation'
-  const isLoginPage = window.location.pathname === '/login'
+  const path = normalizedPath()
+  const isContactPage = path === '/contact'
+  const isPricingPage = path === '/pricing'
+  const isOurTherapistPage = path === '/our-listeners' || path === '/our-therapist'
+  const isHowItWorksPage = path === '/how-it-works'
+  const isMatchPage = path === '/get-matched'
+  const isServicesPage = path === '/services'
+  const isAboutPage = path === '/about'
+  const isStrategyPage = path === '/strategy'
+  const isConfirmationPage = path === '/booking-confirmation'
+  const isLoginPage = path === '/login'
 
   return (
     <>
     <Seo />
     <main className="page">
       <Header />
-      {window.location.pathname === '/listener' ? <ListenerPage /> : window.location.pathname === '/admin' ? <AdminPage /> : window.location.pathname === '/account' ? <AccountPage /> : isContactPage ? (
+      {path === '/listener' ? <ListenerPage /> : path === '/admin' ? <AdminPage /> : path === '/account' ? <AccountPage /> : isContactPage ? (
         <ContactPage />
       ) : isLoginPage ? (
         <LoginPage />
@@ -99,12 +126,12 @@ function App() {
       ) : isStrategyPage ? (
         <StrategyPage />
       ) : (
-        <>
+        <HomeMotion>
           <Hero />
           <About />
           <HowItWorksSummary />
           <LandingSections />
-        </>
+        </HomeMotion>
       )}
     </main>
     <Footer />

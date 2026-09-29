@@ -1,4 +1,3 @@
-import { useEffect, useRef } from 'react'
 import './HowItWorksSummary.css'
 
 const steps = [
@@ -8,40 +7,14 @@ const steps = [
 ]
 
 function HowItWorksSummary() {
-  const stepsRef = useRef<HTMLOListElement>(null)
-
-  useEffect(() => {
-    const items = Array.from(stepsRef.current?.children ?? [])
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)) return
-
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('is-revealed')
-          observer.unobserve(entry.target)
-        }
-      })
-    }, { threshold: 0.2 })
-
-    items.forEach((item) => {
-      item.classList.add('reveal-ready')
-      observer.observe(item)
-    })
-
-    return () => {
-      observer.disconnect()
-      items.forEach((item) => item.classList.remove('reveal-ready', 'is-revealed'))
-    }
-  }, [])
-
   return (
     <section className="how-summary" id="how-it-works" data-nav-section="how-it-works" aria-labelledby="how-summary-heading">
-      <div className="how-summary-heading">
+      <div className="how-summary-heading" data-home-reveal>
         <h2 id="how-summary-heading">How it works</h2>
         <p>A few simple steps to a conversation that’s about you.</p>
       </div>
       <div className="how-summary-layout">
-        <div className="how-product-preview" aria-label="Preview of the check-in and matching experience">
+        <div className="how-product-preview" aria-label="Preview of the check-in and matching experience" data-home-reveal="left">
           <div className="how-preview-window">
             <span className="how-preview-label">Quick check-in</span>
             <h3>How are you feeling today?</h3>
@@ -54,8 +27,8 @@ function HowItWorksSummary() {
             <span className="how-match-status">Ready</span>
           </div>
         </div>
-        <div className="how-summary-content">
-          <ol className="how-summary-steps" ref={stepsRef}>
+        <div className="how-summary-content" data-home-reveal="right">
+          <ol className="how-summary-steps">
             {steps.map((step, index) => (
               <li key={step.title}>
                 <span className="how-summary-number" aria-hidden="true">{index + 1}</span>
