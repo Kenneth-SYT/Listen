@@ -2,23 +2,39 @@
 <html lang="en-AU">
   <head>
     <meta charset="UTF-8" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
     <link rel="icon" type="image/png" sizes="512x512" href="/favicon-transparent-512x512.png" />
     <link rel="apple-touch-icon" href="/favicon-transparent-512x512.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Approachable peer support for university students who want someone to talk to." />
     <meta name="theme-color" content="#f5f9fd" />
     <meta name="robots" content="index, follow, max-image-preview:large" />
-    <link rel="canonical" href="https://www.listenmentalhealth.com/" />
+    <link rel="canonical" href="https://listenmentalhealth.com/" />
     <title>Listen Mental Health | Peer Support for University Students</title>
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
-        "@type": "Organization",
-        "name": "Listen Mental Health",
-        "url": "https://www.listenmentalhealth.com/",
-        "logo": "https://www.listenmentalhealth.com/favicon-transparent-512x512.png",
-        "description": "Approachable peer support for university students who want someone to talk to.",
-        "areaServed": "Australia"
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://listenmentalhealth.com/#organization",
+            "name": "Listen Mental Health",
+            "alternateName": "ListenMentalHealth",
+            "url": "https://listenmentalhealth.com/",
+            "logo": "https://listenmentalhealth.com/favicon-transparent-512x512.png",
+            "description": "Approachable peer support for university students who want someone to talk to.",
+            "areaServed": "Australia"
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://listenmentalhealth.com/#website",
+            "name": "Listen Mental Health",
+            "alternateName": "ListenMentalHealth",
+            "url": "https://listenmentalhealth.com/",
+            "publisher": { "@id": "https://listenmentalhealth.com/#organization" }
+          }
+        ]
       }
     </script>
   </head>

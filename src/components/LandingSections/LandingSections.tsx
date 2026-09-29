@@ -1,5 +1,6 @@
 import { BadgeDollarSign, CalendarDays, ChevronLeft, ChevronRight, ShieldCheck } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
+import { errorMessage, getSupabase, type Listener } from '../../lib/supabase'
 import './LandingSections.css'
 
 const highlights = [
@@ -8,14 +9,9 @@ const highlights = [
   { icon: ShieldCheck, value: 'Private', label: 'respectful and confidential' },
 ]
 
-const listeners = [
-  { name: 'Alex Morgan', initials: 'AM', focus: 'Study pressure and stress', description: 'A calm listener for busy weeks, burnout and moments when everything feels like too much.' },
-  { name: 'Jamie Lee', initials: 'JL', focus: 'Relationships and connection', description: 'A supportive space to talk through communication, boundaries and feeling disconnected.' },
-  { name: 'Sam Taylor', initials: 'ST', focus: 'Confidence and routines', description: 'Gentle, practical conversations about motivation, change and finding your next small step.' },
-  { name: 'Casey Nguyen', initials: 'CN', focus: 'Feeling overwhelmed', description: 'Patient support centred on feeling safe, heard and able to talk at your own pace.' },
-]
-
 function LandingSections() {
+  const [listeners, setListeners] = useState<Listener[]>([])
+  const [listenerMessage, setListenerMessage] = useState('Loading our listeners…')
   const [start, setStart] = useState(0)
   const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null)
   const [hovered, setHovered] = useState(false)
@@ -23,9 +19,33 @@ function LandingSections() {
   const remainingTime = useRef(4000)
   const touchStartX = useRef<number | null>(null)
   const paused = hovered || focused
+  const canAnimate = listeners.length >= 4
 
   useEffect(() => {
-    if (paused || slideDirection) return
+    let active = true
+    const loadListeners = async () => {
+      try {
+        const { data, error } = await getSupabase().from('listeners')
+        .select('id,name,focus,bio,profile_image_url')
+        .eq('active', true)
+        .eq('profile_status', 'published')
+        .order('name')
+        if (!active) return
+        if (error) setListenerMessage(errorMessage(error))
+        else {
+          setListeners((data || []) as Listener[])
+          setListenerMessage('')
+        }
+      } catch (error) {
+        if (active) setListenerMessage(errorMessage(error))
+      }
+    }
+    void loadListeners()
+    return () => { active = false }
+  }, [])
+
+  useEffect(() => {
+    if (!canAnimate || paused || slideDirection) return
 
     const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)')
     let timer: ReturnType<typeof setTimeout> | undefined
@@ -56,21 +76,21 @@ function LandingSections() {
       motionPreference.removeEventListener('change', startTimer)
       document.removeEventListener('visibilitychange', startTimer)
     }
-  }, [paused, slideDirection])
+  }, [canAnimate, paused, slideDirection])
   const trackStart = slideDirection === 'right'
     ? (start - 1 + listeners.length) % listeners.length
     : start
-  const trackListeners = [0, 1, 2, 3].map((offset) => {
+  const trackListeners = (canAnimate ? [0, 1, 2, 3] : listeners.map((_, index) => index)).map((offset) => {
     const index = (trackStart + offset) % listeners.length
     return { ...listeners[index], index }
   })
 
   const showPreviousListeners = () => {
-    if (!slideDirection) setSlideDirection('right')
+    if (canAnimate && !slideDirection) setSlideDirection('right')
   }
 
   const showNextListeners = () => {
-    if (!slideDirection) setSlideDirection('left')
+    if (canAnimate && !slideDirection) setSlideDirection('left')
   }
 
   const finishSlide = () => {
@@ -101,8 +121,8 @@ function LandingSections() {
         <div className="listener-showcase-heading">
           <div><span>Meet the people who listen</span><h2 id="listener-heading">Find a listener who feels right for you.</h2></div>
         </div>
-        <div
-          className="listener-carousel"
+        {listenerMessage ? <p className="listener-showcase-status" role="status">{listenerMessage}</p> : listeners.length ? <div
+          className={`listener-carousel${canAnimate ? '' : ' static-listeners'}`}
           onMouseEnter={() => setHovered(true)}
           onMouseLeave={() => setHovered(false)}
           onFocusCapture={() => setFocused(true)}
@@ -110,9 +130,9 @@ function LandingSections() {
             if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false)
           }}
         >
-          <button className="listener-arrow" type="button" aria-label="Show previous listeners" disabled={slideDirection !== null} onClick={showPreviousListeners}><ChevronLeft aria-hidden="true" /></button>
+          {canAnimate && <button className="listener-arrow" type="button" aria-label="Show previous listeners" disabled={slideDirection !== null} onClick={showPreviousListeners}><ChevronLeft aria-hidden="true" /></button>}
           <div
-            className="listener-track"
+            className={`listener-track${canAnimate ? '' : ' few-listeners'}`}
             aria-live={paused ? 'polite' : 'off'}
             onTouchStart={(event) => { touchStartX.current = event.touches[0]?.clientX ?? null }}
             onTouchEnd={(event) => {
@@ -129,21 +149,23 @@ function LandingSections() {
               onAnimationEnd={finishSlide}
             >
               {trackListeners.map((listener) => (
-                <article className={`listener-preview-card listener-color-${(listener.index % 3) + 1}`} key={listener.name}>
-                  <div className="listener-preview-photo" aria-hidden="true">{listener.initials}</div>
+                <article className={`listener-preview-card listener-color-${(listener.index % 3) + 1}`} key={`${listener.id}-${listener.index}`}>
+                  {listener.profile_image_url
+                    ? <img className="listener-preview-photo" src={listener.profile_image_url} alt="" />
+                    : <div className="listener-preview-photo" aria-hidden="true">{listener.name.split(' ').map(part => part[0]).join('')}</div>}
                   <h3>{listener.name}</h3>
                   <p className="listener-preview-focus">{listener.focus}</p>
-                  <p>{listener.description}</p>
+                  <p>{listener.bio}</p>
                   <a href="/get-matched">Find a match <span aria-hidden="true">→</span></a>
                 </article>
               ))}
             </div>
           </div>
-          <div className="listener-pagination" aria-hidden="true">
+          {canAnimate && <div className="listener-pagination" aria-hidden="true">
             {listeners.map((listener, index) => <span className={index === start ? 'active' : ''} key={listener.name} />)}
-          </div>
-          <button className="listener-arrow" type="button" aria-label="Show next listeners" disabled={slideDirection !== null} onClick={showNextListeners}><ChevronRight aria-hidden="true" /></button>
-        </div>
+          </div>}
+          {canAnimate && <button className="listener-arrow" type="button" aria-label="Show next listeners" disabled={slideDirection !== null} onClick={showNextListeners}><ChevronRight aria-hidden="true" /></button>}
+        </div> : <p className="listener-showcase-status">Our listener profiles will appear here once they are available.</p>}
         <a className="all-listeners-link" href="/our-listeners">View all our listeners</a>
       </section>
     </>

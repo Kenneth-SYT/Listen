@@ -1,0 +1,14 @@
+/account
+  X-Robots-Tag: noindex, nofollow
+/account/*
+  X-Robots-Tag: noindex, nofollow
+/admin
+  X-Robots-Tag: noindex, nofollow
+/listener
+  X-Robots-Tag: noindex, nofollow
+/login
+  X-Robots-Tag: noindex, nofollow
+/get-matched
+  X-Robots-Tag: noindex, nofollow
+/booking-confirmation
+  X-Robots-Tag: noindex, nofollow

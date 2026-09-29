@@ -1,15 +1,9 @@
 .how-section {
-  --color-cream: var(--how-color-cream, #f8fafc);
-  --color-sage-light: var(--how-color-sage-light, #e6f0fa);
-  --color-sage: var(--how-color-sage, #e6f0e8);
-  --color-sage-strong: var(--how-color-sage-strong, #9ec1a3);
-  --color-primary: var(--how-color-primary, #001c55);
-  --color-accent: var(--how-color-accent, #5c97d9);
-  --color-ink: var(--how-color-ink, #001c55);
-  --color-muted: var(--how-color-muted, #4e6575);
   overflow: hidden;
   padding: 84px 24px 128px;
-  background: var(--color-cream);
+  background:
+    radial-gradient(circle at 9% 8%, rgb(129 179 235 / .18), transparent 24rem),
+    linear-gradient(180deg, var(--color-cream) 0%, var(--color-sage-light) 48%, var(--color-cream) 100%);
   color: var(--color-ink);
   text-align: center;
 }
@@ -98,7 +92,9 @@
   width: min(820px, calc(100% - 96px));
   margin: 0 auto;
   padding: 48px clamp(28px, 5vw, 64px);
-  background: var(--color-sage);
+  border: 1px solid var(--color-sage-strong);
+  background: linear-gradient(135deg, var(--color-sage-light), var(--color-sage));
+  box-shadow: 0 20px 44px rgb(39 65 117 / .1);
 }
 
 .how-card-main h3 {
@@ -141,7 +137,7 @@
 
 .how-feature-copy {
   padding: 24px;
-  border: 1px solid var(--color-sage);
+  border: 1px solid var(--color-sage-strong);
   border-radius: 12px;
   background: var(--color-cream);
   box-shadow: 0 20px 8px -3px rgb(0 28 85 / 0.08);
@@ -190,7 +186,8 @@
   padding: 42px 28px;
   overflow: hidden;
   border-radius: 18px;
-  background: linear-gradient(135deg, var(--color-sage-light) 0%, var(--color-sage) 56%, var(--color-cream) 100%);
+  border: 1px solid var(--color-sage-strong);
+  background: linear-gradient(135deg, var(--color-sage-light) 0%, var(--color-sage) 62%, var(--color-cream) 100%);
   color: var(--color-muted);
   text-align: center;
   transform: translateX(-50%);

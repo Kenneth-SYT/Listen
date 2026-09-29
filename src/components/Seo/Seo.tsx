@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 
-const SITE_URL = 'https://www.listenmentalhealth.com'
+const SITE_URL = 'https://listenmentalhealth.com'
 
 type PageSeo = {
   title: string
@@ -88,6 +88,7 @@ export default function Seo() {
     setMeta('meta[property="og:title"]', { property: 'og:title', content: page.title })
     setMeta('meta[property="og:description"]', { property: 'og:description', content: page.description })
     setMeta('meta[property="og:type"]', { property: 'og:type', content: 'website' })
+    setMeta('meta[property="og:site_name"]', { property: 'og:site_name', content: 'Listen Mental Health' })
     setMeta('meta[property="og:url"]', { property: 'og:url', content: canonical })
     setMeta('meta[property="og:image"]', { property: 'og:image', content: `${SITE_URL}/LMH_sideways.png` })
     setMeta('meta[name="twitter:card"]', { name: 'twitter:card', content: 'summary_large_image' })

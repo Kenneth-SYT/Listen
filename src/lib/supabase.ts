@@ -23,11 +23,14 @@ export type Listener = {
 }
 export type Slot = { id: string; listener_id: string; starts_at: string; ends_at: string }
 export type Quote = { rate_code: string; label: string; amount_cents: number; duration_minutes: number }
-export type BookingSelection = { listener: Listener; slot: Slot; quote: Quote; holdToken: string; holdExpiresAt: string }
+export type BookingSelection = { listener: Listener; slot: Slot; quote: Quote; holdToken: string; holdExpiresAt: string; useCredit?: boolean }
+export type BundleProduct = { code: string; label: string; session_count: number; amount_cents: number }
+export type CreditSummary = { standard_credits: number; eligible_for_bundles: boolean }
 export type Appointment = {
   id: string; user_id: string; slot_id: string; listener_id: string; starts_at: string; ends_at: string
   amount_cents: number; rate_code: string; status: 'pending' | 'confirmed' | 'expired'; created_at: string
   checkout_expires_at: string
+  paid_with_credit?: boolean
 }
 export async function createCheckout(slotId: string, holdToken?: string, rateCode?: string) {
   const { data, error } = await getSupabase().functions.invoke('create-checkout', { body: { slot_id: slotId, hold_token: holdToken, rate_code: rateCode } })
@@ -54,4 +57,24 @@ export async function cancelCheckout(bookingId: string) {
     throw new Error(message)
   }
   return data
+}
+
+export async function createBundleCheckout(productCode: string) {
+  const { data, error } = await getSupabase().functions.invoke('create-bundle-checkout', { body: { product_code: productCode } })
+  if (error) {
+    let message = error.message
+    if ('context' in error && error.context instanceof Response) {
+      const body = await error.context.json().catch(() => null)
+      message = body?.error || message
+    }
+    throw new Error(message)
+  }
+  if (!data?.url) throw new Error('Bundle checkout could not be opened. Please try again.')
+  return data.url as string
+}
+
+export async function bookWithCredit(slotId: string, holdToken: string) {
+  const { data, error } = await getSupabase().rpc('book_appointment_with_credit', { p_slot: slotId, p_hold_token: holdToken })
+  if (error) throw error
+  return data as Appointment
 }

@@ -7,4 +7,4 @@ Disallow: /login
 Disallow: /get-matched
 Disallow: /booking-confirmation
 
-Sitemap: https://www.listenmentalhealth.com/sitemap.xml
+Sitemap: https://listenmentalhealth.com/sitemap.xml

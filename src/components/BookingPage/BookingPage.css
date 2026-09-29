@@ -57,6 +57,11 @@
 .booking-summary-session button.selected { border-color: var(--color-primary); background: #fff; color: var(--color-primary); box-shadow: 0 4px 12px rgb(0 28 85 / .1); }
 .booking-summary-session button strong { font-size: .9rem; }
 .booking-summary-session button small { font-size: .76rem; font-weight: 700; }
+.booking-credit-choice { display: flex; gap: 10px; align-items: start; margin: 0 0 20px; padding: 13px; border: 1px solid var(--color-sage-strong); border-radius: 12px; background: var(--color-sage-light); cursor: pointer; }
+.booking-credit-choice input { width: 18px; height: 18px; margin-top: 2px; accent-color: var(--color-primary); }
+.booking-credit-choice span, .booking-credit-choice strong, .booking-credit-choice small { display: block; }
+.booking-credit-choice strong { font-size: .86rem; }
+.booking-credit-choice small { margin-top: 2px; color: var(--color-muted); line-height: 1.35; }
 .booking-summary dl { display: grid; gap: 15px; margin: 0; }
 .booking-summary dl div { display: grid; gap: 3px; padding-bottom: 14px; border-bottom: 1px solid var(--color-sage); }
 .booking-summary dt { color: var(--color-muted); font-size: .8rem; }

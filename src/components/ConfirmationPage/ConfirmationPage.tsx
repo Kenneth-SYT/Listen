@@ -27,7 +27,7 @@ function ConfirmationPage() {
         setBooking(data as Appointment)
         const { data: listener } = await getSupabase().from('listeners').select('name').eq('id', data.listener_id).maybeSingle()
         if (active && listener?.name) setListenerName(listener.name)
-        setMessage(data.status === 'confirmed' ? 'Payment verified. Your appointment is confirmed.' : data.status === 'expired' ? 'This checkout expired without a confirmed payment.' : 'Payment confirmation is still pending. You can check again or view My appointments.')
+        setMessage(data.status === 'confirmed' ? data.paid_with_credit ? 'Your session credit was applied. Your appointment is confirmed.' : 'Payment verified. Your appointment is confirmed.' : data.status === 'expired' ? 'This checkout expired without a confirmed payment.' : 'Payment confirmation is still pending. You can check again or view My appointments.')
         if (data.status === 'pending' && ++attempts < 12) timer = setTimeout(read, 2500)
       } catch (error) { if (active) setMessage(errorMessage(error)) }
     }
@@ -50,7 +50,7 @@ function ConfirmationPage() {
         <div><CalendarDays aria-hidden="true" /><span>Date</span><strong>{startsAt?.toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</strong></div>
         <div><Clock3 aria-hidden="true" /><span>Time and duration</span><strong>{startsAt?.toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })} · {duration === 120 ? '2 hours' : `${duration} minutes`}</strong></div>
         <div><UserRound aria-hidden="true" /><span>Listener</span><strong>{listenerName}</strong></div>
-        <div><CreditCard aria-hidden="true" /><span>{confirmed ? 'Paid' : 'Amount'}</span><strong>{money(booking.amount_cents)} AUD</strong></div>
+        <div><CreditCard aria-hidden="true" /><span>{booking.paid_with_credit ? 'Bundle' : confirmed ? 'Paid' : 'Amount'}</span><strong>{booking.paid_with_credit ? '1 session credit' : `${money(booking.amount_cents)} AUD`}</strong></div>
       </div>
       {confirmed && <div className="confirmation-note"><CheckCircle2 aria-hidden="true" /><p>Your session now appears in My appointments. We’ll use your saved contact details if we need to reach you.</p></div>}
       <p className="confirmation-reference">Booking reference: {booking.id}</p>

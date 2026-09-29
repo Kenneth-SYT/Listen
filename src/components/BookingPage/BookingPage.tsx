@@ -1,6 +1,6 @@
 import { CalendarDays, ChevronLeft, ChevronRight, Clock3 } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { errorMessage, getSupabase, money, type BookingSelection, type Listener, type Quote, type Slot } from '../../lib/supabase'
+import { errorMessage, getSupabase, money, type BookingSelection, type CreditSummary, type Listener, type Quote, type Slot } from '../../lib/supabase'
 import { useSession } from '../../lib/useSession'
 import type { IntakeAnswers } from '../../lib/intake'
 import { rankListeners, recommendedListener } from '../../lib/listenerMatching'
@@ -21,8 +21,11 @@ function BookingPage({ answers, onContinue }: { answers: IntakeAnswers; onContin
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(true)
   const [holding, setHolding] = useState(false)
+  const [credits, setCredits] = useState(0)
+  const [useCredit, setUseCredit] = useState(false)
   const [refresh, setRefresh] = useState(0)
   const topics = answers.topics.join('|')
+  const signedIn = Boolean(session)
 
   useEffect(() => {
     if (authLoading) return
@@ -30,7 +33,8 @@ function BookingPage({ answers, onContinue }: { answers: IntakeAnswers; onContin
     void Promise.all([
       getSupabase().from('listeners').select('*').eq('active', true).order('name'),
       getSupabase().rpc('available_slots'), getSupabase().rpc('booking_options'),
-    ]).then(([people, availability, pricing]) => {
+      signedIn ? getSupabase().rpc('credit_summary') : Promise.resolve({ data: null, error: null }),
+    ]).then(([people, availability, pricing, creditResult]) => {
       if (!active) return
       if (people.error || availability.error || pricing.error) throw people.error || availability.error || pricing.error
       const list = people.data as Listener[]
@@ -41,12 +45,13 @@ function BookingPage({ answers, onContinue }: { answers: IntakeAnswers; onContin
       const ranked = rankListeners(list, available, topics.split('|'), rate.duration_minutes)
       const suggested = recommendedListener(ranked)
       setListeners(list); setSlots(available); setQuotes(rates)
+      setCredits(((creditResult.data as CreditSummary | null)?.standard_credits) || 0)
       setSelectedRate(current => rates.some(option => option.rate_code === current) ? current : rate.rate_code)
       setSelectedListener(current => list.some(person => person.id === current) ? current : suggested?.listener.id || ranked[0]?.listener.id || '')
       setMessage('')
     }).catch(error => { if (active) setMessage(errorMessage(error)) }).finally(() => { if (active) setLoading(false) })
     return () => { active = false }
-  }, [session?.user.id, authLoading, topics, refresh])
+  }, [signedIn, authLoading, topics, refresh])
 
   const quote = quotes.find(option => option.rate_code === selectedRate) || quotes[0] || null
   const rankedListeners = rankListeners(listeners, slots, answers.topics, quote?.duration_minutes ?? 0)
@@ -79,7 +84,7 @@ function BookingPage({ answers, onContinue }: { answers: IntakeAnswers; onContin
       const holdToken = crypto.randomUUID()
       const { data, error } = await getSupabase().rpc('claim_slot_hold', { p_slot: chosenSlot.id, p_token: holdToken })
       if (error) throw error
-      await onContinue({ listener, slot: chosenSlot, quote, holdToken, holdExpiresAt: data as string })
+      await onContinue({ listener, slot: chosenSlot, quote, holdToken, holdExpiresAt: data as string, useCredit: useCredit && quote.rate_code === 'standard' })
     } catch (error) {
       setMessage(errorMessage(error))
       setRefresh(value => value + 1)
@@ -122,10 +127,11 @@ function BookingPage({ answers, onContinue }: { answers: IntakeAnswers; onContin
         {quotes.length > 1 && <div className="booking-summary-session"><span>Choose your session</span><div role="group" aria-label="Session length">{quotes.map(option => <button key={option.rate_code} type="button" className={option.rate_code === quote?.rate_code ? 'selected' : ''} aria-pressed={option.rate_code === quote?.rate_code} onClick={() => { setSelectedRate(option.rate_code); setSelectedDay(''); setSelectedSlot(''); setViewedMonth('') }}>
           <strong>{option.duration_minutes === 120 ? '2 hours' : `${option.duration_minutes} min`}</strong><small>{money(option.amount_cents)}</small>
         </button>)}</div></div>}
+        {quote?.rate_code === 'standard' && credits > 0 && <label className="booking-credit-choice"><input type="checkbox" checked={useCredit} onChange={event => setUseCredit(event.target.checked)} /><span><strong>Use 1 session credit</strong><small>You have {credits} standard-session {credits === 1 ? 'credit' : 'credits'} available.</small></span></label>}
         <dl><div><dt>Listener</dt><dd>{listener?.name || 'Select a listener'}</dd></div><div><dt>Appointment</dt><dd>{chosenSlot ? new Date(chosenSlot.starts_at).toLocaleString('en-AU') : 'Select a time'}</dd></div><div><dt>Session</dt><dd>{quote ? `${quote.label}, ${quote.duration_minutes === 120 ? '2 hours' : `${quote.duration_minutes} min`}` : 'Unavailable'}</dd></div></dl>
-        <div className="booking-total"><span>Estimated rate</span><strong>{quote ? money(quote.amount_cents) + ' AUD' : '—'}</strong></div>
-        <button className="booking-continue" type="button" disabled={holding || !chosenSlot || !quote || !listener} onClick={holdSelectedSlot}>{holding ? session ? 'Opening secure payment…' : 'Holding your time…' : session ? 'Proceed to payment' : 'Continue to account details'}</button>
-        <p className="booking-reassurance">Your time is confirmed only after checkout. Your rate is checked again before payment.</p>
+        <div className="booking-total"><span>{useCredit && quote?.rate_code === 'standard' ? 'Credit used' : 'Estimated rate'}</span><strong>{useCredit && quote?.rate_code === 'standard' ? '1 session credit' : quote ? money(quote.amount_cents) + ' AUD' : '—'}</strong></div>
+        <button className="booking-continue" type="button" disabled={holding || !chosenSlot || !quote || !listener} onClick={holdSelectedSlot}>{holding ? session ? useCredit ? 'Holding your time…' : 'Opening secure payment…' : 'Holding your time…' : session ? useCredit && quote?.rate_code === 'standard' ? 'Continue with session credit' : 'Proceed to payment' : 'Continue to account details'}</button>
+        <p className="booking-reassurance">{useCredit && quote?.rate_code === 'standard' ? 'One credit is deducted only after this appointment is confirmed.' : 'Your time is confirmed only after checkout. Your rate is checked again before payment.'}</p>
       </aside>
     </div>}
     {message && <p role="alert" className="booking-payment-error">{message}</p>}
