@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /account
+Disallow: /admin
+Disallow: /listener
+Disallow: /login
+Disallow: /get-matched
+Disallow: /booking-confirmation
+
+Sitemap: https://www.listenmentalhealth.com/sitemap.xml

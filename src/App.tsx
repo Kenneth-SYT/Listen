@@ -19,6 +19,7 @@ import ListenerPage from './components/ListenerPage/ListenerPage'
 import { useEffect, useState } from 'react'
 import { supabase } from './lib/supabase'
 import { bookingPrivacyAction } from './lib/bookingPrivacy'
+import Seo from './components/Seo/Seo'
 
 let privacyPreparation: Promise<void> | null = null
 function preparePrivateBooking() {
@@ -74,6 +75,7 @@ function App() {
 
   return (
     <>
+    <Seo />
     <main className="page">
       <Header />
       {window.location.pathname === '/listener' ? <ListenerPage /> : window.location.pathname === '/admin' ? <AdminPage /> : window.location.pathname === '/account' ? <AccountPage /> : isContactPage ? (
