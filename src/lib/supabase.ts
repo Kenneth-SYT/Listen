@@ -15,7 +15,11 @@ export function getSupabase() {
   return supabase
 }
 export const money = (cents: number) => new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD' }).format(cents / 100)
-export const errorMessage = (error: unknown) => error instanceof Error ? error.message : 'Something went wrong. Please try again.'
+export const errorMessage = (error: unknown) => {
+  if (error instanceof Error) return error.message
+  if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') return error.message
+  return 'Something went wrong. Please try again.'
+}
 export type Listener = {
   id: string; name: string; focus: string; matches: string[]; active?: boolean
   bio?: string; gender?: string; pronouns?: string; languages?: string[]
@@ -74,7 +78,11 @@ export async function createBundleCheckout(productCode: string) {
 }
 
 export async function bookWithCredit(slotId: string, holdToken: string) {
-  const { data, error } = await getSupabase().rpc('book_appointment_with_credit', { p_slot: slotId, p_hold_token: holdToken })
-  if (error) throw error
+  const client = getSupabase()
+  const { data: pending, error: pendingError } = await client.from('appointments').select('id').eq('status', 'pending')
+  if (pendingError) throw new Error(pendingError.message)
+  for (const booking of pending || []) await cancelCheckout(booking.id)
+  const { data, error } = await client.rpc('book_appointment_with_credit', { p_slot: slotId, p_hold_token: holdToken })
+  if (error) throw new Error(error.message)
   return data as Appointment
 }
