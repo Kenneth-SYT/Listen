@@ -53,6 +53,26 @@ function BookingPage({ answers, onContinue }: { answers: IntakeAnswers; onContin
     return () => { active = false }
   }, [signedIn, authLoading, topics, refresh])
 
+  useEffect(() => {
+    if (authLoading) return
+    let active = true
+    const updateAvailability = async () => {
+      if (document.hidden) return
+      const { data, error } = await getSupabase().rpc('available_slots')
+      if (!active || error) return
+      const available = data as Slot[]
+      if (selectedSlot && !available.some(slot => slot.id === selectedSlot)) {
+        setSelectedSlot('')
+        setMessage('That time is temporarily being held by someone else. Please choose another available time.')
+      }
+      setSlots(available)
+    }
+    const timer = window.setInterval(() => void updateAvailability(), 4000)
+    const whenVisible = () => { if (!document.hidden) void updateAvailability() }
+    document.addEventListener('visibilitychange', whenVisible)
+    return () => { active = false; window.clearInterval(timer); document.removeEventListener('visibilitychange', whenVisible) }
+  }, [authLoading, selectedSlot])
+
   const quote = quotes.find(option => option.rate_code === selectedRate) || quotes[0] || null
   const rankedListeners = rankListeners(listeners, slots, answers.topics, quote?.duration_minutes ?? 0)
   const suggested = recommendedListener(rankedListeners)
@@ -75,7 +95,7 @@ function BookingPage({ answers, onContinue }: { answers: IntakeAnswers; onContin
     if (firstAvailable) { setSelectedDay(firstAvailable); setSelectedSlot('') }
   }
   const daySlots = usableSlots.filter(slot => dayKey(slot.starts_at) === chosenDay)
-  const chosenSlot = daySlots.find(slot => slot.id === selectedSlot) || daySlots[0]
+  const chosenSlot = daySlots.find(slot => slot.id === selectedSlot)
   const listener = listeners.find(person => person.id === selectedListener)
   const holdSelectedSlot = async () => {
     if (!chosenSlot || !quote || !listener || holding) return
