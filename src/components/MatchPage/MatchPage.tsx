@@ -8,7 +8,7 @@ import {
   longSupportTopics, requiresProfessionalSupport, sharedExperiences, supportStyles, supportTopics, type IntakeAnswers,
   type LongAnswers, type QuestionnaireType,
 } from '../../lib/intake'
-import { createCheckout, errorMessage, getSupabase, type BookingSelection } from '../../lib/supabase'
+import { bookWithCredit, createCheckout, errorMessage, getSupabase, type BookingSelection } from '../../lib/supabase'
 import { useSession } from '../../lib/useSession'
 import './MatchPage.css'
 
@@ -154,6 +154,13 @@ function MatchPage() {
     if (intakeError) throw intakeError
     const returningDraft: Draft = { savedAt: Date.now(), stage: 'booking', step, answers, selection: value, customerDetails }
     sessionStorage.setItem(draftKey, JSON.stringify(returningDraft))
+    if (value.useCredit) {
+      const booking = await bookWithCredit(value.slot.id, value.holdToken)
+      sessionStorage.removeItem(draftKey)
+      sessionStorage.removeItem('listen-booking-active')
+      window.location.assign(`/booking-confirmation?booking_id=${booking.id}`)
+      return
+    }
     const checkoutUrl = await createCheckout(value.slot.id, value.holdToken, value.quote.rate_code)
     sessionStorage.setItem('listen-checkout-return', '1')
     window.location.assign(checkoutUrl)
