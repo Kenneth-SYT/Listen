@@ -8,6 +8,7 @@ import './AdminPage.css'
 import AdminAvailabilityCalendar from './AdminAvailabilityCalendar'
 
 type AdminView = 'bookings' | 'users' | 'availability' | 'management' | 'audit'
+type UserRoleFilter = 'all' | 'admin' | 'listener' | 'user'
 type AuditEntry = { id: number; actor_user_id: string | null; action: string; target_type: string; target_id: string; details: Record<string, unknown>; created_at: string }
 type AdminSlot = Slot & { enabled: boolean }
 type AdminUser = {
@@ -37,7 +38,9 @@ function AdminPage() {
   const [audit, setAudit] = useState<AuditEntry[]>([])
   const [refresh, setRefresh] = useState(0)
   const [busy, setBusy] = useState(false)
+  const [roleBusy, setRoleBusy] = useState<string | null>(null)
   const [search, setSearch] = useState('')
+  const [roleFilter, setRoleFilter] = useState<UserRoleFilter>('all')
   const [referenceTime, setReferenceTime] = useState(0)
   const userId = session?.user.id
 
@@ -77,9 +80,19 @@ function AdminPage() {
   const listenerById = useMemo(() => new Map(listeners.map(listener => [listener.id, listener])), [listeners])
   const filteredUsers = useMemo(() => {
     const term = search.trim().toLowerCase()
-    if (!term) return users
-    return users.filter(user => [user.email, user.first_name, user.last_name, user.preferred_name, user.mobile, user.listener_name].some(value => value?.toLowerCase().includes(term)))
-  }, [search, users])
+    return users.filter(user => {
+      const role = user.administrator ? 'admin' : user.listener_name ? 'listener' : 'user'
+      const matchesRole = roleFilter === 'all' || role === roleFilter
+      const matchesSearch = !term || [user.email, user.first_name, user.last_name, user.preferred_name, user.mobile, user.listener_name].some(value => value?.toLowerCase().includes(term))
+      return matchesRole && matchesSearch
+    })
+  }, [roleFilter, search, users])
+  const roleCounts = useMemo(() => ({
+    all: users.length,
+    admin: users.filter(user => user.administrator).length,
+    listener: users.filter(user => !user.administrator && Boolean(user.listener_name)).length,
+    user: users.filter(user => !user.administrator && !user.listener_name).length,
+  }), [users])
   const filteredBookings = useMemo(() => {
     const term = search.trim().toLowerCase()
     if (!term) return bookings
@@ -90,6 +103,18 @@ function AdminPage() {
   }, [bookings, listenerById, search, userById])
   const confirmed = bookings.filter(booking => booking.status === 'confirmed').length
   const upcoming = bookings.filter(booking => booking.status === 'confirmed' && Date.parse(booking.starts_at) >= referenceTime).length
+
+  const changeUserRole = async (person: AdminUser) => {
+    const nextRole = person.listener_name ? 'user' : 'listener'
+    if (nextRole === 'user' && !window.confirm(`Return ${nameFor(person)} to a regular user account? Their listener profile will be suspended and they will lose listener dashboard access.`)) return
+    setRoleBusy(person.user_id); setMessage('')
+    try {
+      const { error } = await getSupabase().rpc('admin_set_user_role', { p_user: person.user_id, p_role: nextRole })
+      if (error) throw error
+      setMessage(nextRole === 'listener' ? `${nameFor(person)} is now a listener. Their public profile is saved as a draft for review.` : `${nameFor(person)} is now a regular user.`)
+      setRefresh(value => value + 1)
+    } catch (error) { setMessage(errorMessage(error)) } finally { setRoleBusy(null) }
+  }
 
   const save = async (event: FormEvent<HTMLFormElement>, kind: 'listener' | 'slot' | 'rate' | 'default') => {
     event.preventDefault(); const form = event.currentTarget; const values = new FormData(form)
@@ -127,7 +152,7 @@ function AdminPage() {
         <article><Clock3 /><div><strong>{upcoming}</strong><span>Upcoming sessions</span></div></article>
       </section>
       <div className="admin-toolbar">
-        <nav aria-label="Admin sections">{(['bookings', 'users', 'availability', 'management', 'audit'] as AdminView[]).map(item => <button key={item} type="button" className={view === item ? 'active' : ''} aria-pressed={view === item} onClick={() => { setView(item); setSearch('') }}>{item === 'bookings' ? 'Bookings' : item === 'users' ? 'Users' : item === 'availability' ? 'Availability' : item === 'management' ? 'Management' : 'Audit history'}</button>)}</nav>
+        <nav aria-label="Admin sections">{(['bookings', 'users', 'availability', 'management', 'audit'] as AdminView[]).map(item => <button key={item} type="button" className={view === item ? 'active' : ''} aria-pressed={view === item} onClick={() => { setView(item); setSearch(''); setRoleFilter('all') }}>{item === 'bookings' ? 'Bookings' : item === 'users' ? 'Users' : item === 'availability' ? 'Availability' : item === 'management' ? 'Management' : 'Audit history'}</button>)}</nav>
         {(view === 'bookings' || view === 'users') && <label className="admin-search"><Search size={17} /><span className="sr-only">Search</span><input value={search} onChange={event => setSearch(event.target.value)} placeholder={view === 'users' ? 'Search users' : 'Search bookings'} /></label>}
       </div>
 
@@ -138,8 +163,18 @@ function AdminPage() {
         })}</tbody></table>{!filteredBookings.length && <p className="admin-empty">No bookings match your search.</p>}</div>
       </section>}
 
-      {view === 'users' && <section className="admin-section"><div className="admin-section-heading"><div><h2>User directory</h2><p>All Supabase Auth accounts, including accounts that have not completed a customer profile.</p></div><span>{filteredUsers.length} shown</span></div>
-        <div className="admin-user-grid">{filteredUsers.map(person => <article className="admin-user-card" key={person.user_id}><div className="admin-user-title"><div className="admin-avatar"><UserRound /></div><div><h3>{nameFor(person)}</h3><p>{person.email}</p></div></div><div className="admin-badges">{person.administrator && <span>Admin</span>}{person.listener_name && <span>Consultant: {person.listener_name}</span>}{person.email_confirmed_at && <span>Email confirmed</span>}</div><dl><div><dt>Preferred name</dt><dd>{person.preferred_name || '—'}</dd></div><div><dt>Mobile</dt><dd>{person.mobile || '—'}</dd></div><div><dt>Date of birth</dt><dd>{person.date_of_birth ? new Date(`${person.date_of_birth}T12:00:00`).toLocaleDateString('en-AU') : '—'}</dd></div><div><dt>Gender</dt><dd>{person.gender || '—'}</dd></div><div><dt>Bookings</dt><dd>{person.confirmed_booking_count} confirmed / {person.booking_count} total</dd></div><div><dt>Next session</dt><dd>{when(person.next_booking_at)}</dd></div><div><dt>Account created</dt><dd>{when(person.account_created_at)}</dd></div><div><dt>Last sign-in</dt><dd>{when(person.last_sign_in_at)}</dd></div></dl></article>)}{!filteredUsers.length && <p className="admin-empty">No users match your search.</p>}</div>
+      {view === 'users' && <section className="admin-section"><div className="admin-section-heading"><div><h2>User directory</h2><p>View account status and manage listener access without opening every profile.</p></div><span>{filteredUsers.length} shown</span></div>
+        <div className="admin-role-filters" role="group" aria-label="Filter users by role">{(['all', 'admin', 'listener', 'user'] as UserRoleFilter[]).map(role => <button type="button" key={role} className={roleFilter === role ? 'active' : ''} aria-pressed={roleFilter === role} onClick={() => setRoleFilter(role)}><span>{role === 'all' ? 'All accounts' : role === 'admin' ? 'Admins' : role === 'listener' ? 'Listeners' : 'Users'}</span><strong>{roleCounts[role]}</strong></button>)}</div>
+        <div className="admin-user-list">{filteredUsers.map(person => {
+          const role = person.administrator ? 'admin' : person.listener_name ? 'listener' : 'user'
+          return <article className="admin-user-row" key={person.user_id}>
+            <div className="admin-user-title"><div className="admin-avatar"><UserRound /></div><div><h3>{nameFor(person)}</h3><p>{person.email}</p></div></div>
+            <span className={`admin-role-badge ${role}`}>{role}</span>
+            <div className="admin-user-summary"><span><strong>{person.confirmed_booking_count}</strong> confirmed</span><span>Last seen <strong>{when(person.last_sign_in_at)}</strong></span></div>
+            <div className="admin-role-action">{person.administrator ? <small>Administrator access is managed separately</small> : <button type="button" disabled={roleBusy !== null} className={role === 'listener' ? 'admin-secondary' : ''} onClick={() => void changeUserRole(person)}>{roleBusy === person.user_id ? 'Updating…' : role === 'listener' ? 'Return to user' : 'Make listener'}</button>}</div>
+            <details><summary>View profile details</summary><dl><div><dt>Preferred name</dt><dd>{person.preferred_name || '—'}</dd></div><div><dt>Mobile</dt><dd>{person.mobile || '—'}</dd></div><div><dt>Date of birth</dt><dd>{person.date_of_birth ? new Date(`${person.date_of_birth}T12:00:00`).toLocaleDateString('en-AU') : '—'}</dd></div><div><dt>Gender</dt><dd>{person.gender || '—'}</dd></div><div><dt>Bookings</dt><dd>{person.confirmed_booking_count} confirmed / {person.booking_count} total</dd></div><div><dt>Next session</dt><dd>{when(person.next_booking_at)}</dd></div><div><dt>Account created</dt><dd>{when(person.account_created_at)}</dd></div><div><dt>Email status</dt><dd>{person.email_confirmed_at ? 'Confirmed' : 'Not confirmed'}</dd></div>{person.listener_name && <div><dt>Listener profile</dt><dd>{person.listener_name}</dd></div>}</dl></details>
+          </article>
+        })}{!filteredUsers.length && <p className="admin-empty">No users match this filter.</p>}</div>
       </section>}
 
       {view === 'availability' && <section className="admin-section"><div className="admin-section-heading"><div><h2>Availability calendar</h2><p>Publish, review and pause listener appointment times. Dates use {Intl.DateTimeFormat().resolvedOptions().timeZone}.</p></div></div>
