@@ -12,6 +12,7 @@ const holdDeadline = (createdAt: string, checkoutExpiresAt: string) => new Date(
   Date.parse(createdAt) + fifteenMinutes,
 )).toISOString()
 type CustomerProfile = { first_name: string; last_name: string; preferred_name: string; date_of_birth: string; mobile: string; contact_email: string; gender: string }
+type CreditAnimation = { from: number; added: number; to: number; phase: 'add' | 'merge' }
 const emptyProfile: CustomerProfile = { first_name: '', last_name: '', preferred_name: '', date_of_birth: '', mobile: '', contact_email: '', gender: '' }
 
 function PendingCountdown({ expiresAt, onExpired }: { expiresAt: string; onExpired: () => void }) {
@@ -40,11 +41,12 @@ function AccountPage() {
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [names, setNames] = useState<Record<string, string>>({})
   const [admin, setAdmin] = useState('')
-  const [message, setMessage] = useState(() => bundleResult === 'success' ? 'Your bundle payment is being confirmed. Your session credits will appear here shortly.' : bundleResult === 'cancelled' ? 'Bundle checkout was cancelled. No credits were added and you were not charged.' : '')
+  const [message, setMessage] = useState(() => bundleResult === 'cancelled' ? 'Bundle checkout was cancelled. No credits were added and you were not charged.' : '')
   const [busy, setBusy] = useState(false)
   const [cancellingId, setCancellingId] = useState('')
   const [bundles, setBundles] = useState<BundleProduct[]>([])
   const [credits, setCredits] = useState<CreditSummary>({ standard_credits: 0, eligible_for_bundles: false })
+  const [creditAnimation, setCreditAnimation] = useState<CreditAnimation | null>(null)
   const [profile, setProfile] = useState<CustomerProfile>(emptyProfile)
   const [savingProfile, setSavingProfile] = useState(false)
   const [refresh, setRefresh] = useState(0)
@@ -81,11 +83,22 @@ function AccountPage() {
     let timer: number | undefined
     const check = async (attempt: number) => {
       try {
-        const result = await reconcileBundleCheckout()
+        const sessionId = new URLSearchParams(window.location.search).get('bundle_session_id') || undefined
+        const result = await reconcileBundleCheckout(sessionId)
         if (!active) return
         if (result.status === 'paid') {
           setCredits({ standard_credits: result.standard_credits, eligible_for_bundles: true })
-          setMessage(`Payment confirmed. ${result.standard_credits} session ${result.standard_credits === 1 ? 'credit is' : 'credits are'} ready to use.`)
+          setMessage('')
+          const animationKey = result.order_id ? `listen-bundle-animation-${result.order_id}` : ''
+          if (result.added_credits > 0 && (!animationKey || !sessionStorage.getItem(animationKey))) {
+            if (animationKey) sessionStorage.setItem(animationKey, '1')
+            setCreditAnimation({ from: Math.max(0, result.standard_credits - result.added_credits), added: result.added_credits, to: result.standard_credits, phase: 'add' })
+            timer = window.setTimeout(() => {
+              if (!active) return
+              setCreditAnimation(current => current ? { ...current, phase: 'merge' } : null)
+              timer = window.setTimeout(() => { if (active) setCreditAnimation(null) }, 650)
+            }, 1400)
+          }
           setRefresh(value => value + 1)
           return
         }
@@ -184,7 +197,7 @@ function AccountPage() {
         {new URLSearchParams(location.search).has('checkout') && <div className="account-checkout-return" role="status"><Clock3 /><div><h2>Your payment wasn’t completed</h2><p>Your details are saved and the selected time remains held until the countdown ends.</p></div></div>}
         {message && <p className="account-message" role="status">{message}</p>}
         {activeView === 'home' && <>
-          <section className="account-credit-panel"><div className="account-credit-count"><Layers3 /><span>Standard-session credits</span><strong>{credits.standard_credits}</strong></div><div><h2>Book bundle sessions when you’re ready.</h2><p>Each credit covers one 50-minute standard session. You purchase the bundle once, then choose and book each appointment separately from your account.</p>{credits.standard_credits > 0 && <a href="/get-matched?repeat=previous">Book a session with a credit <ArrowRight /></a>}</div></section>
+          <section className="account-credit-panel"><div className="account-credit-count"><Layers3 /><span>Standard-session credits</span><strong className={creditAnimation ? `account-credit-value ${creditAnimation.phase}` : 'account-credit-value'} aria-label={`${credits.standard_credits} session credits`}><b>{creditAnimation?.phase === 'add' ? creditAnimation.from : credits.standard_credits}</b>{creditAnimation && <em aria-hidden="true">+{creditAnimation.added}</em>}</strong></div><div><h2>Book bundle sessions when you’re ready.</h2><p>Each credit covers one 50-minute standard session. You purchase the bundle once, then choose and book each appointment separately from your account.</p>{credits.standard_credits > 0 && <a href="/get-matched?repeat=previous">Book a session with a credit <ArrowRight /></a>}</div></section>
           <section className="account-listener-overview"><div><span className="account-card-label">My listener</span><h2>{primaryListener ? names[primaryListener.listener_id] || 'Your listener' : 'Find someone who feels right for you'}</h2><p>{primaryListener ? 'Your chosen listener will support your upcoming conversation.' : 'Complete the matching questions to receive a listener recommendation based on what you want to talk about.'}</p></div><a href="/get-matched?repeat=previous"><UsersRound />{primaryListener ? 'Get matched again' : 'Get matched'}</a></section>
           {pendingBookings.length > 0 && <section className="account-section"><div className="account-section-heading"><div><span>Action needed</span><h2>Complete your booking</h2></div><p>Your appointment is held for 15 minutes while you finish payment.</p></div><div className="account-list">{pendingBookings.map(booking => bookingCard(booking))}</div></section>}
           <section className="account-section"><div className="account-section-heading"><div><span>Coming up</span><h2>Upcoming booking</h2></div></div>{upcomingBookings.length ? <div className="account-list">{upcomingBookings.slice(0, 1).map(booking => bookingCard(booking, true))}</div> : noBookings}</section>

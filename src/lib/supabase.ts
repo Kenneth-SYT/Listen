@@ -77,8 +77,8 @@ export async function createBundleCheckout(productCode: string) {
   return data.url as string
 }
 
-export async function reconcileBundleCheckout() {
-  const { data, error } = await getSupabase().functions.invoke('reconcile-bundle-checkout', { body: {} })
+export async function reconcileBundleCheckout(sessionId?: string) {
+  const { data, error } = await getSupabase().functions.invoke('reconcile-bundle-checkout', { body: { session_id: sessionId } })
   if (error) {
     let message = error.message
     if ('context' in error && error.context instanceof Response) {
@@ -87,7 +87,7 @@ export async function reconcileBundleCheckout() {
     }
     throw new Error(message)
   }
-  return data as { status: 'pending' | 'paid' | 'expired'; standard_credits: number }
+  return data as { status: 'pending' | 'paid' | 'expired'; standard_credits: number; added_credits: number; order_id: string | null }
 }
 
 export async function bookWithCredit(slotId: string, holdToken: string) {
