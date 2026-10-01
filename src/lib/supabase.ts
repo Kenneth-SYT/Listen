@@ -77,6 +77,19 @@ export async function createBundleCheckout(productCode: string) {
   return data.url as string
 }
 
+export async function reconcileBundleCheckout() {
+  const { data, error } = await getSupabase().functions.invoke('reconcile-bundle-checkout', { body: {} })
+  if (error) {
+    let message = error.message
+    if ('context' in error && error.context instanceof Response) {
+      const body = await error.context.json().catch(() => null)
+      message = body?.error || message
+    }
+    throw new Error(message)
+  }
+  return data as { status: 'pending' | 'paid' | 'expired'; standard_credits: number }
+}
+
 export async function bookWithCredit(slotId: string, holdToken: string) {
   const client = getSupabase()
   const { data: pending, error: pendingError } = await client.from('appointments').select('id').eq('status', 'pending')

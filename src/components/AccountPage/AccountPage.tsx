@@ -1,6 +1,6 @@
 import { ArrowRight, CalendarDays, CalendarPlus, CheckCircle2, Clock3, HeartHandshake, HelpCircle, History, Home, Layers3, LogOut, Mail, Phone, Save, Settings, ShieldCheck, UserRound, UsersRound, XCircle } from 'lucide-react'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { cancelCheckout, createBundleCheckout, createCheckout, errorMessage, getSupabase, money, type Appointment, type BundleProduct, type CreditSummary } from '../../lib/supabase'
+import { cancelCheckout, createBundleCheckout, createCheckout, errorMessage, getSupabase, money, reconcileBundleCheckout, type Appointment, type BundleProduct, type CreditSummary } from '../../lib/supabase'
 import { useSession } from '../../lib/useSession'
 import LoginPage from '../LoginPage/LoginPage'
 import './AccountPage.css'
@@ -49,6 +49,7 @@ function AccountPage() {
   const [savingProfile, setSavingProfile] = useState(false)
   const [refresh, setRefresh] = useState(0)
   const bundleStarted = useRef(false)
+  const bundleReconciliationStarted = useRef(false)
   const [openedAt] = useState(() => Date.now())
   const [activeView, setActiveView] = useState<'home' | 'bookings' | 'history' | 'profile' | 'settings'>('home')
   const userId = session?.user.id
@@ -74,11 +75,34 @@ function AccountPage() {
     return () => { active = false }
   }, [userId, userEmail, refresh, bundleResult])
   useEffect(() => {
-    if (!userId) return
-    if (bundleResult === 'success') {
-      const timers = [2000, 5000, 9000].map(delay => window.setTimeout(() => setRefresh(value => value + 1), delay))
-      return () => timers.forEach(timer => window.clearTimeout(timer))
+    if (!userId || bundleResult !== 'success' || bundleReconciliationStarted.current) return
+    bundleReconciliationStarted.current = true
+    let active = true
+    let timer: number | undefined
+    const check = async (attempt: number) => {
+      try {
+        const result = await reconcileBundleCheckout()
+        if (!active) return
+        if (result.status === 'paid') {
+          setCredits({ standard_credits: result.standard_credits, eligible_for_bundles: true })
+          setMessage(`Payment confirmed. ${result.standard_credits} session ${result.standard_credits === 1 ? 'credit is' : 'credits are'} ready to use.`)
+          setRefresh(value => value + 1)
+          return
+        }
+        if (result.status === 'expired') {
+          setMessage('This bundle checkout expired without a completed payment. No session credits were added.')
+          return
+        }
+        if (attempt < 3) timer = window.setTimeout(() => void check(attempt + 1), 2500)
+        else setMessage('Your payment is still being confirmed. Refresh this page shortly, or contact us if your receipt shows the payment completed.')
+      } catch (error) {
+        if (!active) return
+        if (attempt < 3) timer = window.setTimeout(() => void check(attempt + 1), 2500)
+        else setMessage(errorMessage(error))
+      }
     }
+    void check(0)
+    return () => { active = false; if (timer) window.clearTimeout(timer) }
   }, [userId, bundleResult])
   if (loading) return <p role="status">Checking your account…</p>
   if (!session) return <LoginPage />
