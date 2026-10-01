@@ -175,7 +175,7 @@ function AccountPage() {
     { id: 'profile' as const, label: 'Profile', icon: UserRound },
     { id: 'settings' as const, label: 'Settings', icon: Settings },
   ]
-  const noBookings = <section className="account-empty"><div><HeartHandshake /></div><h2>No upcoming bookings</h2><p>You do not have any sessions scheduled. When you’re ready, choose a listener and a time that works for you.</p><a href="/get-matched?repeat=previous">Find a session <ArrowRight /></a></section>
+  const noBookings = <section className="account-empty"><div><HeartHandshake /></div><h2>No upcoming bookings</h2><p>You do not have any sessions scheduled. When you’re ready, complete a new check-in and choose a listener and time that works for you.</p><a href="/get-matched?fresh=1">Start a new check-in <ArrowRight /></a></section>
   return <main className="account-page">
     <header className="account-dashboard-heading"><div><span className="account-eyebrow">My support space</span><h1>Welcome back.</h1><p>Signed in as {session.user.email}</p></div><a className="account-book" href="/get-matched?repeat=previous"><CalendarPlus />Book a session</a></header>
     <div className="account-dashboard-grid">
