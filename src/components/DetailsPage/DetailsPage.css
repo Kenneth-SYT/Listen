@@ -27,11 +27,14 @@
 .details-grid input, .details-grid select { width: 100%; min-height: 50px; padding: 0 15px; border: 1px solid var(--color-border); border-radius: 8px; background: #fff; color: var(--color-ink); outline: none; font: inherit; }
 .details-grid input:focus { border-color: var(--color-primary); box-shadow: 0 0 0 3px rgb(6 81 67 / .12); }
 .details-grid select:focus { border-color: var(--color-primary); box-shadow: 0 0 0 3px rgb(6 81 67 / .12); }
-.details-grid .details-email-verified > span:first-child small { display: inline-flex; align-items: center; gap: 4px; color: var(--color-primary); }
+.details-grid .details-email-status { display: inline-flex; align-items: center; gap: 5px; width: max-content; padding: 4px 8px; border-radius: 999px; background: #edf3fb; color: #36547d; font-size: .66rem; line-height: 1; white-space: nowrap; }
+.details-grid .details-email-status-verified { background: #e5f3ed; color: var(--color-primary); }
 .details-email-input { position: relative; }
 .details-email-input svg { position: absolute; top: 50%; right: 14px; transform: translateY(-50%); color: var(--color-primary); pointer-events: none; }
 .details-grid .details-email-verified input[readonly] { padding-right: 43px; border-color: #8fbcae; background: #edf5f2; color: var(--color-ink); cursor: not-allowed; }
 .details-grid .details-email-verified input[readonly]:focus { border-color: #8fbcae; box-shadow: none; }
+.details-grid .details-email-pending input[readonly] { padding-right: 43px; border-color: #b8c7da; background: #f5f8fc; color: var(--color-ink); cursor: not-allowed; }
+.details-grid .details-email-pending input[readonly]:focus { border-color: #b8c7da; box-shadow: none; }
 .details-grid .details-email-help { color: var(--color-muted); font-size: .72rem; font-weight: 400; line-height: 1.5; text-transform: none; }
 .details-grid .details-email-error input { border-color: #bd2c2c; background: #fff8f8; box-shadow: 0 0 0 3px rgb(189 44 44 / .1); }
 .details-grid .details-email-error input:focus { border-color: #a51f1f; box-shadow: 0 0 0 3px rgb(189 44 44 / .16); }

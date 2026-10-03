@@ -56,6 +56,7 @@
 .match-k6 legend { padding: 0 7px; color: var(--color-ink); font-size: 1rem; font-weight: 700; line-height: 1.45; }
 .match-k6-options { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 7px; }
 .match-k6-options label { display: grid; align-content: center; justify-items: center; min-height: 78px; padding: 10px 6px; border-radius: 12px; font-size: .78rem; line-height: 1.25; text-align: center; }
+.match-k6-options label.selected { font-weight: 400; }
 .match-k6-options input[type="radio"] { width: 17px; height: 17px; margin: 0 0 7px; }
 .match-actions { display: flex; justify-content: center; gap: 14px; margin-top: 38px; padding-top: 26px; border-top: 1px solid #e3ece8; }
 .match-page .match-back { border: 2px solid var(--color-ink); background: transparent; color: var(--color-ink); }
@@ -64,3 +65,4 @@
 @media (max-width: 600px) { .match-page { padding-right: 14px; padding-left: 14px; } .match-intro { margin-top: 58px; } .match-question { margin-top: 32px; padding: 26px 18px; border-radius: 22px; } .match-question fieldset { grid-template-columns: 1fr; } .match-actions { flex-direction: column-reverse; } .match-actions button { width: 100%; } .match-intro .questionnaire-card { min-height: 280px; padding: 27px 22px; } }
 @media (max-width: 600px) { .match-k6-options { grid-template-columns: 1fr; } .match-k6-options label { display: flex; justify-content: flex-start; min-height: 48px; padding: 8px 12px; text-align: left; } .match-k6-options input { margin: 0 10px 0 0; } }
 .match-restoring { min-height: 65vh; }
+.match-expired { width: min(680px, 100%); padding: clamp(32px, 6vw, 60px); border: 1px solid #dce9e3; border-radius: 28px; background: #fff; box-shadow: 0 22px 55px rgb(0 38 70 / .08); }

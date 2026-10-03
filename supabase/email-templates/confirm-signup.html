@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Your Listen Mental Health verification code</title>
+  </head>
+  <body style="margin:0;padding:0;background:#f5f8fb;color:#183b6b;font-family:Arial,Helvetica,sans-serif;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#f5f8fb;">
+      <tr>
+        <td align="center" style="padding:32px 16px;">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:560px;background:#ffffff;border:1px solid #d8e3ec;border-radius:16px;">
+            <tr>
+              <td style="padding:28px 32px 12px;">
+                <img src="https://listenmentalhealth.com/LMH_sideways.png" width="180" alt="Listen Mental Health" style="display:block;width:180px;max-width:100%;height:auto;border:0;color:#25477f;font-size:18px;font-weight:700;">
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:12px 32px 32px;">
+                <h1 style="margin:0 0 16px;font-size:26px;line-height:1.25;color:#183b6b;">Verify your email</h1>
+                <p style="margin:0 0 20px;font-size:16px;line-height:1.6;color:#405875;">
+                  Enter the code below on the Listen Mental Health booking page to confirm your email address.
+                </p>
+                <p style="margin:0 0 20px;padding:16px;text-align:center;background:#edf5fb;border:1px solid #c9dceb;border-radius:10px;font-size:28px;line-height:1.2;font-weight:700;letter-spacing:6px;color:#183b6b;">
+                  {{ .Token }}
+                </p>
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin:0 auto 20px;">
+                  <tr>
+                    <td align="center" style="border-radius:999px;background:#25477f;">
+                      <a href="{{ .RedirectTo }}?signup_draft={{ .Data.signup_draft_token }}" style="display:inline-block;padding:14px 24px;color:#ffffff;font-size:15px;font-weight:700;text-decoration:none;">Continue creating your account</a>
+                    </td>
+                  </tr>
+                </table>
+                <p style="margin:0 0 12px;font-size:14px;line-height:1.6;color:#5b6f86;">
+                  Your saved questionnaire and details are available through this button for 15 minutes. For your security, use the code as soon as possible and do not share it with anyone.
+                </p>
+                <p style="margin:0;font-size:14px;line-height:1.6;color:#5b6f86;">
+                  If you did not create a Listen Mental Health account, you can ignore this email.
+                </p>
+              </td>
+            </tr>
+          </table>
+          <p style="margin:16px 0 0;font-size:12px;line-height:1.5;color:#718096;">
+            This is an automated account-verification message from Listen Mental Health.
+          </p>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

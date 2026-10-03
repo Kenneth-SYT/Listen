@@ -9,7 +9,7 @@ export type CustomerDetails = {
   firstName: string; lastName: string; preferredName: string; dateOfBirth: string
   mobile: string; email: string; gender: 'male' | 'female' | 'other' | ''
 }
-type Props = { initialDetails: CustomerDetails; selection?: BookingSelection; answers: IntakeAnswers; onBack: () => void; onDetailsChange: (details: CustomerDetails) => void; onAccountReady?: () => void }
+type Props = { initialDetails: CustomerDetails; selection?: BookingSelection; answers: IntakeAnswers; onBack: () => void; onDetailsChange: (details: CustomerDetails) => void; onAccountReady?: () => void; resumeDraftToken?: string }
 // Reserved for an optional second factor. Email remains the account identity.
 const phoneVerificationEnabled = import.meta.env.VITE_ENABLE_PHONE_VERIFICATION === 'true'
 // Verification is required by default. Set the flag to false only for a
@@ -18,17 +18,19 @@ const emailVerificationRequired = import.meta.env.VITE_REQUIRE_EMAIL_VERIFICATIO
 const toInternational = (mobile: string) => '+61' + mobile.slice(1)
 const toLocal = (phone: string) => phone.startsWith('+61') ? '0' + phone.slice(3) : phone
 
-function DetailsPage({ initialDetails, selection, answers, onBack, onDetailsChange, onAccountReady }: Props) {
+function DetailsPage({ initialDetails, selection, answers, onBack, onDetailsChange, onAccountReady, resumeDraftToken = '' }: Props) {
   const [details, setDetails] = useState(initialDetails)
   const { session, loading } = useSession()
   const [code, setCode] = useState('')
   const [pendingPhone, setPendingPhone] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [signupPassword, setSignupPassword] = useState('')
   const [emailOtp, setEmailOtp] = useState('')
   const [displayQuote, setDisplayQuote] = useState(selection?.quote ?? null)
   const [accountMode, setAccountMode] = useState<'signup' | 'signin'>('signup')
-  const [awaitingConfirmation, setAwaitingConfirmation] = useState(false)
+  const [awaitingConfirmation, setAwaitingConfirmation] = useState(!!resumeDraftToken)
+  const [signupDraftToken, setSignupDraftToken] = useState(resumeDraftToken)
   const [emailInUse, setEmailInUse] = useState(false)
   const [duplicateEmail, setDuplicateEmail] = useState('')
   const [accountCreatedThisVisit, setAccountCreatedThisVisit] = useState(false)
@@ -46,9 +48,15 @@ function DetailsPage({ initialDetails, selection, answers, onBack, onDetailsChan
   const verifiedEmail = session?.user.email_confirmed_at ? session.user.email?.toLowerCase() : ''
   const signinOnly = !session && accountMode === 'signin'
   const duplicateEmailEntered = !session && emailInUse && details.email.trim().toLowerCase() === duplicateEmail
-  const passwordMismatch = !session && accountMode === 'signup' && !!confirmPassword && password !== confirmPassword
+  const canEditNewPassword = accountMode === 'signup' && (!session || accountCreatedThisVisit)
+  const passwordMismatch = canEditNewPassword && !!confirmPassword && password !== confirmPassword
   const holdTime = `${String(Math.floor(holdSeconds / 60)).padStart(2, '0')}:${String(holdSeconds % 60).padStart(2, '0')}`
   const visibleMessage = session && /email already exists|confirm your email|check your email/i.test(message) ? '' : message
+
+  const newSignupDraftToken = () => {
+    const bytes = crypto.getRandomValues(new Uint8Array(32))
+    return Array.from(bytes, value => value.toString(16).padStart(2, '0')).join('')
+  }
 
   useEffect(() => {
     if (!selection) return
@@ -113,7 +121,7 @@ function DetailsPage({ initialDetails, selection, answers, onBack, onDetailsChan
       if (error) throw error
       const emptyDetails: CustomerDetails = { firstName: '', lastName: '', preferredName: '', dateOfBirth: '', mobile: '', email: '', gender: '' }
       setDetails(emptyDetails); onDetailsChange(emptyDetails)
-      setAccountMode('signin'); setPassword(''); setConfirmPassword(''); setAwaitingConfirmation(false); setEmailInUse(false); setDuplicateEmail(''); setAccountCreatedThisVisit(false)
+      setAccountMode('signin'); setPassword(''); setConfirmPassword(''); setSignupPassword(''); setAwaitingConfirmation(false); setEmailInUse(false); setDuplicateEmail(''); setAccountCreatedThisVisit(false)
     } catch (error) { setMessage(errorMessage(error)) }
     finally { setBusy(false) }
   }
@@ -163,7 +171,7 @@ function DetailsPage({ initialDetails, selection, answers, onBack, onDetailsChan
       if (error) throw error
       if (!data.session || !data.user?.email_confirmed_at) throw new Error('We could not verify that code. Please request a new code and try again.')
       setAwaitingConfirmation(false); setEmailOtp(''); setAccountCreatedThisVisit(true)
-      setMessage('Email verified. You can now continue to payment.')
+      setMessage('')
     } catch (error) { setMessage(errorMessage(error)) }
     finally { setBusy(false) }
   }
@@ -172,23 +180,42 @@ function DetailsPage({ initialDetails, selection, answers, onBack, onDetailsChan
     setBusy(true); setMessage('')
     try {
       const email = details.email.trim().toLowerCase()
-      const { error } = await getSupabase().auth.resend({ type: 'signup', email, options: { emailRedirectTo: window.location.origin + '/get-matched' } })
+      const client = getSupabase()
+      if (signupDraftToken) {
+        const { error: draftError } = await client.rpc('create_signup_draft', {
+          p_token: signupDraftToken,
+          p_email: email,
+          p_payload: { version: 1, answers, customerDetails: { ...details, email } },
+        })
+        if (draftError) throw new Error('We could not securely refresh your signup progress. Please try again.')
+      }
+      const { error } = await client.auth.resend({ type: 'signup', email, options: { emailRedirectTo: window.location.origin + '/get-matched' } })
       if (error) throw error
       setRetryUntil(Date.now() + 60_000)
       setMessage('A new verification code has been sent to your email.')
     } catch (error) { setMessage(errorMessage(error)) }
     finally { setBusy(false) }
   }
+  const changePendingEmail = () => {
+    if (signupDraftToken) void getSupabase().rpc('delete_signup_draft', { p_token: signupDraftToken })
+    setAwaitingConfirmation(false)
+    setSignupDraftToken('')
+    setEmailOtp('')
+    setRetryUntil(0)
+    setEmailInUse(false)
+    setDuplicateEmail('')
+    setMessage('Enter the new email address, then choose “Create account and continue” to send its first verification code.')
+  }
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (busy || loading || (!session && retrySeconds > 0) || (selection && (holdSeconds <= 0 || !holdValid || holdChecking)) || (!session && accountMode === 'signup' && awaitingConfirmation)) return
     const email = (session?.user.email ?? details.email).trim().toLowerCase()
-    if (!/^[^\s@]+@[^\s@]+\.com$/i.test(email)) { setMessage('Enter an email address ending in .com.'); return }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i.test(email)) { setMessage('Enter a valid email address, such as name@university.edu.au.'); return }
     if (!session && accountMode === 'signup' && emailInUse && email === duplicateEmail) {
       setMessage('Email already exists. Try signing in, or enter a different email to create a new account.')
       return
     }
-    if (!session && accountMode === 'signup' && password !== confirmPassword) {
+    if (canEditNewPassword && password !== confirmPassword) {
       return
     }
     if (session || accountMode === 'signup') {
@@ -209,9 +236,20 @@ function DetailsPage({ initialDetails, selection, answers, onBack, onDetailsChan
           return
         }
         if (accountMode === 'signup') {
+          const draftToken = signupDraftToken || newSignupDraftToken()
+          const { error: draftError } = await client.rpc('create_signup_draft', {
+            p_token: draftToken,
+            p_email: email,
+            p_payload: { version: 1, answers, customerDetails: { ...details, email } },
+          })
+          if (draftError) throw new Error('We could not securely save your signup progress. Please try again.')
+          setSignupDraftToken(draftToken)
           const { data, error } = await client.auth.signUp({
             email, password,
-            options: { emailRedirectTo: window.location.origin + '/get-matched' },
+            options: {
+              emailRedirectTo: window.location.origin + '/get-matched',
+              data: { signup_draft_token: draftToken },
+            },
           })
           if (error && /already|registered|exists/i.test(error.message)) {
             setEmailInUse(true)
@@ -220,6 +258,7 @@ function DetailsPage({ initialDetails, selection, answers, onBack, onDetailsChan
             return
           }
           if (error) throw error
+          setSignupPassword(password)
           if (data.user && data.user.identities?.length === 0) {
             setEmailInUse(true)
             setDuplicateEmail(email)
@@ -237,7 +276,7 @@ function DetailsPage({ initialDetails, selection, answers, onBack, onDetailsChan
           if (!data.session) {
             if (emailVerificationRequired) {
               setAwaitingConfirmation(true)
-              setMessage('Enter the verification code sent to your email. Your selected time remains held until the timer ends.')
+              setMessage('')
             } else {
               setMessage('Your account was created, but no signed-in session was returned. Please sign in to continue.')
             }
@@ -256,6 +295,10 @@ function DetailsPage({ initialDetails, selection, answers, onBack, onDetailsChan
       if (error || !data.user) throw new Error('We could not verify the signed-in account. Please sign in again.')
       if (data.user.email?.toLowerCase() !== email) throw new Error('The signed-in account does not match this booking email. Please use the correct account.')
       if (emailVerificationRequired && !data.user.email_confirmed_at) throw new Error('Please verify your email address before continuing.')
+      if (accountCreatedThisVisit && password !== signupPassword) {
+        const { error: passwordUpdateError } = await client.auth.updateUser({ password })
+        if (passwordUpdateError && !/different from the old password/i.test(passwordUpdateError.message)) throw passwordUpdateError
+      }
       if (selection && displayQuote) {
         const { data: currentQuote, error: quoteError } = await client.rpc('booking_quote', { p_rate_code: selection.quote.rate_code })
         if (quoteError) throw quoteError
@@ -273,6 +316,10 @@ function DetailsPage({ initialDetails, selection, answers, onBack, onDetailsChan
         mobile: savedDetails.mobile.trim(), contact_email: email, gender: savedDetails.gender || null,
       })
       if (profileError) throw profileError
+      if (signupDraftToken) {
+        await client.rpc('delete_signup_draft', { p_token: signupDraftToken })
+        setSignupDraftToken('')
+      }
       if (!selection) {
         onAccountReady?.()
         return
@@ -310,8 +357,8 @@ function DetailsPage({ initialDetails, selection, answers, onBack, onDetailsChan
   }
   return <>
     <div className={`details-layout${selection ? '' : ' details-layout-account'}`}><form className="details-form" onSubmit={submit}>
-      <header className="details-heading"><span className="match-eyebrow">{selection ? 'Final step before payment' : 'Save your match'}</span><h1 id="match-heading">{signinOnly ? 'Welcome back.' : accountCreatedThisVisit ? 'Your account is ready.' : session ? selection ? 'Complete your booking.' : 'Continue to your matches.' : 'Create your account.'}</h1><p>{signinOnly ? 'Sign in to continue.' : accountCreatedThisVisit ? selection ? 'Your email is verified. Review your booking and proceed when you’re ready.' : 'Your email is verified. Continue to choose your listener and an available time.' : 'We’ll use these details to prepare your booking and contact you about your appointment.'}</p>
-        {session && <div className="details-signed-in"><CheckCircle2 size={20} aria-hidden="true" /><span>{accountCreatedThisVisit ? 'Account created' : 'Signed in'} as <strong>{session.user.email}</strong></span><button type="button" onClick={switchAccount} disabled={busy}>Use another account</button></div>}
+      <header className="details-heading"><span className="match-eyebrow">{selection ? 'Final step before payment' : 'Save your match'}</span><h1 id="match-heading">{signinOnly ? 'Welcome back.' : accountCreatedThisVisit ? 'Your account is ready.' : session ? selection ? 'Complete your booking.' : 'Continue to your matches.' : 'Create your account.'}</h1><p>{signinOnly ? 'Sign in to continue.' : accountCreatedThisVisit ? selection ? 'Your email is verified. Review your booking and proceed when you’re ready.' : 'Continue to choose your listener.' : 'We’ll use these details to prepare your booking and contact you about your appointment.'}</p>
+        {session && <div className="details-signed-in"><CheckCircle2 size={20} aria-hidden="true" /><span>{accountCreatedThisVisit ? 'Email verified' : 'Signed in'} as <strong>{session.user.email}</strong></span><button type="button" onClick={switchAccount} disabled={busy}>Use another account</button></div>}
       </header>
       <div className="details-grid">
         {!signinOnly && <>
@@ -321,12 +368,12 @@ function DetailsPage({ initialDetails, selection, answers, onBack, onDetailsChan
         <label><span>Date of birth</span><input type="date" autoComplete="bday" max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split('T')[0]} value={details.dateOfBirth} onChange={event => update('dateOfBirth', event.target.value)} required /></label>
         <div className="details-mobile-field"><label htmlFor="details-mobile"><span>Mobile</span></label><div className="details-mobile-row"><input id="details-mobile" type="tel" inputMode="numeric" autoComplete="tel" placeholder="04xxxxxxxx" pattern="04[0-9]{8}" title="Enter 10 digits starting with 04" maxLength={10} value={activeVerifiedPhone || details.mobile} onChange={event => update('mobile', event.target.value.replace(/\D/g, '').slice(0, 10))} readOnly={!!activeVerifiedPhone} required />{phoneVerificationEnabled && session && (verifiedPhone ? <span className="details-verified"><CheckCircle2 size={18} /> Verified</span> : <button type="button" onClick={sendCode} disabled={busy || retrySeconds > 0 || !supabase}>{retrySeconds > 0 ? `Retry ${retrySeconds}s` : 'Verify'}</button>)}</div></div>
         </>}
-        <label className={verifiedEmail ? 'details-email-verified' : duplicateEmailEntered ? 'details-email-error' : ''}><span>Email {verifiedEmail && <small><LockKeyhole size={13} aria-hidden="true" /> {accountCreatedThisVisit ? 'Verified and locked' : 'Signed in and locked'}</small>}</span><span className="details-email-input"><input type="email" autoComplete="email" placeholder="you@example.com" pattern="[^\s@]+@[^\s@]+\.com" title={verifiedEmail ? 'This verified email is linked to the signed-in account.' : 'Use an email address ending in .com'} value={session?.user.email ?? details.email} onChange={event => update('email', event.target.value)} readOnly={!!session} aria-invalid={duplicateEmailEntered || undefined} aria-describedby={duplicateEmailEntered ? 'details-email-error' : undefined} required />{verifiedEmail && <LockKeyhole size={18} aria-hidden="true" />}</span></label>
+        <label className={verifiedEmail ? 'details-email-verified' : awaitingConfirmation ? 'details-email-pending' : duplicateEmailEntered ? 'details-email-error' : ''}><span>Email {verifiedEmail ? <small className="details-email-status details-email-status-verified"><LockKeyhole size={12} aria-hidden="true" /> Verified</small> : awaitingConfirmation && <small className="details-email-status"><LockKeyhole size={12} aria-hidden="true" /> Verification pending</small>}</span><span className="details-email-input"><input type="email" autoComplete="email" placeholder="you@example.com" pattern="[^\s@]+@[^\s@]+\.[^\s@]{2,}" title={verifiedEmail ? 'This verified email is linked to the signed-in account.' : awaitingConfirmation ? 'Use “Change email address” below before entering another address.' : 'Enter a valid email address, including university and international domains.'} value={session?.user.email ?? details.email} onChange={event => update('email', event.target.value)} readOnly={!!session || awaitingConfirmation} aria-invalid={duplicateEmailEntered || undefined} aria-describedby={duplicateEmailEntered ? 'details-email-error' : undefined} required />{(verifiedEmail || awaitingConfirmation) && <LockKeyhole size={18} aria-hidden="true" />}</span></label>
         {!signinOnly &&
         <label><span>Gender <small>Optional</small></span><select value={details.gender} onChange={event => update('gender', event.target.value)}><option value="">Prefer not to say</option><option value="male">Male</option><option value="female">Female</option><option value="other">Other</option></select></label>
         }
-        {!session && accountMode === 'signup' && <>
-          <label><span>Create a password</span><input type="password" autoComplete="new-password" minLength={8} value={password} onChange={event => setPassword(event.target.value)} required /></label>
+        {canEditNewPassword && <>
+          <label><span>{accountCreatedThisVisit ? 'Password' : 'Create a password'}</span><input type="password" autoComplete="new-password" minLength={8} value={password} onChange={event => setPassword(event.target.value)} required /></label>
           <label className={passwordMismatch ? 'details-password-error' : ''}><span>Confirm password</span><input type="password" autoComplete="new-password" minLength={8} value={confirmPassword} onChange={event => setConfirmPassword(event.target.value)} aria-invalid={passwordMismatch || undefined} aria-describedby={passwordMismatch ? 'details-password-error' : undefined} required /></label>
         </>}
         {!session && accountMode === 'signin' && <label className="details-wide"><span>Your password</span><input type="password" autoComplete="current-password" minLength={8} value={password} onChange={event => setPassword(event.target.value)} required /></label>}
@@ -337,10 +384,10 @@ function DetailsPage({ initialDetails, selection, answers, onBack, onDetailsChan
         <div><strong id="email-code-heading">Verify your email</strong><span>Enter the code sent to {details.email}.</span></div>
         <div className="details-email-otp-row"><input aria-label="Email verification code" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6,8}" maxLength={8} placeholder="Verification code" value={emailOtp} onChange={event => setEmailOtp(event.target.value.replace(/\D/g, '').slice(0, 8))} /><button type="button" onClick={verifyEmailCode} disabled={busy || emailOtp.length < 6}>{busy ? 'Checking…' : 'Verify email'}</button></div>
         <button type="button" className="details-email-resend" onClick={resendEmailCode} disabled={busy || retrySeconds > 0}>{retrySeconds > 0 ? `Send again in ${retrySeconds}s` : 'Send a new code'}</button>
+        <button type="button" className="details-email-resend" onClick={changePendingEmail} disabled={busy}>Change email address</button>
       </section>}
       {!session && <div className="details-existing-account"><span>Already have an account?</span><a href="/login">Sign in</a></div>}
-      {retrySeconds > 0 && <p role="status" className="details-message">You can try again in {retrySeconds} seconds.</p>}
-      <div className="details-actions"><button type="button" className="details-back" onClick={backToBooking} disabled={busy}><ArrowLeft size={18} /> {selection ? 'Back to times' : 'Back to questionnaire'}</button><button type="submit" disabled={busy || loading || !supabase || (!session && retrySeconds > 0) || (selection && (holdSeconds <= 0 || !holdValid || holdChecking)) || duplicateEmailEntered || (!session && accountMode === 'signup' && awaitingConfirmation)}>{busy ? <><LoaderCircle className="details-button-spinner" size={18} aria-hidden="true" /> {selection?.useCredit ? 'Confirming with your credit…' : selection ? 'Opening secure payment…' : 'Saving your account…'}</> : <>{session ? selection ? selection.useCredit ? 'Confirm with session credit' : 'Proceed to payment' : 'Choose your listener and time' : awaitingConfirmation && accountMode === 'signup' ? 'Verify your email above' : accountMode === 'signup' ? 'Create account and continue' : 'Sign in and continue'} <ArrowRight size={18} /></>}</button></div>
+      <div className="details-actions"><button type="button" className="details-back" onClick={backToBooking} disabled={busy}><ArrowLeft size={18} /> {selection ? 'Back to times' : 'Back to questionnaire'}</button><button type="submit" disabled={busy || loading || !supabase || passwordMismatch || (!session && retrySeconds > 0) || (selection && (holdSeconds <= 0 || !holdValid || holdChecking)) || duplicateEmailEntered || (!session && accountMode === 'signup' && awaitingConfirmation)}>{busy ? <><LoaderCircle className="details-button-spinner" size={18} aria-hidden="true" /> {selection?.useCredit ? 'Confirming with your credit…' : selection ? 'Opening secure payment…' : 'Saving your account…'}</> : <>{session ? selection ? selection.useCredit ? 'Confirm with session credit' : 'Proceed to payment' : 'Choose your listener and time' : awaitingConfirmation && accountMode === 'signup' ? 'Verify your email above' : accountMode === 'signup' ? 'Create account and continue' : 'Sign in and continue'} <ArrowRight size={18} /></>}</button></div>
       {visibleMessage && <p id={duplicateEmailEntered ? 'details-email-error' : undefined} role={duplicateEmailEntered ? 'alert' : 'status'} className={'details-message details-action-message' + (duplicateEmailEntered ? ' details-message-error' : '')}>{visibleMessage}</p>}
       {checkoutError && <p role="alert" className="details-message details-message-error details-action-message">{checkoutError} Please try again. If the problem continues, <a href="/contact">contact support</a>.</p>}
     </form>

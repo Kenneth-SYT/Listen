@@ -6,7 +6,7 @@ export function bookingPrivacyAction(path: string, search: string, hash: string,
   if (path === '/get-matched') {
     const query = new URLSearchParams(search)
     const fragment = new URLSearchParams(hash.replace(/^#/, ''))
-    if (query.has('code') || query.has('token_hash') || fragment.has('access_token')) return 'email-confirmation'
+    if (query.has('code') || query.has('token_hash') || query.has('signup_draft') || fragment.has('access_token')) return 'email-confirmation'
     if (query.has('resume') || query.has('repeat')) return 'checkout-return'
     return 'clear'
   }

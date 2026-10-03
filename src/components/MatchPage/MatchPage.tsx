@@ -20,6 +20,7 @@ type SavedIntake = {
   k10_answers: number[] | null; listener_note: string; questionnaire_type: QuestionnaireType
   impact_score: number | null; long_answers: Partial<LongAnswers> | null
 }
+type RemoteDraftRow = { payload: { answers?: Partial<IntakeAnswers>; customerDetails?: Partial<CustomerDetails> }; expires_at: string }
 
 function readDraft(): Draft | null {
   try {
@@ -42,10 +43,11 @@ function readDraft(): Draft | null {
 function MatchPage() {
   const { session } = useSession()
   const entryParams = new URLSearchParams(window.location.search)
+  const [remoteDraftToken] = useState(() => entryParams.get('signup_draft')?.trim() ?? '')
   const repeatRequested = entryParams.has('repeat')
   const freshRequested = entryParams.has('fresh')
-  const restorePrevious = !freshRequested && (repeatRequested || (!entryParams.has('resume') && !entryParams.has('code') && !entryParams.has('token_hash')))
-  const [draft] = useState(readDraft)
+  const restorePrevious = !freshRequested && (repeatRequested || (!entryParams.has('resume') && !entryParams.has('code') && !entryParams.has('token_hash') && !remoteDraftToken))
+  const [draft] = useState(() => remoteDraftToken ? null : readDraft())
   const [stage, setStage] = useState<'intro' | 'questions' | 'booking' | 'account' | 'safety'>(draft?.stage ?? 'intro')
   const [step, setStep] = useState(draft?.step ?? 0)
   const [answers, setAnswers] = useState<IntakeAnswers>(draft?.answers ?? emptyIntake)
@@ -53,6 +55,48 @@ function MatchPage() {
   const [customerDetails, setCustomerDetails] = useState<CustomerDetails>(draft?.customerDetails ?? emptyDetails)
   const [restoringPrevious, setRestoringPrevious] = useState(restorePrevious)
   const [restoreMessage, setRestoreMessage] = useState('')
+  const [remoteDraftState, setRemoteDraftState] = useState<'none' | 'loading' | 'ready' | 'expired'>(remoteDraftToken ? 'loading' : 'none')
+
+  useEffect(() => {
+    if (!remoteDraftToken) return
+    let active = true
+    void (async () => {
+      const client = getSupabase()
+      const { data: currentAuth, error: currentAuthError } = await client.auth.getSession()
+      if (currentAuthError) throw currentAuthError
+      if (currentAuth.session) {
+        const { error: signOutError } = await client.auth.signOut({ scope: 'local' })
+        if (signOutError) throw signOutError
+      }
+      const { data, error } = await client.rpc('get_signup_draft', { p_token: remoteDraftToken })
+      if (error) throw error
+      const row = (Array.isArray(data) ? data[0] : data) as RemoteDraftRow | null
+      if (!row?.payload?.answers || !row.payload.customerDetails || new Date(row.expires_at).getTime() <= Date.now()) {
+        if (active) setRemoteDraftState('expired')
+        return
+      }
+      const restoredAnswers: IntakeAnswers = {
+        ...emptyIntake,
+        ...row.payload.answers,
+        k6: Array.isArray(row.payload.answers.k6) ? row.payload.answers.k6 : emptyIntake.k6,
+        k10: Array.isArray(row.payload.answers.k10) ? row.payload.answers.k10 : emptyIntake.k10,
+        long: { ...emptyLongAnswers, ...row.payload.answers.long },
+      }
+      if (requiresProfessionalSupport(restoredAnswers)) {
+        if (active) setRemoteDraftState('expired')
+        return
+      }
+      const restoredDetails = { ...emptyDetails, ...row.payload.customerDetails }
+      if (!active) return
+      setAnswers(restoredAnswers)
+      setCustomerDetails(restoredDetails)
+      setSelection(null)
+      setStage('account')
+      setRemoteDraftState('ready')
+      window.history.replaceState(window.history.state, '', '/get-matched?resume=signup')
+    })().catch(() => { if (active) setRemoteDraftState('expired') })
+    return () => { active = false }
+  }, [remoteDraftToken])
 
   useEffect(() => {
     if (!restorePrevious) return
@@ -183,7 +227,8 @@ function MatchPage() {
       : <input value={String(answers.long[key] ?? '')} onChange={event => updateLong({ [key]: event.target.value })} maxLength={200} required={required} />}
   </label>
 
-  if (restoringPrevious) return <section className="match-page match-restoring" aria-busy="true"><span className="sr-only" role="status">Loading</span></section>
+  if (restoringPrevious || remoteDraftState === 'loading') return <section className="match-page match-restoring" aria-busy="true"><span className="sr-only" role="status">Restoring your signup</span></section>
+  if (remoteDraftState === 'expired') return <section className="match-page"><div className="match-intro match-expired"><span className="match-eyebrow">Signup link expired</span><h1 id="match-heading">This link is no longer available.</h1><p>For your privacy, saved signup details are kept for 15 minutes. Please restart the questionnaire to create a new account.</p><a className="match-button-link" href="/get-matched?fresh=1">Start again</a></div></section>
 
   return <section className="match-page" aria-labelledby="match-heading">
     {restoreMessage && <p className="match-restore-message" role="alert">{restoreMessage} You can start a new questionnaire below.</p>}
@@ -256,7 +301,7 @@ function MatchPage() {
       <div className="match-actions"><button type="button" className="match-back" onClick={() => step === 0 ? setStage('intro') : setStep(value => value - 1)}>Back</button><button type="submit" disabled={!canContinue}>{step === totalSteps - 1 ? session ? 'Choose a listener and time' : 'Create your account' : 'Continue'}</button></div>
     </form> : stage === 'safety' ? <SafetySupportPage />
       : stage === 'booking' ? <BookingPage answers={answers} onContinue={continueFromBooking} />
-      : <DetailsPage initialDetails={customerDetails} answers={answers} onBack={() => { setStep(totalSteps - 1); setStage('questions') }} onDetailsChange={setCustomerDetails} onAccountReady={() => { setSelection(null); setStage('booking') }} />}
+      : <DetailsPage initialDetails={customerDetails} answers={answers} resumeDraftToken={remoteDraftState === 'ready' ? remoteDraftToken : ''} onBack={() => { setStep(totalSteps - 1); setStage('questions') }} onDetailsChange={setCustomerDetails} onAccountReady={() => { setSelection(null); setStage('booking') }} />}
   </section>
 }
 export default MatchPage
