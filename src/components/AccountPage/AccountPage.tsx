@@ -15,8 +15,8 @@ type CustomerProfile = { first_name: string; last_name: string; preferred_name: 
 type CreditAnimation = { from: number; added: number; to: number; phase: 'add' | 'merge' }
 const emptyProfile: CustomerProfile = { first_name: '', last_name: '', preferred_name: '', date_of_birth: '', mobile: '', contact_email: '', gender: '' }
 
-function FaviconMark() {
-  return <svg viewBox="0 0 48 46" fill="none" aria-hidden="true"><path fill="currentColor" d="M25.946 44.938c-.664.845-2.021.375-2.021-.698V33.937a2.26 2.26 0 0 0-2.262-2.262H10.287c-.92 0-1.456-1.04-.92-1.788l7.48-10.471c1.07-1.497 0-3.578-1.842-3.578H1.237c-.92 0-1.456-1.04-.92-1.788L10.013.474c.214-.297.556-.474.92-.474h28.894c.92 0 1.456 1.04.92 1.788l-7.48 10.471c-1.07 1.498 0 3.579 1.842 3.579h11.377c.943 0 1.473 1.088.89 1.83L25.947 44.94z" /></svg>
+function ListenerMark() {
+  return <img className="account-listener-mark" src="/favicon-transparent-512x512.png" alt="" aria-hidden="true" />
 }
 
 function PendingCountdown({ expiresAt, onExpired }: { expiresAt: string; onExpired: () => void }) {
@@ -197,7 +197,7 @@ function AccountPage() {
   return <main className="account-page">
     <header className="account-dashboard-heading"><div><span className="account-eyebrow">My support space</span><h1>Welcome back.</h1><p>Signed in as {session.user.email}</p></div><a className="account-book" href="/get-matched?repeat=previous"><CalendarPlus />Book a session</a></header>
     <div className="account-dashboard-grid">
-      <div className="account-sidebar-column"><aside className="account-sidebar" aria-label="Account navigation"><nav>{navItems.map(item => { const Icon = item.icon; return <button key={item.id} type="button" className={activeView === item.id ? 'active' : ''} onClick={() => setActiveView(item.id)}><Icon />{item.label}</button> })}</nav>{(listenerAccount || admin === userId) && <a href="/listener"><FaviconMark />Listener dashboard</a>}{admin === userId && <a href="/admin"><ShieldCheck />Admin dashboard</a>}</aside><button type="button" className="account-sidebar-signout" onClick={signOut}><LogOut />Sign out</button></div>
+      <div className="account-sidebar-column"><aside className="account-sidebar" aria-label="Account navigation"><nav>{navItems.map(item => { const Icon = item.icon; return <button key={item.id} type="button" className={activeView === item.id ? 'active' : ''} onClick={() => setActiveView(item.id)}><Icon />{item.label}</button> })}</nav>{(listenerAccount || admin === userId) && <a href="/listener"><ListenerMark />Listener dashboard</a>}{admin === userId && <a href="/admin"><ShieldCheck />Admin dashboard</a>}</aside><button type="button" className="account-sidebar-signout" onClick={signOut}><LogOut />Sign out</button></div>
       <div className="account-dashboard-main">
         {new URLSearchParams(location.search).has('checkout') && <div className="account-checkout-return" role="status"><Clock3 /><div><h2>Your payment wasn’t completed</h2><p>Your details are saved and the selected time remains held until the countdown ends.</p></div></div>}
         {message && <p className="account-message" role="status">{message}</p>}

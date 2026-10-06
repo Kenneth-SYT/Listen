@@ -10,6 +10,7 @@
 .account-sidebar nav { display: grid; }
 .account-sidebar button, .account-sidebar > a { display: flex; gap: 10px; align-items: center; width: 100%; min-height: 52px; padding: 0 16px; border: 0; border-bottom: 1px solid #e5ebee; background: #fff; color: var(--color-muted); cursor: pointer; font: inherit; font-size: .9rem; font-weight: 700; text-align: left; text-decoration: none; }
 .account-sidebar button svg, .account-sidebar > a svg { width: 18px; }
+.account-listener-mark { flex: 0 0 20px; width: 20px; height: 20px; object-fit: contain; }
 .account-sidebar button:hover, .account-sidebar button.active { background: var(--color-primary); color: #fff; }
 .account-sidebar-signout { display: flex; gap: 10px; align-items: center; justify-content: center; min-height: 48px; padding: 0 16px; border: 1px solid #e3caca; border-radius: 14px; background: #fff; color: #8d2e2e; cursor: pointer; font: inherit; font-size: .88rem; font-weight: 700; }
 .account-sidebar-signout svg { width: 18px; }

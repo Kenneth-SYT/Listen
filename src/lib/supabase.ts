@@ -25,7 +25,7 @@ export type Listener = {
   bio?: string; gender?: string; pronouns?: string; languages?: string[]
   profile_image_url?: string | null; profile_status?: 'draft' | 'pending' | 'published' | 'suspended'
 }
-export type Slot = { id: string; listener_id: string; starts_at: string; ends_at: string }
+export type Slot = { id: string; listener_id: string; starts_at: string; ends_at: string; window_id?: string | null }
 export type Quote = { rate_code: string; label: string; amount_cents: number; duration_minutes: number }
 export type BookingSelection = { listener: Listener; slot: Slot; quote: Quote; holdToken: string; holdExpiresAt: string; useCredit?: boolean }
 export type BundleProduct = { code: string; label: string; session_count: number; amount_cents: number }
@@ -95,7 +95,14 @@ export async function bookWithCredit(slotId: string, holdToken: string) {
   const { data: pending, error: pendingError } = await client.from('appointments').select('id').eq('status', 'pending')
   if (pendingError) throw new Error(pendingError.message)
   for (const booking of pending || []) await cancelCheckout(booking.id)
-  const { data, error } = await client.rpc('book_appointment_with_credit', { p_slot: slotId, p_hold_token: holdToken })
-  if (error) throw new Error(error.message)
-  return data as Appointment
+  const { data, error } = await client.functions.invoke('book-with-credit', { body: { slot_id: slotId, hold_token: holdToken } })
+  if (error) {
+    let message = error.message
+    if ('context' in error && error.context instanceof Response) {
+      const body = await error.context.json().catch(() => null)
+      message = body?.error || message
+    }
+    throw new Error(message)
+  }
+  return data.booking as Appointment
 }

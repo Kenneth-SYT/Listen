@@ -6,12 +6,13 @@ import type { IntakeAnswers } from '../../lib/intake'
 import { rankListeners, recommendedListener } from '../../lib/listenerMatching'
 import './BookingPage.css'
 
-const dayKey = (value: string) => new Date(value).toLocaleDateString('en-CA')
 const localDayKey = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+const dayKey = (value: string) => localDayKey(new Date(value))
 function BookingPage({ answers, onContinue }: { answers: IntakeAnswers; onContinue: (selection: BookingSelection) => void | Promise<void> }) {
   const { session, loading: authLoading } = useSession()
   const [listeners, setListeners] = useState<Listener[]>([])
-  const [slots, setSlots] = useState<Slot[]>([])
+  const [fixedSlots, setFixedSlots] = useState<Slot[]>([])
+  const [windowSlots, setWindowSlots] = useState<Slot[]>([])
   const [quotes, setQuotes] = useState<Quote[]>([])
   const [selectedRate, setSelectedRate] = useState('')
   const [selectedListener, setSelectedListener] = useState('')
@@ -34,50 +35,68 @@ function BookingPage({ answers, onContinue }: { answers: IntakeAnswers; onContin
       getSupabase().from('listeners').select('*').eq('active', true).order('name'),
       getSupabase().rpc('available_slots'), getSupabase().rpc('booking_options'),
       signedIn ? getSupabase().rpc('credit_summary') : Promise.resolve({ data: null, error: null }),
-    ]).then(([people, availability, pricing, creditResult]) => {
+    ]).then(async ([people, availability, pricing, creditResult]) => {
       if (!active) return
       if (people.error || availability.error || pricing.error) throw people.error || availability.error || pricing.error
       const list = people.data as Listener[]
-      const available = availability.data as Slot[]
+      const fixed = availability.data as Slot[]
       const rates = pricing.data as Quote[]
       const rate = rates[0]
       if (!rate) throw new Error('No session prices are currently available.')
-      const ranked = rankListeners(list, available, topics.split('|'), rate.duration_minutes)
+      const chosenRate = rates.find(option => option.rate_code === selectedRate) || rate
+      const { data: starts, error: startsError } = await getSupabase().rpc('available_window_starts', { p_duration_minutes: chosenRate.duration_minutes })
+      if (!active) return
+      if (startsError) throw startsError
+      const windows = (starts || []).map((slot: { selection_key: string; window_id: string; listener_id: string; starts_at: string; ends_at: string }) => ({ id: slot.selection_key, window_id: slot.window_id, listener_id: slot.listener_id, starts_at: slot.starts_at, ends_at: slot.ends_at }))
+      const available = [...fixed, ...windows]
+      const ranked = rankListeners(list, available, topics.split('|'), chosenRate.duration_minutes)
       const suggested = recommendedListener(ranked)
-      setListeners(list); setSlots(available); setQuotes(rates)
+      setListeners(list); setFixedSlots(fixed); setWindowSlots(windows); setQuotes(rates)
       setCredits(((creditResult.data as CreditSummary | null)?.standard_credits) || 0)
       setSelectedRate(current => rates.some(option => option.rate_code === current) ? current : rate.rate_code)
       setSelectedListener(current => list.some(person => person.id === current) ? current : suggested?.listener.id || ranked[0]?.listener.id || '')
       setMessage('')
     }).catch(error => { if (active) setMessage(errorMessage(error)) }).finally(() => { if (active) setLoading(false) })
     return () => { active = false }
-  }, [signedIn, authLoading, topics, refresh])
+  }, [signedIn, authLoading, topics, refresh, selectedRate])
 
+  const activeQuote = quotes.find(option => option.rate_code === selectedRate) || quotes[0] || null
   useEffect(() => {
     if (authLoading) return
     let active = true
     const updateAvailability = async () => {
       if (document.hidden) return
-      const { data, error } = await getSupabase().rpc('available_slots')
-      if (!active || error) return
-      const available = data as Slot[]
+      const [fixedResult, windowsResult] = await Promise.all([
+        getSupabase().rpc('available_slots'),
+        activeQuote ? getSupabase().rpc('available_window_starts', { p_duration_minutes: activeQuote.duration_minutes }) : Promise.resolve({ data: [], error: null }),
+      ])
+      if (!active) return
+      if (fixedResult.error || windowsResult.error) { setMessage(errorMessage(fixedResult.error || windowsResult.error)); return }
+      const fixed = fixedResult.data as Slot[]
+      const windows = (windowsResult.data || []).map((slot: { selection_key: string; window_id: string; listener_id: string; starts_at: string; ends_at: string }) => ({ id: slot.selection_key, window_id: slot.window_id, listener_id: slot.listener_id, starts_at: slot.starts_at, ends_at: slot.ends_at }))
+      const available = [...fixed, ...windows]
       if (selectedSlot && !available.some(slot => slot.id === selectedSlot)) {
         setSelectedSlot('')
         setMessage('That time is temporarily being held by someone else. Please choose another available time.')
       }
-      setSlots(available)
+      setFixedSlots(fixed); setWindowSlots(windows)
     }
     const timer = window.setInterval(() => void updateAvailability(), 4000)
     const whenVisible = () => { if (!document.hidden) void updateAvailability() }
     document.addEventListener('visibilitychange', whenVisible)
     return () => { active = false; window.clearInterval(timer); document.removeEventListener('visibilitychange', whenVisible) }
-  }, [authLoading, selectedSlot])
+  }, [authLoading, selectedSlot, activeQuote])
 
-  const quote = quotes.find(option => option.rate_code === selectedRate) || quotes[0] || null
+  const quote = activeQuote
+  const slots = [...fixedSlots, ...windowSlots]
   const rankedListeners = rankListeners(listeners, slots, answers.topics, quote?.duration_minutes ?? 0)
   const suggested = recommendedListener(rankedListeners)
-  const usableSlots = slots.filter(slot => slot.listener_id === selectedListener && quote && Date.parse(slot.ends_at) - Date.parse(slot.starts_at) >= quote.duration_minutes * 60000)
-  const days = [...new Set(usableSlots.map(slot => dayKey(slot.starts_at)))]
+  const usableSlots = slots.filter(slot => {
+    if (slot.listener_id !== selectedListener || !quote) return false
+    const duration = Date.parse(slot.ends_at) - Date.parse(slot.starts_at)
+    return slot.window_id ? duration === quote.duration_minutes * 60000 : duration >= quote.duration_minutes * 60000
+  }).sort((a, b) => Date.parse(a.starts_at) - Date.parse(b.starts_at))
+  const days = [...new Set(usableSlots.map(slot => dayKey(slot.starts_at)))].sort()
   const chosenDay = days.includes(selectedDay) ? selectedDay : days[0] || ''
   const monthKey = viewedMonth || chosenDay.slice(0, 7)
   const [year, month] = monthKey.split('-').map(Number)
@@ -102,9 +121,16 @@ function BookingPage({ answers, onContinue }: { answers: IntakeAnswers; onContin
     setHolding(true); setMessage('')
     try {
       const holdToken = crypto.randomUUID()
-      const { data, error } = await getSupabase().rpc('claim_slot_hold', { p_slot: chosenSlot.id, p_token: holdToken })
-      if (error) throw error
-      await onContinue({ listener, slot: chosenSlot, quote, holdToken, holdExpiresAt: data as string, useCredit: useCredit && quote.rate_code === 'standard' })
+      if (chosenSlot.window_id) {
+        const { data, error } = await getSupabase().rpc('claim_window_start', { p_window: chosenSlot.window_id, p_starts: chosenSlot.starts_at, p_duration_minutes: quote.duration_minutes, p_token: holdToken })
+        if (error) throw error
+        const claimed = data as { slot_id: string; expires_at: string }
+        await onContinue({ listener, slot: { ...chosenSlot, id: claimed.slot_id }, quote, holdToken, holdExpiresAt: claimed.expires_at, useCredit: useCredit && quote.rate_code === 'standard' })
+      } else {
+        const { data, error } = await getSupabase().rpc('claim_slot_hold', { p_slot: chosenSlot.id, p_token: holdToken })
+        if (error) throw error
+        await onContinue({ listener, slot: chosenSlot, quote, holdToken, holdExpiresAt: data as string, useCredit: useCredit && quote.rate_code === 'standard' })
+      }
     } catch (error) {
       setMessage(errorMessage(error))
       setRefresh(value => value + 1)
