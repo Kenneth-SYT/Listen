@@ -177,7 +177,7 @@
 .admin-publish-form button { min-height: 42px; padding: 0 18px; border: 0; border-radius: 9px; background: var(--color-primary); color: #fff; font: inherit; font-size: .8rem; font-weight: 700; white-space: nowrap; cursor: pointer; }
 .admin-publish-form button:hover { background: var(--color-primary-hover); }
 .admin-publish-form button:disabled { opacity: .5; cursor: not-allowed; }
-.admin-availability { margin: 20px 26px 26px; overflow: hidden; border: 1px solid #dce6f3; border-radius: 18px; background: #fff; }
+.admin-availability { margin: 0; overflow: hidden; border: 0; border-radius: 0; background: #fff; }
 .admin-availability-heading { display: flex; justify-content: space-between; gap: 20px; align-items: center; padding: 18px 22px; border-bottom: 1px solid #e4ebf4; }
 .admin-availability-heading > div > span { display: inline-flex; gap: 7px; align-items: center; color: var(--color-primary); font-size: .75rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
 .admin-availability-heading h3 { margin: 4px 0 2px; font-size: 1.3rem; }
@@ -297,7 +297,7 @@
   .admin-user-summary, .admin-role-action, .admin-user-row details { grid-column: 1; }
   .admin-role-action button { width: 100%; }
   .admin-user-row dl { grid-template-columns: 1fr; }
-  .admin-availability { margin: 13px; }
+  .admin-availability { margin: 0; }
   .admin-availability-section > .admin-section-heading { padding: 20px 18px; }
   .admin-publish-form { grid-template-columns: 1fr; padding: 18px; }
   .admin-publish-intro { grid-column: auto; }
