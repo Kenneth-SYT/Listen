@@ -24,6 +24,21 @@ type Intake = {
 
 const when = (value: string | null) => value ? new Date(value).toLocaleString('en-AU') : '—'
 const nameFor = (person?: AdminUser) => person ? [person.first_name, person.last_name].filter(Boolean).join(' ') || person.email : 'Unknown customer'
+const auditLabel = (value: string) => value
+  .replaceAll('.', ' ')
+  .replaceAll('_', ' ')
+  .replace(/\b\w/g, letter => letter.toUpperCase())
+const shortId = (value: string) => value.length > 16 ? `${value.slice(0, 8)}…${value.slice(-4)}` : value
+
+const auditDetailSummary = (details: Record<string, unknown> | null) => {
+  if (!details) return ''
+  const identityFields = new Set(['actor_user_id', 'actor_name', 'actor_email', 'target_id', 'target_user_id', 'target_listener_id', 'user_id', 'listener_id', 'email', 'user_email', 'target_email', 'name', 'target_name', 'listener_name'])
+  return Object.entries(details)
+    .filter(([key, value]) => !identityFields.has(key) && ['string', 'number', 'boolean'].includes(typeof value))
+    .slice(0, 3)
+    .map(([key, value]) => `${auditLabel(key)}: ${typeof value === 'boolean' ? (value ? 'Yes' : 'No') : String(value)}`)
+    .join(' · ')
+}
 
 function AdminPage() {
   const { session, loading } = useSession()
@@ -41,6 +56,7 @@ function AdminPage() {
   const [roleBusy, setRoleBusy] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [roleFilter, setRoleFilter] = useState<UserRoleFilter>('all')
+  const [managementListenerId, setManagementListenerId] = useState('')
   const [referenceTime, setReferenceTime] = useState(0)
   const userId = session?.user.id
 
@@ -63,7 +79,9 @@ function AdminPage() {
       for (const result of results) if (result.error) throw result.error
       if (!active) return
       setAllowed(true)
-      setListeners(results[0].data as Listener[])
+      const loadedListeners = results[0].data as Listener[]
+      setListeners(loadedListeners)
+      setManagementListenerId(current => loadedListeners.some(listener => listener.id === current) ? current : loadedListeners[0]?.id || '')
       setSlots(results[1].data as AdminSlot[])
       setBookings(results[2].data as Appointment[])
       setUsers((results[3].data || []) as AdminUser[])
@@ -78,6 +96,35 @@ function AdminPage() {
 
   const userById = useMemo(() => new Map(users.map(user => [user.user_id, user])), [users])
   const listenerById = useMemo(() => new Map(listeners.map(listener => [listener.id, listener])), [listeners])
+  const managementListener = listenerById.get(managementListenerId) || listeners[0]
+  const auditIdentity = (entry: AuditEntry, kind: 'actor' | 'target') => {
+    const details = entry.details || {}
+    const detailString = (...keys: string[]) => keys.map(key => details[key]).find(value => typeof value === 'string' && value) as string | undefined
+    if (kind === 'actor') {
+      if (!entry.actor_user_id) return { name: 'System', detail: 'Automated action' }
+      const savedName = detailString('actor_name')
+      const savedEmail = detailString('actor_email')
+      if (savedName || savedEmail) return { name: savedName || savedEmail!, detail: savedEmail || shortId(entry.actor_user_id) }
+      const actor = userById.get(entry.actor_user_id)
+      if (actor) return { name: nameFor(actor), detail: actor.email }
+      if (entry.actor_user_id === userId) return { name: session?.user.user_metadata?.full_name || session?.user.email || 'Current administrator', detail: session?.user.email || shortId(entry.actor_user_id) }
+      return { name: 'Unknown administrator', detail: shortId(entry.actor_user_id) }
+    }
+
+    const savedName = detailString('target_name')
+    const savedEmail = detailString('target_email')
+    if (savedName || savedEmail) return { name: savedName || savedEmail!, detail: savedEmail || auditLabel(entry.target_type) }
+    const targetUserId = detailString('target_user_id', 'user_id')
+    const listenerId = detailString('target_listener_id', 'listener_id')
+    const person = userById.get(entry.target_id) || (targetUserId ? userById.get(targetUserId) : undefined)
+    if (person) return { name: nameFor(person), detail: person.email }
+    const listener = listenerById.get(entry.target_id) || (listenerId ? listenerById.get(listenerId) : undefined)
+    if (listener) return { name: listener.name, detail: 'Listener' }
+    const suppliedName = detailString('target_name', 'listener_name', 'name')
+    const suppliedEmail = detailString('target_email', 'user_email', 'email')
+    if (suppliedName || suppliedEmail) return { name: suppliedName || suppliedEmail!, detail: suppliedName && suppliedEmail ? suppliedEmail : auditLabel(entry.target_type) }
+    return { name: auditLabel(entry.target_type), detail: shortId(entry.target_id) }
+  }
   const filteredUsers = useMemo(() => {
     const term = search.trim().toLowerCase()
     return users.filter(user => {
@@ -150,7 +197,7 @@ function AdminPage() {
       } else if (kind === 'slot') {
         const starts = new Date(String(values.get('starts'))); const ends = new Date(String(values.get('ends')))
         if (starts <= new Date() || ends <= starts) throw new Error('Choose a future start and a later end time.')
-        result = await client.from('availability').insert({ listener_id: values.get('listener'), starts_at: starts.toISOString(), ends_at: ends.toISOString() })
+        result = await client.rpc('admin_create_availability', { p_listener: values.get('listener'), p_starts: starts.toISOString(), p_ends: ends.toISOString() })
       } else {
         const amount = Math.round(Number(values.get('amount')) * 100)
         if (!Number.isSafeInteger(amount) || amount < 100) throw new Error('Enter an amount of at least $1.')
@@ -199,20 +246,45 @@ function AdminPage() {
         })}{!filteredUsers.length && <p className="admin-empty">No users match this filter.</p>}</div>
       </section>}
 
-      {view === 'availability' && <section className="admin-section"><div className="admin-section-heading"><div><h2>Availability calendar</h2><p>Publish, review and pause listener appointment times. Dates use {Intl.DateTimeFormat().resolvedOptions().timeZone}.</p></div></div>
-        <div className="admin-availability-publish"><form className="admin-form-card" onSubmit={event => save(event, 'slot')}><h3>Publish one appointment</h3><p>Add an individual appointment window, then manage it from the calendar.</p><label>Consultant<select name="listener" required><option value="">Select consultant</option>{listeners.map(person => <option value={person.id} key={person.id}>{person.name}</option>)}</select></label><label>Start<input name="starts" type="datetime-local" required /></label><label>End<input name="ends" type="datetime-local" required /></label><button disabled={busy}>Publish time</button></form></div>
+      {view === 'availability' && <section className="admin-section admin-availability-section"><div className="admin-section-heading"><div><h2>Availability</h2><p>Manage listener appointment windows · {Intl.DateTimeFormat().resolvedOptions().timeZone} time</p></div></div>
+        <form className="admin-publish-form" onSubmit={event => save(event, 'slot')}>
+          <div className="admin-publish-intro"><span>Quick action</span><h3>Add an appointment window</h3></div>
+          <label>Listener<select name="listener" required><option value="">Select listener</option>{listeners.map(person => <option value={person.id} key={person.id}>{person.name}</option>)}</select></label>
+          <label>Starts<input name="starts" type="datetime-local" required /></label>
+          <label>Ends<input name="ends" type="datetime-local" required /></label>
+          <button disabled={busy}>Add time</button>
+        </form>
         <AdminAvailabilityCalendar listeners={listeners} slots={slots} busy={busy} setBusy={setBusy} setMessage={setMessage} refresh={() => setRefresh(value => value + 1)} />
       </section>}
 
-      {view === 'management' && <section className="admin-section"><div className="admin-section-heading"><div><h2>Account and pricing management</h2><p>Manage listener access, public profiles and session pricing.</p></div></div>
-      <h3 className="admin-subheading">Listener profiles</h3><div className="admin-user-grid">{listeners.map(person => <article className="admin-user-card" key={person.id}><div className="admin-user-title"><div className="admin-avatar"><UserRound /></div><div><h3>{person.name}</h3><p>{person.focus}</p></div></div><div className="admin-badges"><span>{person.profile_status || 'draft'}</span>{person.active === false && <span>Inactive</span>}</div><p>{person.bio || 'This listener has not written a public biography yet.'}</p><p><strong>Languages:</strong> {person.languages?.join(', ') || 'Not added'}</p><div className="admin-badges">{person.profile_status === 'suspended' || person.active === false ? <button disabled={busy} onClick={async () => { setBusy(true); try { const { error } = await getSupabase().rpc('admin_set_listener_status', { p_listener: person.id, p_status: 'published' }); if (error) throw error; setMessage(`${person.name}'s profile is active again.`); setRefresh(value => value + 1) } catch (error) { setMessage(errorMessage(error)) } finally { setBusy(false) } }}>Reactivate</button> : <small>{person.profile_status === 'published' ? 'Public profile live' : 'Publishes when profile is complete'}</small>}<button disabled={busy} className="admin-secondary" onClick={async () => { setBusy(true); try { const { error } = await getSupabase().rpc('admin_set_listener_status', { p_listener: person.id, p_status: 'suspended' }); if (error) throw error; setMessage(`${person.name}'s profile is suspended.`); setRefresh(value => value + 1) } catch (error) { setMessage(errorMessage(error)) } finally { setBusy(false) } }}>Suspend</button></div><details className="admin-listener-editor"><summary>Edit public profile</summary><form className="admin-form-card" onSubmit={event => void saveListenerProfile(event, person.id)}><label>Display name<input name="name" defaultValue={person.name} maxLength={100} required /></label><label>Role or focus<input name="focus" defaultValue={person.focus} maxLength={200} required /></label><label>About<textarea name="bio" defaultValue={person.bio || ''} maxLength={2000} rows={5} required /></label><label>Gender<select name="gender" defaultValue={person.gender || ''}><option value="">Prefer not to say</option><option>Woman</option><option>Man</option><option>Non-binary or another gender</option></select></label><label>Pronouns<input name="pronouns" defaultValue={person.pronouns || ''} /></label><label>Languages, separated by commas<input name="languages" defaultValue={person.languages?.join(', ') || ''} required /></label><label>Profile image URL<input name="image" type="url" defaultValue={person.profile_image_url || ''} /></label><fieldset className="admin-topic-fieldset"><legend>Supported topics</legend><div>{supportTopics.filter(topic => topic !== 'I’m not sure yet').map(topic => <label key={topic}><input type="checkbox" name="matches" value={topic} defaultChecked={person.matches.includes(topic)} />{topic}</label>)}</div></fieldset><button disabled={busy}>Save profile</button></form></details></article>)}</div>
-      <div className="admin-management-grid">
-        <form className="admin-form-card" onSubmit={async event => { event.preventDefault(); const form = event.currentTarget; const values = new FormData(form); setBusy(true); setMessage(''); try { const { error } = await getSupabase().rpc('link_listener_account', { p_listener: String(values.get('listener')), p_email: String(values.get('email')) }); if (error) throw error; setMessage('Consultant account linked successfully.'); form.reset(); setRefresh(value => value + 1) } catch (error) { setMessage(errorMessage(error)) } finally { setBusy(false) } }}><h3>Consultant access</h3><p>Link a consultant to an existing account for the protected listener page.</p><label>Consultant<select name="listener" required><option value="">Select consultant</option>{listeners.map(person => <option key={person.id} value={person.id}>{person.name}</option>)}</select></label><label>Account email<input name="email" type="email" required /></label><button disabled={busy}>Link account</button></form>
-        <form className="admin-form-card" onSubmit={event => save(event, 'listener')}><h3>Add consultant</h3><label>Name<input name="name" required maxLength={100} /></label><label>Focus<input name="focus" required maxLength={200} /></label><fieldset className="admin-topic-fieldset"><legend>Supported topics</legend><div>{supportTopics.filter(topic => topic !== 'I’m not sure yet').map(topic => <label key={topic}><input type="checkbox" name="matches" value={topic} />{topic}</label>)}</div></fieldset><button disabled={busy}>Add consultant</button></form>
-        <form className="admin-form-card" onSubmit={event => save(event, 'rate')}><h3>Customer rate</h3><label>Customer<select name="customer" required><option value="">Select customer</option>{users.filter(person => person.first_name).map(person => <option key={person.user_id} value={person.user_id}>{nameFor(person)} ({person.email})</option>)}</select></label><label>Price per appointment (AUD)<input name="amount" type="number" min="1" step="0.01" required /></label><button disabled={busy}>Save customer rate</button><button type="button" className="admin-secondary" disabled={busy} onClick={async event => { const id = new FormData(event.currentTarget.form!).get('customer'); if (!id) { setMessage('Select a customer first.'); return } setBusy(true); try { const { error } = await getSupabase().from('customer_rates').delete().eq('user_id', id); if (error) throw error; setMessage('Customer now uses standard pricing.') } catch (error) { setMessage(errorMessage(error)) } finally { setBusy(false) } }}>Remove override</button></form>
-        <form className="admin-form-card" onSubmit={event => save(event, 'default')}><h3>Default rates</h3><label>Session<select name="code"><option value="intro">Introductory (30 minutes)</option><option value="standard">Standard (50 minutes)</option><option value="extended">Extended (2 hours)</option></select></label><label>Price (AUD)<input name="amount" type="number" min="1" step="0.01" required /></label><button disabled={busy}>Update rate</button></form>
-      </div></section>}
-      {view === 'audit' && <section className="admin-section"><div className="admin-section-heading"><div><h2>Role and profile audit history</h2><p>Recent listener profile, approval and availability changes.</p></div><span>{audit.length} events</span></div><div className="admin-table"><table><thead><tr><th>When</th><th>Action</th><th>Target</th><th>Details</th></tr></thead><tbody>{audit.map(entry => <tr key={entry.id}><td>{when(entry.created_at)}</td><td><strong>{entry.action.replaceAll('.', ' ')}</strong></td><td>{entry.target_type}<small>{entry.target_id}</small></td><td>{JSON.stringify(entry.details)}</td></tr>)}</tbody></table>{!audit.length && <p className="admin-empty">No audited role changes yet.</p>}</div></section>}
+      {view === 'management' && <section className="admin-section admin-management-section"><div className="admin-section-heading"><div><h2>Listener management</h2><p>Select a listener to review their public profile and manage their account.</p></div><span>{listeners.length} {listeners.length === 1 ? 'listener' : 'listeners'}</span></div>
+        <div className="admin-management-layout">
+          <aside className="admin-management-sidebar">
+            <div className="admin-management-sidebar-heading"><span>Listener directory</span><strong>Profiles</strong></div>
+            <nav aria-label="Choose a listener">{listeners.map(person => <button type="button" key={person.id} className={managementListener?.id === person.id ? 'active' : ''} aria-pressed={managementListener?.id === person.id} onClick={() => setManagementListenerId(person.id)}><span>{person.name}</span><small>{person.focus}</small><i className={person.profile_status === 'published' && person.active !== false ? 'live' : ''}>{person.profile_status === 'published' && person.active !== false ? 'Live' : person.profile_status || 'Draft'}</i></button>)}</nav>
+            {!listeners.length && <p className="admin-management-empty">No listener profiles yet.</p>}
+            <details className="admin-sidebar-pricing"><summary><span><small>Pricing</small><strong>Session rates</strong></span></summary><form className="admin-form-card" onSubmit={event => save(event, 'default')}><label>Session<select name="code"><option value="intro">Introductory (30 minutes)</option><option value="standard">Standard (50 minutes)</option><option value="extended">Extended (2 hours)</option></select></label><label>Price (AUD)<input name="amount" type="number" min="1" step="0.01" required /></label><button disabled={busy}>Update rate</button></form></details>
+          </aside>
+          <div className="admin-management-detail">{managementListener ? <article className="admin-listener-detail" key={managementListener.id}>
+            <header><div className="admin-user-title"><div className="admin-avatar"><UserRound /></div><div><span>Listener profile</span><h3>{managementListener.name}</h3><p>{managementListener.focus}</p></div></div><div className="admin-listener-state"><span className={managementListener.profile_status === 'published' && managementListener.active !== false ? 'live' : ''}>{managementListener.profile_status || 'draft'}</span>{managementListener.active === false && <span className="inactive">Inactive</span>}</div></header>
+            <div className="admin-listener-detail-grid"><section><span>About</span><p>{managementListener.bio || 'This listener has not written a public biography yet.'}</p></section><dl><div><dt>Languages</dt><dd>{managementListener.languages?.join(', ') || 'Not added'}</dd></div><div><dt>Pronouns</dt><dd>{managementListener.pronouns || 'Not added'}</dd></div><div><dt>Gender</dt><dd>{managementListener.gender || 'Not added'}</dd></div><div><dt>Visibility</dt><dd>{managementListener.profile_status === 'published' && managementListener.active !== false ? 'Publicly visible' : 'Not currently public'}</dd></div></dl></div>
+            <section className="admin-listener-topics"><span>Supported topics</span><div>{managementListener.matches.map(topic => <small key={topic}>{topic}</small>)}</div></section>
+            <div className="admin-listener-detail-actions"><small>{managementListener.profile_status === 'published' && managementListener.active !== false ? 'This profile is live on the listener page.' : 'This profile is hidden from the listener page.'}</small>{managementListener.profile_status === 'suspended' || managementListener.active === false ? <button disabled={busy} onClick={async () => { setBusy(true); try { const { error } = await getSupabase().rpc('admin_set_listener_status', { p_listener: managementListener.id, p_status: 'published' }); if (error) throw error; setMessage(`${managementListener.name}'s profile is active again.`); setRefresh(value => value + 1) } catch (error) { setMessage(errorMessage(error)) } finally { setBusy(false) } }}>Reactivate</button> : <button disabled={busy} className="admin-secondary" onClick={async () => { setBusy(true); try { const { error } = await getSupabase().rpc('admin_set_listener_status', { p_listener: managementListener.id, p_status: 'suspended' }); if (error) throw error; setMessage(`${managementListener.name}'s profile is suspended.`); setRefresh(value => value + 1) } catch (error) { setMessage(errorMessage(error)) } finally { setBusy(false) } }}>Suspend</button>}</div>
+            <details className="admin-listener-editor"><summary>Edit public profile</summary><form className="admin-form-card" onSubmit={event => void saveListenerProfile(event, managementListener.id)}><label>Display name<input name="name" defaultValue={managementListener.name} maxLength={100} required /></label><label>Role or focus<input name="focus" defaultValue={managementListener.focus} maxLength={200} required /></label><label>About<textarea name="bio" defaultValue={managementListener.bio || ''} maxLength={2000} rows={5} required /></label><label>Gender<select name="gender" defaultValue={managementListener.gender || ''}><option value="">Prefer not to say</option><option>Woman</option><option>Man</option><option>Non-binary or another gender</option></select></label><label>Pronouns<input name="pronouns" defaultValue={managementListener.pronouns || ''} /></label><label>Languages, separated by commas<input name="languages" defaultValue={managementListener.languages?.join(', ') || ''} required /></label><label>Profile image URL<input name="image" type="url" defaultValue={managementListener.profile_image_url || ''} /></label><fieldset className="admin-topic-fieldset"><legend>Supported topics</legend><div>{supportTopics.filter(topic => topic !== 'I’m not sure yet').map(topic => <label key={topic}><input type="checkbox" name="matches" value={topic} defaultChecked={managementListener.matches.includes(topic)} />{topic}</label>)}</div></fieldset><button disabled={busy}>Save profile</button></form></details>
+          </article> : <div className="admin-management-placeholder"><UserRound /><h3>Select a listener</h3><p>Choose a name from the directory to view their profile.</p></div>}</div>
+        </div>
+      </section>}
+      {view === 'audit' && <section className="admin-section"><div className="admin-section-heading"><div><h2>Audit history</h2><p>See what changed, who it affected, who made the change and when it happened.</p></div><span>{audit.length} events</span></div><div className="admin-table admin-audit-table"><table><thead><tr><th>Action taken</th><th>On who</th><th>By who</th><th>Time</th></tr></thead><tbody>{audit.map(entry => {
+        const target = auditIdentity(entry, 'target')
+        const actor = auditIdentity(entry, 'actor')
+        const detail = auditDetailSummary(entry.details)
+        return <tr key={entry.id}>
+          <td><div className="admin-audit-action"><strong>{auditLabel(entry.action)}</strong>{detail && <small>{detail}</small>}<span>{auditLabel(entry.target_type)}</span></div></td>
+          <td><div className="admin-audit-identity"><strong>{target.name}</strong><small>{target.detail}</small></div></td>
+          <td><div className="admin-audit-identity"><strong>{actor.name}</strong><small>{actor.detail}</small></div></td>
+          <td><time className="admin-audit-time" dateTime={entry.created_at}>{when(entry.created_at)}</time></td>
+        </tr>
+      })}</tbody></table>{!audit.length && <p className="admin-empty">No audited changes yet.</p>}</div></section>}
     </>}
   </section>
 }

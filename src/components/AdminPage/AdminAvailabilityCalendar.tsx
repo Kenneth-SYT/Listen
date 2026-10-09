@@ -1,4 +1,4 @@
-import { CalendarDays, ChevronLeft, ChevronRight, Clock3 } from 'lucide-react'
+import { CalendarDays, CalendarRange, ChevronDown, ChevronLeft, ChevronRight, Clock3 } from 'lucide-react'
 import { useMemo, useState, type FormEvent } from 'react'
 import { errorMessage, getSupabase, type Listener, type Slot } from '../../lib/supabase'
 
@@ -51,7 +51,7 @@ export default function AdminAvailabilityCalendar({ listeners, slots, busy, setB
   const setSlotStatus = async (slot: AdminSlot, enabled: boolean) => {
     setBusy(true); setMessage('')
     try {
-      const { error } = await getSupabase().from('availability').update({ enabled }).eq('id', slot.id)
+      const { error } = await getSupabase().rpc('admin_set_availability', { p_slot: slot.id, p_enabled: enabled })
       if (error) throw error
       setMessage(`${listenerNames.get(slot.listener_id) || 'Listener'} is now ${enabled ? 'available' : 'unavailable'} for that time.`)
       refresh()
@@ -85,7 +85,7 @@ export default function AdminAvailabilityCalendar({ listeners, slots, busy, setB
 
     setBusy(true); setMessage('')
     try {
-      const { error } = await getSupabase().from('availability').update({ enabled }).in('id', matching.map(slot => slot.id))
+      const { error } = await getSupabase().rpc('admin_set_availability_range', { p_listener: targetListener, p_slots: matching.map(slot => slot.id), p_enabled: enabled })
       if (error) throw error
       setMessage(`${matching.length} published ${matching.length === 1 ? 'time was' : 'times were'} marked ${enabled ? 'available' : 'unavailable'}.`)
       setListenerId(targetListener)
@@ -98,20 +98,23 @@ export default function AdminAvailabilityCalendar({ listeners, slots, busy, setB
 
   return <section className="admin-availability" aria-labelledby="availability-heading">
     <div className="admin-availability-heading">
-      <div><span><CalendarDays size={18} /> Schedule</span><h3 id="availability-heading">Upcoming availability</h3><p>Review published appointment windows or change several existing times at once.</p></div>
-      <label>Show calendar for<select value={listenerId} onChange={event => setListenerId(event.target.value)}><option value="all">All listeners</option>{listeners.map(listener => <option key={listener.id} value={listener.id}>{listener.name}</option>)}</select></label>
+      <div><span><CalendarDays size={16} /> Schedule</span><h3 id="availability-heading">Calendar</h3><p>Select a date to review or pause its published times.</p></div>
+      <label>Show for<select value={listenerId} onChange={event => setListenerId(event.target.value)}><option value="all">All listeners</option>{listeners.map(listener => <option key={listener.id} value={listener.id}>{listener.name}</option>)}</select></label>
     </div>
 
-    <form className="admin-range-form" onSubmit={updateRange}>
-      <div><strong>Change a date range</strong><p>Only published times that overlap this daily time window will change.</p></div>
-      <label>Listener<select name="listener" required defaultValue=""><option value="" disabled>Select listener</option>{listeners.map(listener => <option key={listener.id} value={listener.id}>{listener.name}</option>)}</select></label>
-      <label>From date<input name="from-date" type="date" min={dateKey(today)} required /></label>
-      <label>To date<input name="to-date" type="date" min={dateKey(today)} required /></label>
-      <label>From time<input name="from-time" type="time" required /></label>
-      <label>To time<input name="to-time" type="time" required /></label>
-      <label>Set as<select name="status" defaultValue="unavailable"><option value="unavailable">Unavailable</option><option value="available">Available</option></select></label>
-      <button disabled={busy}>Update matching times</button>
-    </form>
+    <details className="admin-range-details">
+      <summary><span><CalendarRange size={17} /> Change several published times</span><ChevronDown size={17} /></summary>
+      <form className="admin-range-form" onSubmit={updateRange}>
+        <p>Only published times overlapping this daily time window will change.</p>
+        <label>Listener<select name="listener" required defaultValue=""><option value="" disabled>Select listener</option>{listeners.map(listener => <option key={listener.id} value={listener.id}>{listener.name}</option>)}</select></label>
+        <label>From date<input name="from-date" type="date" min={dateKey(today)} required /></label>
+        <label>To date<input name="to-date" type="date" min={dateKey(today)} required /></label>
+        <label>From time<input name="from-time" type="time" required /></label>
+        <label>To time<input name="to-time" type="time" required /></label>
+        <label>Set as<select name="status" defaultValue="unavailable"><option value="unavailable">Unavailable</option><option value="available">Available</option></select></label>
+        <button disabled={busy}>Update times</button>
+      </form>
+    </details>
 
     <div className="admin-calendar-layout">
       <div className="admin-calendar">
