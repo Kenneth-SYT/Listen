@@ -47,7 +47,7 @@ function PricingPage() {
     let active = true
     const loadRates = async () => {
       try {
-        const { data, error } = await getSupabase().rpc('booking_options')
+        const { data, error } = await getSupabase().rpc('public_session_rates')
         if (error) throw error
         if (active) {
           setQuotes((data || []) as Quote[])
