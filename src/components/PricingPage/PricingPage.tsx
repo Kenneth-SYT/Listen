@@ -1,32 +1,32 @@
 import { Clock3, MessageCircleHeart, Timer } from 'lucide-react'
-import { useState } from 'react'
-import { createBundleCheckout, errorMessage } from '../../lib/supabase'
+import { useEffect, useState } from 'react'
+import { createBundleCheckout, errorMessage, getSupabase, money, type Quote } from '../../lib/supabase'
 import { useSession } from '../../lib/useSession'
 import './PricingPage.css'
 
-const sessions = [
+const sessionDetails = [
   {
+    code: 'intro',
     icon: MessageCircleHeart,
     label: '30 minutes',
     title: 'Introductory chat',
     description: 'A low-pressure first chat to share what’s on your mind and see whether peer support feels right for you.',
-    price: '$20',
     note: 'One introductory chat per student',
   },
   {
+    code: 'standard',
     icon: Clock3,
     label: '50 minutes',
     title: 'Standard support session',
     description: 'Time with a supportive listener to talk things through, reflect and decide on your next step.',
-    price: '$35',
     note: 'Book sessions when you need them',
   },
   {
+    code: 'extended',
     icon: Timer,
     label: '2 hours',
     title: 'Extended support session',
     description: 'A longer conversation when you want more time to unpack what is happening without feeling rushed.',
-    price: '$80',
     note: 'Extra time for a deeper conversation',
   },
 ]
@@ -39,6 +39,49 @@ function PricingPage() {
   const { session, loading } = useSession()
   const [buying, setBuying] = useState('')
   const [message, setMessage] = useState('')
+  const [quotes, setQuotes] = useState<Quote[]>([])
+  const [pricingLoading, setPricingLoading] = useState(true)
+  const [pricingMessage, setPricingMessage] = useState('')
+
+  useEffect(() => {
+    let active = true
+    const loadRates = async () => {
+      try {
+        const { data, error } = await getSupabase().rpc('booking_options')
+        if (error) throw error
+        if (active) {
+          setQuotes((data || []) as Quote[])
+          setPricingMessage('')
+        }
+      } catch (error) {
+        if (active) setPricingMessage(errorMessage(error))
+      } finally {
+        if (active) setPricingLoading(false)
+      }
+    }
+    const refreshRates = () => void loadRates()
+    const refreshVisibleRates = () => {
+      if (document.visibilityState === 'visible') refreshRates()
+    }
+    refreshRates()
+    window.addEventListener('focus', refreshRates)
+    document.addEventListener('visibilitychange', refreshVisibleRates)
+    return () => {
+      active = false
+      window.removeEventListener('focus', refreshRates)
+      document.removeEventListener('visibilitychange', refreshVisibleRates)
+    }
+  }, [])
+
+  const sessions = sessionDetails.map(details => {
+    const quote = quotes.find(option => option.rate_code === details.code)
+    return {
+      ...details,
+      label: quote ? quote.duration_minutes === 120 ? '2 hours' : `${quote.duration_minutes} minutes` : details.label,
+      price: quote ? money(quote.amount_cents) : pricingLoading ? '…' : '—',
+    }
+  })
+
   const buyBundle = async (code: string) => {
     if (loading || buying) return
     if (!session) {
@@ -73,6 +116,7 @@ function PricingPage() {
           )
         })}
       </div>
+      {pricingMessage && <p className="pricing-rate-error" role="alert">Current session prices could not be loaded. Please refresh the page or try again shortly.</p>}
 
       <section className="pricing-bundles" aria-labelledby="bundle-heading">
         <div className="pricing-bundle-heading"><span>Plan ahead and save</span><h2 id="bundle-heading">Standard-session bundles</h2><p>Pay once, then schedule each 50-minute session separately whenever you’re ready. Your remaining credits stay visible in your account.</p></div>

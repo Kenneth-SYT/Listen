@@ -37,6 +37,7 @@
 .pricing-bundle-grid button:hover, .pricing-bundle-grid button:focus-visible { background: var(--color-primary-hover); }
 .pricing-bundle-grid button:disabled { opacity: .6; cursor: wait; }
 .pricing-bundle-error { margin: 18px 0 0; padding: 12px 15px; border-radius: 10px; background: #fff1f1; color: #8d2e2e; font-weight: 700; }
+.pricing-rate-error { width: min(1180px, 100%); margin: 18px auto 0; padding: 12px 15px; border-radius: 10px; background: #fff1f1; color: #8d2e2e; font-weight: 700; }
 .pricing-bundle-note { margin: 20px 0 0; font-size: .85rem; }
 .pricing-help h2 { margin: 0 0 10px; font-size: 1.4rem; }
 .pricing-help p { margin: 0 0 16px; color: var(--color-muted); line-height: 1.6; }
