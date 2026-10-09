@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
-import { CalendarDays, Clock3, Search, ShieldCheck, UserRound, UsersRound } from 'lucide-react'
+import { ArrowLeft, CalendarDays, Clock3, Search, ShieldCheck, UserRound, UsersRound } from 'lucide-react'
 import { errorMessage, getSupabase, money, type Appointment, type Listener, type Slot } from '../../lib/supabase'
 import { useSession } from '../../lib/useSession'
 import LoginPage from '../LoginPage/LoginPage'
@@ -150,6 +150,13 @@ function AdminPage() {
   }, [bookings, listenerById, search, userById])
   const confirmed = bookings.filter(booking => booking.status === 'confirmed').length
   const upcoming = bookings.filter(booking => booking.status === 'confirmed' && Date.parse(booking.starts_at) >= referenceTime).length
+  const adminNavItems = [
+    { id: 'bookings' as const, label: 'Bookings', icon: CalendarDays },
+    { id: 'users' as const, label: 'Users', icon: UsersRound },
+    { id: 'availability' as const, label: 'Availability', icon: Clock3 },
+    { id: 'management' as const, label: 'Management', icon: UserRound },
+    { id: 'audit' as const, label: 'Audit history', icon: ShieldCheck },
+  ]
 
   const changeUserRole = async (person: AdminUser) => {
     const nextRole = person.listener_name ? 'user' : 'listener'
@@ -211,19 +218,22 @@ function AdminPage() {
   if (loading) return <p role="status" className="admin-state">Checking your account…</p>
   if (!session) return <LoginPage />
   return <section className="admin-page">
-    <header className="admin-hero"><div><span><ShieldCheck size={17} /> Restricted administrator area</span><h1>Admin dashboard</h1><p>Review customers, consultants, bookings and the context shared before each session.</p></div><a href="/account">My account</a></header>
+    <header className="admin-hero"><div><span><ShieldCheck size={17} /> Restricted administrator area</span><h1>Admin dashboard</h1><p>Review customers, consultants, bookings and the context shared before each session.</p></div></header>
     {message && <p role="status" className={'admin-notice' + (!allowed ? ' admin-error' : '')}>{message}</p>}
-    {allowed && <>
+    {allowed && <div className="admin-dashboard-layout">
+      <aside className="admin-dashboard-sidebar" aria-label="Admin navigation">
+        <div className="admin-dashboard-sidebar-heading"><span>Admin workspace</span><strong>Dashboard</strong></div>
+        <nav>{adminNavItems.map(item => { const Icon = item.icon; return <button key={item.id} type="button" className={view === item.id ? 'active' : ''} aria-pressed={view === item.id} onClick={() => { setView(item.id); setSearch(''); setRoleFilter('all') }}><Icon />{item.label}</button> })}</nav>
+        <a href="/account"><ArrowLeft />My account</a>
+      </aside>
+      <div className="admin-dashboard-main">
       <section className="admin-stats" aria-label="Dashboard summary">
         <article><UsersRound /><div><strong>{users.length}</strong><span>Total accounts</span></div></article>
         <article><CalendarDays /><div><strong>{bookings.length}</strong><span>All bookings</span></div></article>
         <article><ShieldCheck /><div><strong>{confirmed}</strong><span>Confirmed bookings</span></div></article>
         <article><Clock3 /><div><strong>{upcoming}</strong><span>Upcoming sessions</span></div></article>
       </section>
-      <div className="admin-toolbar">
-        <nav aria-label="Admin sections">{(['bookings', 'users', 'availability', 'management', 'audit'] as AdminView[]).map(item => <button key={item} type="button" className={view === item ? 'active' : ''} aria-pressed={view === item} onClick={() => { setView(item); setSearch(''); setRoleFilter('all') }}>{item === 'bookings' ? 'Bookings' : item === 'users' ? 'Users' : item === 'availability' ? 'Availability' : item === 'management' ? 'Management' : 'Audit history'}</button>)}</nav>
-        {(view === 'bookings' || view === 'users') && <label className="admin-search"><Search size={17} /><span className="sr-only">Search</span><input value={search} onChange={event => setSearch(event.target.value)} placeholder={view === 'users' ? 'Search users' : 'Search bookings'} /></label>}
-      </div>
+      {(view === 'bookings' || view === 'users') && <div className="admin-toolbar"><label className="admin-search"><Search size={17} /><span className="sr-only">Search</span><input value={search} onChange={event => setSearch(event.target.value)} placeholder={view === 'users' ? 'Search users' : 'Search bookings'} /></label></div>}
 
       {view === 'bookings' && <section className="admin-section"><div className="admin-section-heading"><div><h2>Bookings and consultants</h2><p>Every reservation is matched to its customer and assigned consultant.</p></div><span>{filteredBookings.length} shown</span></div>
         <div className="admin-table"><table><thead><tr><th>Customer</th><th>Consultant</th><th>Appointment</th><th>Questionnaire context</th><th>Payment</th><th>Status</th></tr></thead><tbody>{filteredBookings.map(booking => {
@@ -285,7 +295,8 @@ function AdminPage() {
           <td><time className="admin-audit-time" dateTime={entry.created_at}>{when(entry.created_at)}</time></td>
         </tr>
       })}</tbody></table>{!audit.length && <p className="admin-empty">No audited changes yet.</p>}</div></section>}
-    </>}
+      </div>
+    </div>}
   </section>
 }
 

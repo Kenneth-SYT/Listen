@@ -1,4 +1,4 @@
-import { CalendarDays, CalendarRange, ChevronDown, ChevronLeft, ChevronRight, Clock3 } from 'lucide-react'
+import { CalendarDays, CalendarRange, ChevronLeft, ChevronRight, Clock3 } from 'lucide-react'
 import { useMemo, useState, type FormEvent } from 'react'
 import { errorMessage, getSupabase, type Listener, type Slot } from '../../lib/supabase'
 
@@ -102,46 +102,45 @@ export default function AdminAvailabilityCalendar({ listeners, slots, busy, setB
       <label>Show for<select value={listenerId} onChange={event => setListenerId(event.target.value)}><option value="all">All listeners</option>{listeners.map(listener => <option key={listener.id} value={listener.id}>{listener.name}</option>)}</select></label>
     </div>
 
-    <details className="admin-range-details">
-      <summary><span><CalendarRange size={17} /> Change several published times</span><ChevronDown size={17} /></summary>
-      <form className="admin-range-form" onSubmit={updateRange}>
-        <p>Only published times overlapping this daily time window will change.</p>
-        <label>Listener<select name="listener" required defaultValue=""><option value="" disabled>Select listener</option>{listeners.map(listener => <option key={listener.id} value={listener.id}>{listener.name}</option>)}</select></label>
-        <label>From date<input name="from-date" type="date" min={dateKey(today)} required /></label>
-        <label>To date<input name="to-date" type="date" min={dateKey(today)} required /></label>
-        <label>From time<input name="from-time" type="time" required /></label>
-        <label>To time<input name="to-time" type="time" required /></label>
-        <label>Set as<select name="status" defaultValue="unavailable"><option value="unavailable">Unavailable</option><option value="available">Available</option></select></label>
-        <button disabled={busy}>Update times</button>
-      </form>
-    </details>
-
-    <div className="admin-calendar-layout">
-      <div className="admin-calendar">
-        <div className="admin-calendar-toolbar"><button type="button" aria-label="Previous month" onClick={() => shiftMonth(-1)}><ChevronLeft /></button><strong>{month.toLocaleDateString('en-AU', { month: 'long', year: 'numeric' })}</strong><button type="button" aria-label="Next month" onClick={() => shiftMonth(1)}><ChevronRight /></button></div>
-        <div className="admin-calendar-weekdays">{['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => <span key={day}>{day}</span>)}</div>
-        <div className="admin-calendar-grid">
-          {Array.from({ length: firstWeekday }, (_, index) => <span className="admin-calendar-blank" key={`blank-${index}`} />)}
-          {Array.from({ length: daysInMonth }, (_, index) => {
-            const date = new Date(month.getFullYear(), month.getMonth(), index + 1)
-            const key = dateKey(date)
-            const daySlots = slotsByDay.get(key) || []
-            const available = daySlots.filter(slot => slot.enabled).length
-            const unavailable = daySlots.length - available
-            return <button type="button" key={key} className={selectedDay === key ? 'selected' : ''} aria-pressed={selectedDay === key} onClick={() => setSelectedDay(key)}>
-              <span>{index + 1}</span>{daySlots.length > 0 && <small><i className="available-dot" />{available}{unavailable > 0 && <><i className="unavailable-dot" />{unavailable}</>}</small>}
-            </button>
-          })}
-        </div>
-        <div className="admin-calendar-key"><span><i className="available-dot" />Available</span><span><i className="unavailable-dot" />Unavailable</span></div>
-      </div>
-
-      <aside className="admin-day-schedule">
-        <div><span>Selected day</span><h4>{selectedDate.toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long' })}</h4></div>
-        {selectedSlots.length ? <div className="admin-time-list">{selectedSlots.map(slot => <article key={slot.id} className={slot.enabled ? '' : 'disabled'}>
-          <Clock3 size={18} /><div><strong>{new Date(slot.starts_at).toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })}–{new Date(slot.ends_at).toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })}</strong><span>{listenerNames.get(slot.listener_id) || 'Unknown listener'}</span></div><button type="button" disabled={busy} onClick={() => void setSlotStatus(slot, !slot.enabled)}>{slot.enabled ? 'Mark unavailable' : 'Restore'}</button>
-        </article>)}</div> : <p className="admin-empty">No published times on this day.</p>}
+    <div className="admin-availability-workspace">
+      <aside className="admin-range-sidebar">
+        <div className="admin-range-sidebar-heading"><span><CalendarRange size={16} /> Bulk changes</span><h4>Change published times</h4><p>Update every published time that overlaps the selected date and time range.</p></div>
+        <form className="admin-range-form" onSubmit={updateRange}>
+          <label>Listener<select name="listener" required defaultValue=""><option value="" disabled>Select listener</option>{listeners.map(listener => <option key={listener.id} value={listener.id}>{listener.name}</option>)}</select></label>
+          <div className="admin-range-field-pair"><label>From date<input name="from-date" type="date" min={dateKey(today)} required /></label><label>To date<input name="to-date" type="date" min={dateKey(today)} required /></label></div>
+          <div className="admin-range-field-pair"><label>From time<input name="from-time" type="time" required /></label><label>To time<input name="to-time" type="time" required /></label></div>
+          <label>Set as<select name="status" defaultValue="unavailable"><option value="unavailable">Unavailable</option><option value="available">Available</option></select></label>
+          <button disabled={busy}>Update times</button>
+        </form>
       </aside>
+
+      <div className="admin-calendar-layout">
+        <div className="admin-calendar">
+          <div className="admin-calendar-toolbar"><button type="button" aria-label="Previous month" onClick={() => shiftMonth(-1)}><ChevronLeft /></button><strong>{month.toLocaleDateString('en-AU', { month: 'long', year: 'numeric' })}</strong><button type="button" aria-label="Next month" onClick={() => shiftMonth(1)}><ChevronRight /></button></div>
+          <div className="admin-calendar-weekdays">{['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => <span key={day}>{day}</span>)}</div>
+          <div className="admin-calendar-grid">
+            {Array.from({ length: firstWeekday }, (_, index) => <span className="admin-calendar-blank" key={`blank-${index}`} />)}
+            {Array.from({ length: daysInMonth }, (_, index) => {
+              const date = new Date(month.getFullYear(), month.getMonth(), index + 1)
+              const key = dateKey(date)
+              const daySlots = slotsByDay.get(key) || []
+              const available = daySlots.filter(slot => slot.enabled).length
+              const unavailable = daySlots.length - available
+              return <button type="button" key={key} className={selectedDay === key ? 'selected' : ''} aria-pressed={selectedDay === key} onClick={() => setSelectedDay(key)}>
+                <span>{index + 1}</span>{daySlots.length > 0 && <small><i className="available-dot" />{available}{unavailable > 0 && <><i className="unavailable-dot" />{unavailable}</>}</small>}
+              </button>
+            })}
+          </div>
+          <div className="admin-calendar-key"><span><i className="available-dot" />Available</span><span><i className="unavailable-dot" />Unavailable</span></div>
+        </div>
+
+        <aside className="admin-day-schedule">
+          <div><span>Selected day</span><h4>{selectedDate.toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long' })}</h4></div>
+          {selectedSlots.length ? <div className="admin-time-list">{selectedSlots.map(slot => <article key={slot.id} className={slot.enabled ? '' : 'disabled'}>
+            <Clock3 size={18} /><div><strong>{new Date(slot.starts_at).toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })}–{new Date(slot.ends_at).toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })}</strong><span>{listenerNames.get(slot.listener_id) || 'Unknown listener'}</span></div><button type="button" disabled={busy} onClick={() => void setSlotStatus(slot, !slot.enabled)}>{slot.enabled ? 'Mark unavailable' : 'Restore'}</button>
+          </article>)}</div> : <p className="admin-empty">No published times on this day.</p>}
+        </aside>
+      </div>
     </div>
   </section>
 }
