@@ -2,10 +2,10 @@ import { ArrowLeft, CalendarDays, Clock3, ShieldCheck, UserRound, UsersRound } f
 import type { AdminView } from './adminTypes'
 
 const navigation = [
-  { id: 'bookings' as const, label: 'Bookings', icon: CalendarDays },
   { id: 'users' as const, label: 'Users', icon: UsersRound },
   { id: 'availability' as const, label: 'Availability', icon: Clock3 },
   { id: 'management' as const, label: 'Management', icon: UserRound },
+  { id: 'bookings' as const, label: 'Bookings', icon: CalendarDays },
   { id: 'audit' as const, label: 'Audit history', icon: ShieldCheck },
 ]
 

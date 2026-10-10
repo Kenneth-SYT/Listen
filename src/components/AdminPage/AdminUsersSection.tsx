@@ -18,8 +18,8 @@ const roleLabels: Record<UserRoleFilter, string> = { all: 'All accounts', admin:
 export default function AdminUsersSection({ users, search, roleFilter, roleCounts, roleBusy, onSearch, onRoleFilter, onChangeRole }: Props) {
   return <section className="admin-section">
     <div className="admin-users-heading">
-      <div className="admin-users-heading-row"><h2>User directory</h2><div className="admin-section-tools"><label className="admin-search"><Search size={17} /><span className="sr-only">Search</span><input value={search} onChange={event => onSearch(event.target.value)} placeholder="Search users" /></label><span>{users.length} shown</span></div></div>
-      <div className="admin-role-filters" role="group" aria-label="Filter users by role">{(['all', 'admin', 'listener', 'user'] as UserRoleFilter[]).map(role => <button type="button" key={role} className={roleFilter === role ? 'active' : ''} aria-pressed={roleFilter === role} onClick={() => onRoleFilter(role)}><span>{roleLabels[role]}</span><strong>{roleCounts[role]}</strong></button>)}</div>
+      <h2>User directory</h2>
+      <div className="admin-users-controls-row"><div className="admin-role-filters" role="group" aria-label="Filter users by role">{(['all', 'admin', 'listener', 'user'] as UserRoleFilter[]).map(role => <button type="button" key={role} className={roleFilter === role ? 'active' : ''} aria-pressed={roleFilter === role} onClick={() => onRoleFilter(role)}><span>{roleLabels[role]}</span><strong>{roleCounts[role]}</strong></button>)}</div><div className="admin-section-tools"><label className="admin-search"><Search size={17} /><span className="sr-only">Search</span><input value={search} onChange={event => onSearch(event.target.value)} placeholder="Search users" /></label><span>{users.length} shown</span></div></div>
     </div>
     <div className="admin-user-list">{users.map(person => {
       const role = person.administrator ? 'admin' : person.listener_name ? 'listener' : 'user'

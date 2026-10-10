@@ -56,9 +56,9 @@
 .admin-user-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr)); gap: 18px; padding: 22px; background: #f7f9fc; }
 .admin-user-card { padding: 22px; border: 1px solid #dce6f3; border-radius: 18px; background: #fff; }
 .admin-users-heading { display: grid; gap: 17px; padding: 22px 28px 18px; border-bottom: 1px solid #e4ebf4; background: #fff; }
-.admin-users-heading-row { display: flex; justify-content: space-between; gap: 18px; align-items: center; }
-.admin-users-heading-row h2 { margin: 0; font-size: 1.55rem; }
-.admin-users-heading-row .admin-section-tools { width: min(430px, 100%); }
+.admin-users-heading > h2 { margin: 0; font-size: 1.55rem; }
+.admin-users-controls-row { display: flex; justify-content: space-between; gap: 16px; align-items: center; margin-left: 5px; }
+.admin-users-controls-row .admin-section-tools { width: min(430px, 100%); }
 .admin-role-filters { display: flex; flex-wrap: wrap; gap: 8px; }
 .admin-role-filters button { display: inline-flex; gap: 10px; align-items: center; padding: 9px 13px; border: 1px solid #cbd9e9; border-radius: 999px; background: #fff; color: var(--color-ink); font: inherit; font-size: .82rem; font-weight: 700; cursor: pointer; }
 .admin-role-filters button strong { display: grid; min-width: 23px; height: 23px; padding: 0 5px; place-items: center; border-radius: 999px; background: #eaf1fa; font-size: .72rem; }
@@ -139,7 +139,6 @@
 .admin-listener-topics > div { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .admin-listener-topics small { padding: 5px 8px; border-radius: 999px; background: #edf3fb; color: #31558a; font-size: .68rem; font-weight: 700; }
 .admin-listener-detail-actions { display: flex; gap: 14px; justify-content: space-between; align-items: center; padding: 14px 20px; border-top: 1px solid #e4ebf4; background: #f8fafd; }
-.admin-listener-detail-actions small { color: var(--color-muted); font-size: .75rem; }
 .admin-listener-detail-actions button { min-height: 36px; padding: 0 14px; border: 0; border-radius: 8px; background: var(--color-primary); color: #fff; font: inherit; font-size: .76rem; font-weight: 700; cursor: pointer; }
 .admin-listener-detail-actions button.admin-secondary { border: 1px solid #cbd8e8; background: #fff; color: var(--color-ink); }
 .admin-listener-detail-actions button:disabled { cursor: wait; opacity: .55; }
@@ -163,14 +162,8 @@
 .admin-topic-fieldset label { display: flex; flex-direction: row; gap: 7px; align-items: center; font-weight: 500; }
 .admin-topic-fieldset input[type="checkbox"] { width: auto; min-height: auto; }
 .admin-subheading { margin: 28px 28px 10px; }
-.admin-listener-editor { margin-top: 11px; border-top: 1px solid #e4ebf4; padding-top: 10px; }
-.admin-listener-editor summary { color: var(--color-primary); font-size: .82rem; font-weight: 700; cursor: pointer; }
-.admin-listener-editor .admin-form-card { margin-top: 10px; padding: 14px; background: #f8fafd; }
 .admin-listener-detail > .admin-listener-editor { margin: 0; padding: 14px 20px 20px; border-top: 1px solid #e4ebf4; }
-.admin-listener-detail > .admin-listener-editor > summary { display: inline-flex; min-height: 36px; padding: 0 13px; align-items: center; border: 1px solid var(--color-primary); border-radius: 8px; background: #fff; list-style: none; }
-.admin-listener-detail > .admin-listener-editor > summary::-webkit-details-marker { display: none; }
-.admin-listener-detail > .admin-listener-editor[open] > summary { background: var(--color-primary); color: #fff; }
-.admin-listener-detail .admin-listener-editor .admin-form-card { grid-template-columns: 1fr 1fr; margin-top: 14px; padding: 18px; }
+.admin-listener-detail .admin-listener-editor .admin-form-card { grid-template-columns: 1fr 1fr; padding: 18px; background: #f8fafd; }
 .admin-listener-detail .admin-listener-editor .admin-form-card > label:nth-child(3), .admin-listener-detail .admin-listener-editor .admin-topic-fieldset, .admin-listener-detail .admin-listener-editor .admin-form-card > button { grid-column: 1 / -1; }
 .admin-availability { margin: 0; overflow: hidden; border: 0; border-radius: 0; background: #fff; }
 .admin-availability-heading { display: flex; justify-content: space-between; gap: 20px; align-items: center; padding: 18px 22px; border-bottom: 1px solid #e4ebf4; }
@@ -306,8 +299,8 @@
   .admin-listener-detail .admin-listener-editor .admin-form-card > label:nth-child(3), .admin-listener-detail .admin-listener-editor .admin-topic-fieldset, .admin-listener-detail .admin-listener-editor .admin-form-card > button { grid-column: auto; }
   .admin-user-card dl { grid-template-columns: 1fr; }
   .admin-users-heading, .admin-user-list { padding-right: 13px; padding-left: 13px; }
-  .admin-users-heading-row { align-items: stretch; flex-direction: column; }
-  .admin-users-heading-row .admin-section-tools { width: 100%; }
+  .admin-users-controls-row { align-items: stretch; flex-direction: column; }
+  .admin-users-controls-row .admin-section-tools { width: 100%; }
   .admin-role-filters button { flex: 1 1 calc(50% - 8px); justify-content: space-between; }
   .admin-user-row { grid-template-columns: minmax(0, 1fr); gap: 12px; }
   .admin-role-badge { grid-row: 2; }

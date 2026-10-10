@@ -17,7 +17,7 @@ import AdminUsersSection from './AdminUsersSection'
 function AdminPage() {
   const { session, loading } = useSession()
   const [allowed, setAllowed] = useState(false)
-  const [view, setView] = useState<AdminView>('bookings')
+  const [view, setView] = useState<AdminView>('users')
   const [message, setMessage] = useState('Checking administrator access…')
   const [listeners, setListeners] = useState<Listener[]>([])
   const [slots, setSlots] = useState<AdminSlot[]>([])
