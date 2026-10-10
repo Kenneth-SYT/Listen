@@ -1,6 +1,9 @@
-import { CalendarDays, CalendarRange, ChevronLeft, ChevronRight, Clock3 } from 'lucide-react'
+import { CalendarDays, CalendarRange, ChevronLeft, ChevronRight, Clock3, Plus } from 'lucide-react'
 import { useMemo, useState, type FormEvent } from 'react'
 import { errorMessage, getSupabase, type Listener, type Slot } from '../../lib/supabase'
+import AdminAddWindowForm from './AdminAddWindowForm'
+import AdminAvailabilityDrawer from './AdminAvailabilityDrawer'
+import { adminTimeOptions } from './adminUtils'
 
 type AdminSlot = Slot & { enabled: boolean }
 
@@ -8,6 +11,7 @@ type Props = {
   listeners: Listener[]
   slots: AdminSlot[]
   busy: boolean
+  onAddWindow: (event: FormEvent<HTMLFormElement>) => Promise<boolean>
   setBusy: (value: boolean) => void
   setMessage: (value: string) => void
   refresh: () => void
@@ -20,11 +24,12 @@ const inputMinutes = (value: FormDataEntryValue | null) => {
   return hours * 60 + minutes
 }
 
-export default function AdminAvailabilityCalendar({ listeners, slots, busy, setBusy, setMessage, refresh }: Props) {
+export default function AdminAvailabilityCalendar({ listeners, slots, busy, onAddWindow, setBusy, setMessage, refresh }: Props) {
   const today = new Date()
   const [listenerId, setListenerId] = useState('all')
   const [month, setMonth] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1))
   const [selectedDay, setSelectedDay] = useState(() => dateKey(today))
+  const [drawer, setDrawer] = useState<'add' | 'bulk' | null>(null)
 
   const visibleSlots = useMemo(() => slots.filter(slot => listenerId === 'all' || slot.listener_id === listenerId), [listenerId, slots])
   const slotsByDay = useMemo(() => {
@@ -93,28 +98,23 @@ export default function AdminAvailabilityCalendar({ listeners, slots, busy, setB
       setMonth(new Date(rangeStart.getFullYear(), rangeStart.getMonth(), 1))
       setSelectedDay(fromDate)
       refresh()
+      setDrawer(null)
     } catch (error) { setMessage(errorMessage(error)) } finally { setBusy(false) }
   }
 
   return <section className="admin-availability" aria-labelledby="availability-heading">
     <div className="admin-availability-heading">
       <div><span><CalendarDays size={16} /> Schedule</span><h3 id="availability-heading">Calendar</h3><p>Select a date to review or pause its published times.</p></div>
-      <label>Show for<select value={listenerId} onChange={event => setListenerId(event.target.value)}><option value="all">All listeners</option>{listeners.map(listener => <option key={listener.id} value={listener.id}>{listener.name}</option>)}</select></label>
+      <div className="admin-availability-controls">
+        <label>Show for<select value={listenerId} onChange={event => setListenerId(event.target.value)}><option value="all">All listeners</option>{listeners.map(listener => <option key={listener.id} value={listener.id}>{listener.name}</option>)}</select></label>
+        <div className="admin-availability-actions">
+          <button type="button" className="secondary" onClick={() => setDrawer('bulk')}><CalendarRange size={16} /> Bulk change</button>
+          <button type="button" onClick={() => setDrawer('add')}><Plus size={16} /> Add appointment</button>
+        </div>
+      </div>
     </div>
 
-    <div className="admin-availability-workspace">
-      <aside className="admin-range-sidebar">
-        <div className="admin-range-sidebar-heading"><span><CalendarRange size={16} /> Bulk changes</span><h4>Change published times</h4><p>Update every published time that overlaps the selected date and time range.</p></div>
-        <form className="admin-range-form" onSubmit={updateRange}>
-          <label>Listener<select name="listener" required defaultValue=""><option value="" disabled>Select listener</option>{listeners.map(listener => <option key={listener.id} value={listener.id}>{listener.name}</option>)}</select></label>
-          <div className="admin-range-field-pair"><label>From date<input name="from-date" type="date" min={dateKey(today)} required /></label><label>To date<input name="to-date" type="date" min={dateKey(today)} required /></label></div>
-          <div className="admin-range-field-pair"><label>From time<input name="from-time" type="time" required /></label><label>To time<input name="to-time" type="time" required /></label></div>
-          <label>Set as<select name="status" defaultValue="unavailable"><option value="unavailable">Unavailable</option><option value="available">Available</option></select></label>
-          <button disabled={busy}>Update times</button>
-        </form>
-      </aside>
-
-      <div className="admin-calendar-layout">
+    <div className="admin-calendar-layout">
         <div className="admin-calendar">
           <div className="admin-calendar-toolbar"><button type="button" aria-label="Previous month" onClick={() => shiftMonth(-1)}><ChevronLeft /></button><strong>{month.toLocaleDateString('en-AU', { month: 'long', year: 'numeric' })}</strong><button type="button" aria-label="Next month" onClick={() => shiftMonth(1)}><ChevronRight /></button></div>
           <div className="admin-calendar-weekdays">{['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => <span key={day}>{day}</span>)}</div>
@@ -140,7 +140,25 @@ export default function AdminAvailabilityCalendar({ listeners, slots, busy, setB
             <Clock3 size={18} /><div><strong>{new Date(slot.starts_at).toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })}–{new Date(slot.ends_at).toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })}</strong><span>{listenerNames.get(slot.listener_id) || 'Unknown listener'}</span></div><button type="button" disabled={busy} onClick={() => void setSlotStatus(slot, !slot.enabled)}>{slot.enabled ? 'Mark unavailable' : 'Restore'}</button>
           </article>)}</div> : <p className="admin-empty">No published times on this day.</p>}
         </aside>
-      </div>
     </div>
+
+    {drawer === 'add' && <AdminAvailabilityDrawer eyebrow="New availability" title="Add an appointment window" description="Publish one available time for a listener." onClose={() => setDrawer(null)}>
+      <AdminAddWindowForm listeners={listeners} busy={busy} initialDate={selectedDay} onSubmit={onAddWindow} onCancel={() => setDrawer(null)} />
+    </AdminAvailabilityDrawer>}
+
+    {drawer === 'bulk' && <AdminAvailabilityDrawer eyebrow="Bulk changes" title="Change published times" description="Update every published time that overlaps the selected date and daily time range." onClose={() => setDrawer(null)}>
+      <form className="admin-drawer-form" onSubmit={updateRange}>
+        <label>Listener<select name="listener" required defaultValue={listenerId === 'all' ? '' : listenerId}><option value="" disabled>Select listener</option>{listeners.map(listener => <option key={listener.id} value={listener.id}>{listener.name}</option>)}</select></label>
+        <div className="admin-range-field-pair"><label>From date<input name="from-date" type="date" min={dateKey(today)} required /></label><label>To date<input name="to-date" type="date" min={dateKey(today)} required /></label></div>
+        <div className="admin-time-selector-row">
+          <label>Start time<select name="from-time" defaultValue="09:00" required>{adminTimeOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
+          <span>to</span>
+          <label>End time<select name="to-time" defaultValue="17:00" required>{adminTimeOptions.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label>
+        </div>
+        <label>Set as<select name="status" defaultValue="unavailable"><option value="unavailable">Unavailable</option><option value="available">Available</option></select></label>
+        <p className="admin-drawer-hint">Only existing published times within this range will change.</p>
+        <div className="admin-drawer-footer"><button type="button" className="secondary" onClick={() => setDrawer(null)}>Cancel</button><button disabled={busy}>Update times</button></div>
+      </form>
+    </AdminAvailabilityDrawer>}
   </section>
 }

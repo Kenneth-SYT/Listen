@@ -169,7 +169,7 @@ function AdminPage() {
     } catch (error) { setMessage(errorMessage(error)) } finally { setBusy(false) }
   }
 
-  const save = async (event: FormEvent<HTMLFormElement>, kind: 'listener' | 'slot' | 'rate' | 'default') => {
+  const save = async (event: FormEvent<HTMLFormElement>, kind: 'listener' | 'slot' | 'rate' | 'default'): Promise<boolean> => {
     event.preventDefault(); const form = event.currentTarget; const values = new FormData(form)
     setBusy(true); setMessage('')
     try {
@@ -188,8 +188,8 @@ function AdminPage() {
         result = kind === 'rate' ? await client.from('customer_rates').upsert({ user_id: values.get('customer'), amount_cents: amount }) : await client.from('rates').update({ amount_cents: amount }).eq('code', String(values.get('code')))
       }
       if (result.error) throw result.error
-      form.reset(); setMessage('Saved successfully.'); setRefresh(value => value + 1)
-    } catch (error) { setMessage(errorMessage(error)) } finally { setBusy(false) }
+      form.reset(); setMessage('Saved successfully.'); setRefresh(value => value + 1); return true
+    } catch (error) { setMessage(errorMessage(error)); return false } finally { setBusy(false) }
   }
 
   if (loading) return <p role="status" className="admin-state">Checking your account…</p>

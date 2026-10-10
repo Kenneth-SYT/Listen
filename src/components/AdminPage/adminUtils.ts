@@ -1,5 +1,13 @@
 import type { AdminUser } from './adminTypes'
 
+export const adminTimeOptions = Array.from({ length: 96 }, (_, index) => {
+  const hours = Math.floor(index / 4)
+  const minutes = (index % 4) * 15
+  const value = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
+  const label = new Date(2000, 0, 1, hours, minutes).toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })
+  return { value, label }
+})
+
 export const when = (value: string | null) => value ? new Date(value).toLocaleString('en-AU') : '—'
 
 export const nameFor = (person?: AdminUser) => person
