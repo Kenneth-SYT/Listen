@@ -1,4 +1,4 @@
-import { ArrowLeft, CalendarDays, Clock3, ShieldCheck, UserRound, UsersRound } from 'lucide-react'
+import { ArrowLeft, CalendarDays, Clock3, MessageSquareQuote, ShieldCheck, UserRound, UsersRound } from 'lucide-react'
 import type { AdminView } from './adminTypes'
 
 const navigation = [
@@ -6,6 +6,7 @@ const navigation = [
   { id: 'availability' as const, label: 'Availability', icon: Clock3 },
   { id: 'management' as const, label: 'Management', icon: UserRound },
   { id: 'bookings' as const, label: 'Bookings', icon: CalendarDays },
+  { id: 'reviews' as const, label: 'Reviews', icon: MessageSquareQuote },
   { id: 'audit' as const, label: 'Audit history', icon: ShieldCheck },
 ]
 

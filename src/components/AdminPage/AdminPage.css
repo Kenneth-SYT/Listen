@@ -156,6 +156,45 @@
 .admin-form-card > button:hover, .admin-table button:hover { background: var(--color-primary-hover); }
 .admin-form-card > button:disabled, .admin-table button:disabled { opacity: .5; cursor: not-allowed; }
 .admin-form-card > button.admin-secondary { border: 1px solid #cbd8e8; background: #fff; color: var(--color-ink); }
+.admin-heading-action { display: inline-flex; flex: 0 0 auto; gap: 7px; align-items: center; min-height: 40px; padding: 0 14px; border: 0; border-radius: 10px; background: var(--color-primary); color: #fff; font: inherit; font-size: .78rem; font-weight: 800; cursor: pointer; }
+.admin-heading-action svg { width: 16px; height: 16px; }
+.admin-reviews-error { margin: 0; padding: 12px 28px; border-bottom: 1px solid #f2d6d6; background: #fff4f4; color: #8d2626; font-size: .8rem; }
+.admin-reviews-layout { background: #f7f9fc; }
+.admin-reviews-layout.editor-open { display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, 390px); }
+.admin-review-list { display: grid; gap: 12px; align-content: start; max-height: 680px; overflow-y: auto; padding: 22px; }
+.admin-review-list article { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 12px; padding: 18px; border: 1px solid #dce6f3; border-radius: 14px; background: #fff; box-shadow: 0 5px 14px rgb(0 28 85 / .035); }
+.admin-review-list article.selected { border-color: var(--color-primary); box-shadow: 0 0 0 2px rgb(30 73 137 / .08); }
+.admin-review-list article > svg { width: 20px; height: 20px; color: var(--color-primary); }
+.admin-review-list blockquote { margin: 0; color: var(--color-ink); font-size: .9rem; line-height: 1.55; }
+.admin-review-list article > div, .admin-review-list article > footer { grid-column: 2; }
+.admin-review-list article > div { display: flex; justify-content: space-between; gap: 12px; align-items: end; margin-top: 8px; }
+.admin-review-list article span strong, .admin-review-list article span small { display: block; }
+.admin-review-list article span strong { font-size: .8rem; }
+.admin-review-list article span small { margin-top: 2px; color: var(--color-muted); font-size: .7rem; }
+.admin-review-list article i { display: inline-flex; gap: 5px; align-items: center; padding: 5px 8px; border-radius: 999px; background: #edf0f4; color: #5c6570; font-size: .65rem; font-style: normal; font-weight: 800; white-space: nowrap; }
+.admin-review-list article i.published { background: #e3f5eb; color: #17633c; }
+.admin-review-list article i svg { width: 13px; height: 13px; }
+.admin-review-list article > footer { display: flex; gap: 8px; margin-top: 13px; }
+.admin-review-list article > footer button { display: inline-flex; gap: 6px; align-items: center; min-height: 34px; padding: 0 11px; border: 1px solid #cbd8e8; border-radius: 8px; background: #fff; color: var(--color-ink); font: inherit; font-size: .7rem; font-weight: 800; cursor: pointer; }
+.admin-review-list article > footer button.delete { border-color: #efd0d0; color: #9f2929; }
+.admin-review-list article > footer button:disabled { cursor: wait; opacity: .55; }
+.admin-review-list article > footer svg { width: 14px; height: 14px; }
+.admin-review-empty { display: grid; min-height: 280px; place-content: center; justify-items: center; color: var(--color-muted); text-align: center; }
+.admin-review-empty svg { width: 34px; height: 34px; }
+.admin-review-empty h3 { margin: 12px 0 4px; color: var(--color-ink); }
+.admin-review-empty p { margin: 0; }
+.admin-review-editor { padding: 22px; border-left: 1px solid #dce6f3; background: #f1f6fc; }
+.admin-review-editor .admin-form-card { position: sticky; top: 18px; }
+.admin-review-editor .admin-form-card > div:first-child > span { color: var(--color-primary); font-size: .65rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.admin-review-editor .admin-form-card h3 { margin-top: 3px; }
+.admin-review-published { grid-template-columns: auto 1fr !important; align-items: start; padding: 12px; border-radius: 10px; background: #f4f7fb; }
+.admin-review-published input { width: 17px; min-height: 17px; margin-top: 2px; }
+.admin-review-published strong, .admin-review-published small { display: block; }
+.admin-review-published small { margin-top: 3px; color: var(--color-muted); font-weight: 400; line-height: 1.4; }
+.admin-review-form-actions { display: grid; grid-template-columns: 1fr 1.25fr; gap: 8px; }
+.admin-review-form-actions button { min-height: 42px; border: 0; border-radius: 9px; background: var(--color-primary); color: #fff; font: inherit; font-size: .75rem; font-weight: 800; cursor: pointer; }
+.admin-review-form-actions button.admin-secondary { border: 1px solid #cbd8e8; background: #fff; color: var(--color-ink); }
+.admin-review-form-actions button:disabled { cursor: wait; opacity: .55; }
 .admin-topic-fieldset { margin: 0; padding: 12px; border: 1px solid #cbd8e8; border-radius: 8px; }
 .admin-topic-fieldset legend { padding: 0 5px; font-size: .8rem; font-weight: 700; }
 .admin-topic-fieldset > div { display: grid; gap: 8px; max-height: 190px; overflow-y: auto; }
@@ -275,6 +314,9 @@
   .admin-management-sidebar { border-right: 0; border-bottom: 1px solid #dce6f3; }
   .admin-management-sidebar nav { grid-template-columns: 1fr 1fr; }
   .admin-sidebar-pricing { margin-top: 15px; }
+  .admin-reviews-layout.editor-open { grid-template-columns: 1fr; }
+  .admin-review-editor { border-top: 1px solid #dce6f3; border-left: 0; }
+  .admin-review-editor .admin-form-card { position: static; }
 }
 @media (max-width: 560px) {
   .admin-page { width: min(100% - 24px, 1380px); margin-top: 24px; }
@@ -304,6 +346,11 @@
   .admin-role-filters button { flex: 1 1 calc(50% - 8px); justify-content: space-between; }
   .admin-user-row { grid-template-columns: minmax(0, 1fr); gap: 12px; }
   .admin-role-badge { grid-row: 2; }
+  .admin-review-list, .admin-review-editor { padding: 13px; }
+  .admin-review-list article { grid-template-columns: 1fr; }
+  .admin-review-list article > div, .admin-review-list article > footer { grid-column: 1; }
+  .admin-review-list article > div { align-items: start; flex-direction: column; }
+  .admin-review-form-actions { grid-template-columns: 1fr; }
   .admin-user-summary, .admin-role-action, .admin-user-row details { grid-column: 1; }
   .admin-role-action button { width: 100%; }
   .admin-user-row dl { grid-template-columns: 1fr; }

@@ -1,17 +1,12 @@
 import { BadgeDollarSign, CalendarDays, ChevronLeft, ChevronRight, ShieldCheck } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import { errorMessage, getSupabase, type Listener } from '../../lib/supabase'
+import { errorMessage, getSupabase, money, type Listener, type Quote } from '../../lib/supabase'
 import './LandingSections.css'
-
-const highlights = [
-  { icon: CalendarDays, value: '7 days', label: 'support available each week' },
-  { icon: BadgeDollarSign, value: '$1', label: 'for your introductory chat' },
-  { icon: ShieldCheck, value: 'Private', label: 'respectful and confidential' },
-]
 
 function LandingSections() {
   const [listeners, setListeners] = useState<Listener[]>([])
   const [listenerMessage, setListenerMessage] = useState('Loading our listeners…')
+  const [introPrice, setIntroPrice] = useState('…')
   const [start, setStart] = useState(0)
   const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null)
   const [hovered, setHovered] = useState(false)
@@ -20,6 +15,11 @@ function LandingSections() {
   const touchStartX = useRef<number | null>(null)
   const paused = hovered || focused
   const canAnimate = listeners.length >= 4
+  const highlights = [
+    { icon: CalendarDays, value: '7 days', label: 'support available each week' },
+    { icon: BadgeDollarSign, value: introPrice, label: 'for your introductory chat' },
+    { icon: ShieldCheck, value: 'Private', label: 'respectful and confidential' },
+  ]
 
   useEffect(() => {
     let active = true
@@ -41,6 +41,21 @@ function LandingSections() {
       }
     }
     void loadListeners()
+    return () => { active = false }
+  }, [])
+
+  useEffect(() => {
+    let active = true
+    const loadIntroPrice = async () => {
+      try {
+        const { data, error } = await getSupabase().rpc('public_session_rates')
+        if (!active) return
+        if (error) { setIntroPrice('—'); return }
+        const introductoryRate = (data as Quote[] | null)?.find(rate => rate.rate_code === 'intro')
+        setIntroPrice(introductoryRate ? money(introductoryRate.amount_cents) : '—')
+      } catch { if (active) setIntroPrice('—') }
+    }
+    void loadIntroPrice()
     return () => { active = false }
   }, [])
 
@@ -110,7 +125,7 @@ function LandingSections() {
           <div className="trust-highlights">
             {highlights.map((item) => {
               const Icon = item.icon
-              return <article key={item.value}><Icon size={34} aria-hidden="true" /><strong>{item.value}</strong><p>{item.label}</p></article>
+              return <article key={item.label}><Icon size={34} aria-hidden="true" /><strong>{item.value}</strong><p>{item.label}</p></article>
             })}
           </div>
           <a href="/get-matched">Find your listener</a>

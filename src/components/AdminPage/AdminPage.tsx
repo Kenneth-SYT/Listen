@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { ShieldCheck } from 'lucide-react'
-import { errorMessage, getSupabase, type Appointment, type Listener } from '../../lib/supabase'
+import { errorMessage, getSupabase, type Appointment, type Listener, type Testimonial } from '../../lib/supabase'
 import { useSession } from '../../lib/useSession'
 import LoginPage from '../LoginPage/LoginPage'
 import './AdminPage.css'
@@ -9,6 +9,7 @@ import AdminAvailabilitySection from './AdminAvailabilitySection'
 import AdminBookingsSection from './AdminBookingsSection'
 import AdminDashboardSidebar from './AdminDashboardSidebar'
 import AdminManagementSection from './AdminManagementSection'
+import AdminReviewsSection from './AdminReviewsSection'
 import AdminStats from './AdminStats'
 import type { AdminSlot, AdminUser, AdminView, AuditEntry, Intake, UserRoleFilter } from './adminTypes'
 import { auditLabel, nameFor, shortId } from './adminUtils'
@@ -25,6 +26,8 @@ function AdminPage() {
   const [users, setUsers] = useState<AdminUser[]>([])
   const [intakes, setIntakes] = useState<Intake[]>([])
   const [audit, setAudit] = useState<AuditEntry[]>([])
+  const [reviews, setReviews] = useState<Testimonial[]>([])
+  const [reviewLoadError, setReviewLoadError] = useState('')
   const [refresh, setRefresh] = useState(0)
   const [busy, setBusy] = useState(false)
   const [roleBusy, setRoleBusy] = useState<string | null>(null)
@@ -49,8 +52,9 @@ function AdminPage() {
         client.rpc('admin_user_directory'),
         client.from('intake_responses').select('user_id,selected_slot_id,topics,questionnaire_type,k6_score,k10_score,listener_note'),
         client.from('role_audit_log').select('*').order('created_at', { ascending: false }).limit(200),
+        client.rpc('admin_testimonials'),
       ])
-      for (const result of results) if (result.error) throw result.error
+      for (const result of results.slice(0, 6)) if (result.error) throw result.error
       if (!active) return
       setAllowed(true)
       const loadedListeners = results[0].data as Listener[]
@@ -61,6 +65,8 @@ function AdminPage() {
       setUsers((results[3].data || []) as AdminUser[])
       setIntakes(results[4].data as Intake[])
       setAudit((results[5].data || []) as AuditEntry[])
+      setReviews((results[6].data || []) as Testimonial[])
+      setReviewLoadError(results[6].error ? 'Reviews need the testimonials database migration before they can be managed.' : '')
       setReferenceTime(Date.now())
       setMessage('')
     }
@@ -169,6 +175,37 @@ function AdminPage() {
     } catch (error) { setMessage(errorMessage(error)) } finally { setBusy(false) }
   }
 
+  const saveReview = async (event: FormEvent<HTMLFormElement>, reviewId?: string): Promise<boolean> => {
+    event.preventDefault(); const values = new FormData(event.currentTarget); setBusy(true); setMessage('')
+    const parameters = {
+      p_quote: String(values.get('quote')).trim(),
+      p_display_name: String(values.get('display-name')).trim(),
+      p_context: String(values.get('context')).trim(),
+      p_published: values.get('published') === 'on',
+    }
+    try {
+      const client = getSupabase()
+      const result = reviewId
+        ? await client.rpc('admin_update_testimonial', { p_id: reviewId, ...parameters })
+        : await client.rpc('admin_create_testimonial', parameters)
+      if (result.error) throw result.error
+      setMessage(reviewId ? 'Review updated on the homepage.' : 'Review added to the homepage.')
+      setRefresh(value => value + 1)
+      return true
+    } catch (error) { setMessage(errorMessage(error)); return false } finally { setBusy(false) }
+  }
+
+  const deleteReview = async (review: Testimonial) => {
+    if (!window.confirm(`Remove the review from ${review.display_name}? This cannot be undone.`)) return
+    setBusy(true); setMessage('')
+    try {
+      const { error } = await getSupabase().rpc('admin_delete_testimonial', { p_id: review.id })
+      if (error) throw error
+      setMessage('Review removed.')
+      setRefresh(value => value + 1)
+    } catch (error) { setMessage(errorMessage(error)) } finally { setBusy(false) }
+  }
+
   const save = async (event: FormEvent<HTMLFormElement>, kind: 'listener' | 'slot' | 'rate' | 'default'): Promise<boolean> => {
     event.preventDefault(); const form = event.currentTarget; const values = new FormData(form)
     setBusy(true); setMessage('')
@@ -208,6 +245,7 @@ function AdminPage() {
       {view === 'availability' && <AdminAvailabilitySection listeners={listeners} slots={slots} busy={busy} onAddWindow={event => save(event, 'slot')} setBusy={setBusy} setMessage={setMessage} refresh={() => setRefresh(value => value + 1)} />}
 
       {view === 'management' && <AdminManagementSection listeners={listeners} selectedListener={managementListener} busy={busy} onSelect={setManagementListenerId} onSaveRate={event => save(event, 'default')} onSaveProfile={(event, listenerId) => void saveListenerProfile(event, listenerId)} onSetStatus={(listener, status) => void setListenerStatus(listener, status)} />}
+      {view === 'reviews' && <AdminReviewsSection reviews={reviews} busy={busy} loadError={reviewLoadError} onSave={saveReview} onDelete={review => void deleteReview(review)} />}
       {view === 'audit' && <AdminAuditSection entries={audit} identify={auditIdentity} />}
       </div>
     </div>}
