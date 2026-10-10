@@ -1,0 +1,38 @@
+import { UserRound } from 'lucide-react'
+import type { FormEvent } from 'react'
+import type { Listener } from '../../lib/supabase'
+import { supportTopics } from '../../lib/intake'
+
+type Props = {
+  listeners: Listener[]
+  selectedListener?: Listener
+  busy: boolean
+  onSelect: (listenerId: string) => void
+  onSaveRate: (event: FormEvent<HTMLFormElement>) => void
+  onSaveProfile: (event: FormEvent<HTMLFormElement>, listenerId: string) => void
+  onSetStatus: (listener: Listener, status: 'published' | 'suspended') => void
+}
+
+const isLive = (listener: Listener) => listener.profile_status === 'published' && listener.active !== false
+
+export default function AdminManagementSection({ listeners, selectedListener, busy, onSelect, onSaveRate, onSaveProfile, onSetStatus }: Props) {
+  return <section className="admin-section admin-management-section">
+    <div className="admin-section-heading"><div><h2>Listener management</h2><p>Select a listener to review their public profile and manage their account.</p></div><span>{listeners.length} {listeners.length === 1 ? 'listener' : 'listeners'}</span></div>
+    <div className="admin-management-layout">
+      <aside className="admin-management-sidebar">
+        <div className="admin-management-sidebar-heading"><span>Listener directory</span><strong>Profiles</strong></div>
+        <nav aria-label="Choose a listener">{listeners.map(person => <button type="button" key={person.id} className={selectedListener?.id === person.id ? 'active' : ''} aria-pressed={selectedListener?.id === person.id} onClick={() => onSelect(person.id)}><span>{person.name}</span><small>{person.focus}</small><i className={isLive(person) ? 'live' : ''}>{isLive(person) ? 'Live' : person.profile_status || 'Draft'}</i></button>)}</nav>
+        {!listeners.length && <p className="admin-management-empty">No listener profiles yet.</p>}
+        <details className="admin-sidebar-pricing"><summary><span><small>Pricing</small><strong>Session rates</strong></span></summary><form className="admin-form-card" onSubmit={onSaveRate}><label>Session<select name="code"><option value="intro">Introductory (30 minutes)</option><option value="standard">Standard (50 minutes)</option><option value="extended">Extended (2 hours)</option></select></label><label>Price (AUD)<input name="amount" type="number" min="1" step="0.01" required /></label><button disabled={busy}>Update rate</button></form></details>
+      </aside>
+      <div className="admin-management-detail">{selectedListener ? <article className="admin-listener-detail" key={selectedListener.id}>
+        <header><div className="admin-user-title"><div className="admin-avatar"><UserRound /></div><div><span>Listener profile</span><h3>{selectedListener.name}</h3><p>{selectedListener.focus}</p></div></div><div className="admin-listener-state"><span className={isLive(selectedListener) ? 'live' : ''}>{selectedListener.profile_status || 'draft'}</span>{selectedListener.active === false && <span className="inactive">Inactive</span>}</div></header>
+        <div className="admin-listener-detail-grid"><section><span>About</span><p>{selectedListener.bio || 'This listener has not written a public biography yet.'}</p></section><dl><div><dt>Languages</dt><dd>{selectedListener.languages?.join(', ') || 'Not added'}</dd></div><div><dt>Pronouns</dt><dd>{selectedListener.pronouns || 'Not added'}</dd></div><div><dt>Gender</dt><dd>{selectedListener.gender || 'Not added'}</dd></div><div><dt>Visibility</dt><dd>{isLive(selectedListener) ? 'Publicly visible' : 'Not currently public'}</dd></div></dl></div>
+        <section className="admin-listener-topics"><span>Supported topics</span><div>{selectedListener.matches.map(topic => <small key={topic}>{topic}</small>)}</div></section>
+        <div className="admin-listener-detail-actions"><small>{isLive(selectedListener) ? 'This profile is live on the listener page.' : 'This profile is hidden from the listener page.'}</small>{selectedListener.profile_status === 'suspended' || selectedListener.active === false ? <button disabled={busy} onClick={() => onSetStatus(selectedListener, 'published')}>Reactivate</button> : <button disabled={busy} className="admin-secondary" onClick={() => onSetStatus(selectedListener, 'suspended')}>Suspend</button>}</div>
+        <details className="admin-listener-editor"><summary>Edit public profile</summary><form className="admin-form-card" onSubmit={event => onSaveProfile(event, selectedListener.id)}><label>Display name<input name="name" defaultValue={selectedListener.name} maxLength={100} required /></label><label>Role or focus<input name="focus" defaultValue={selectedListener.focus} maxLength={200} required /></label><label>About<textarea name="bio" defaultValue={selectedListener.bio || ''} maxLength={2000} rows={5} required /></label><label>Gender<select name="gender" defaultValue={selectedListener.gender || ''}><option value="">Prefer not to say</option><option>Woman</option><option>Man</option><option>Non-binary or another gender</option></select></label><label>Pronouns<input name="pronouns" defaultValue={selectedListener.pronouns || ''} /></label><label>Languages, separated by commas<input name="languages" defaultValue={selectedListener.languages?.join(', ') || ''} required /></label><label>Profile image URL<input name="image" type="url" defaultValue={selectedListener.profile_image_url || ''} /></label><fieldset className="admin-topic-fieldset"><legend>Supported topics</legend><div>{supportTopics.filter(topic => topic !== 'I’m not sure yet').map(topic => <label key={topic}><input type="checkbox" name="matches" value={topic} defaultChecked={selectedListener.matches.includes(topic)} />{topic}</label>)}</div></fieldset><button disabled={busy}>Save profile</button></form></details>
+      </article> : <div className="admin-management-placeholder"><UserRound /><h3>Select a listener</h3><p>Choose a name from the directory to view their profile.</p></div>}</div>
+    </div>
+  </section>
+}
+
