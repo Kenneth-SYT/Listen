@@ -143,7 +143,7 @@ function AdminPage() {
     } catch (error) { setMessage(errorMessage(error)) } finally { setRoleBusy(null) }
   }
 
-  const saveListenerProfile = async (event: FormEvent<HTMLFormElement>, listenerId: string) => {
+  const saveListenerProfile = async (event: FormEvent<HTMLFormElement>, listenerId: string): Promise<boolean> => {
     event.preventDefault(); const data = new FormData(event.currentTarget); setBusy(true); setMessage('')
     try {
       const languages = String(data.get('languages')).split(',').map(value => value.trim()).filter(Boolean)
@@ -162,7 +162,8 @@ function AdminPage() {
       if (error) throw error
       setMessage('Listener profile updated. Published profiles are updated on the public listener page.')
       setRefresh(value => value + 1)
-    } catch (error) { setMessage(errorMessage(error)) } finally { setBusy(false) }
+      return true
+    } catch (error) { setMessage(errorMessage(error)); return false } finally { setBusy(false) }
   }
 
   const setListenerStatus = async (listener: Listener, status: 'published' | 'suspended') => {
@@ -264,7 +265,7 @@ function AdminPage() {
 
       {view === 'availability' && <AdminAvailabilitySection listeners={listeners} slots={slots} busy={busy} onAddWindow={event => save(event, 'slot')} setBusy={setBusy} setMessage={setMessage} refresh={() => setRefresh(value => value + 1)} />}
 
-      {view === 'management' && <AdminManagementSection listeners={listeners} selectedListener={managementListener} busy={busy} onSelect={setManagementListenerId} onSaveRate={event => save(event, 'default')} onSaveProfile={(event, listenerId) => void saveListenerProfile(event, listenerId)} onSetStatus={(listener, status) => void setListenerStatus(listener, status)} />}
+      {view === 'management' && <AdminManagementSection listeners={listeners} selectedListener={managementListener} busy={busy} onSelect={setManagementListenerId} onSaveRate={event => save(event, 'default')} onSaveProfile={saveListenerProfile} onSetStatus={(listener, status) => void setListenerStatus(listener, status)} />}
       {view === 'reviews' && <AdminReviewsSection reviews={reviews} busy={busy} loadError={reviewLoadError} onSave={saveReview} onDelete={review => void deleteReview(review)} />}
       {view === 'audit' && <AdminAuditSection entries={audit} identify={auditIdentity} />}
       </div>
