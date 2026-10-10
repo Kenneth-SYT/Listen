@@ -164,7 +164,9 @@
 .admin-review-list { display: grid; gap: 12px; align-content: start; max-height: 680px; overflow-y: auto; padding: 22px; }
 .admin-review-list article { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 12px; padding: 18px; border: 1px solid #dce6f3; border-radius: 14px; background: #fff; box-shadow: 0 5px 14px rgb(0 28 85 / .035); }
 .admin-review-list article.selected { border-color: var(--color-primary); box-shadow: 0 0 0 2px rgb(30 73 137 / .08); }
-.admin-review-list article > svg { width: 20px; height: 20px; color: var(--color-primary); }
+.admin-review-card-media { display: grid; width: 38px; height: 38px; place-items: center; overflow: hidden; border-radius: 10px; background: #edf3fb; color: var(--color-primary); }
+.admin-review-card-media svg { width: 20px; height: 20px; }
+.admin-review-card-media img { width: 100%; height: 100%; object-fit: cover; }
 .admin-review-list blockquote { margin: 0; color: var(--color-ink); font-size: .9rem; line-height: 1.55; }
 .admin-review-list article > div, .admin-review-list article > footer { grid-column: 2; }
 .admin-review-list article > div { display: flex; justify-content: space-between; gap: 12px; align-items: end; margin-top: 8px; }
@@ -187,6 +189,20 @@
 .admin-review-editor .admin-form-card { position: sticky; top: 18px; }
 .admin-review-editor .admin-form-card > div:first-child > span { color: var(--color-primary); font-size: .65rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
 .admin-review-editor .admin-form-card h3 { margin-top: 3px; }
+.admin-review-photo-field { display: grid; gap: 8px; }
+.admin-review-photo-field > span { color: var(--color-ink); font-size: .8rem; font-weight: 700; }
+.admin-review-photo-field > span small { color: var(--color-muted); font-weight: 500; }
+.admin-review-photo-field > small { color: var(--color-muted); font-size: .68rem; line-height: 1.4; }
+.admin-review-photo-placeholder, .admin-review-photo-preview { display: grid; min-height: 128px; place-items: center; overflow: hidden; border: 1px dashed #b9cbe0; border-radius: 12px; background: #f5f8fc; color: var(--color-muted); }
+.admin-review-photo-placeholder { align-content: center; gap: 7px; font-size: .72rem; }
+.admin-review-photo-placeholder svg { width: 25px; height: 25px; }
+.admin-review-photo-preview { position: relative; border-style: solid; }
+.admin-review-photo-preview > img { width: 100%; height: 160px; object-fit: cover; }
+.admin-review-photo-preview > button { position: absolute; top: 8px; right: 8px; display: grid; width: 30px; height: 30px; padding: 0; place-items: center; border: 0; border-radius: 50%; background: rgb(0 28 85 / .82); color: #fff; cursor: pointer; }
+.admin-review-photo-preview > button svg { width: 15px; height: 15px; }
+.admin-review-photo-button { display: inline-flex !important; width: fit-content; grid-template-columns: none !important; flex-direction: row; gap: 7px !important; align-items: center; min-height: 38px; padding: 0 12px; border: 1px solid #cbd8e8; border-radius: 9px; background: #fff; color: var(--color-primary) !important; font-size: .72rem !important; font-weight: 800 !important; cursor: pointer; }
+.admin-review-photo-button svg { width: 15px; height: 15px; }
+.admin-review-photo-button input { position: absolute; width: 1px; height: 1px; min-height: 0; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); border: 0; }
 .admin-review-published { grid-template-columns: auto 1fr !important; align-items: start; padding: 12px; border-radius: 10px; background: #f4f7fb; }
 .admin-review-published input { width: 17px; min-height: 17px; margin-top: 2px; }
 .admin-review-published strong, .admin-review-published small { display: block; }

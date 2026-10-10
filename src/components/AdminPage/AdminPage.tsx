@@ -177,22 +177,41 @@ function AdminPage() {
 
   const saveReview = async (event: FormEvent<HTMLFormElement>, reviewId?: string): Promise<boolean> => {
     event.preventDefault(); const values = new FormData(event.currentTarget); setBusy(true); setMessage('')
-    const parameters = {
-      p_quote: String(values.get('quote')).trim(),
-      p_display_name: String(values.get('display-name')).trim(),
-      p_context: String(values.get('context')).trim(),
-      p_published: values.get('published') === 'on',
-    }
+    const currentImage = String(values.get('current-image') || '')
+    const imageFile = values.get('image')
+    let imagePath: string | null = values.get('remove-image') === 'true' ? null : currentImage || null
+    let uploadedPath = ''
     try {
       const client = getSupabase()
+      if (imageFile instanceof File && imageFile.size) {
+        const extensions: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }
+        const extension = extensions[imageFile.type]
+        if (!extension) throw new Error('Choose a JPG, PNG or WebP image.')
+        if (imageFile.size > 5 * 1024 * 1024) throw new Error('The photo must be 5 MB or smaller.')
+        uploadedPath = `reviews/${crypto.randomUUID()}.${extension}`
+        const { error: uploadError } = await client.storage.from('testimonial-images').upload(uploadedPath, imageFile, { contentType: imageFile.type, cacheControl: '31536000' })
+        if (uploadError) throw uploadError
+        imagePath = uploadedPath
+      }
+      const parameters = {
+        p_quote: String(values.get('quote')).trim(),
+        p_display_name: String(values.get('display-name')).trim(),
+        p_context: String(values.get('context')).trim(),
+        p_published: values.get('published') === 'on',
+        p_image_path: imagePath,
+      }
       const result = reviewId
         ? await client.rpc('admin_update_testimonial', { p_id: reviewId, ...parameters })
         : await client.rpc('admin_create_testimonial', parameters)
       if (result.error) throw result.error
+      if (currentImage && currentImage !== imagePath) await client.storage.from('testimonial-images').remove([currentImage])
       setMessage(reviewId ? 'Review updated on the homepage.' : 'Review added to the homepage.')
       setRefresh(value => value + 1)
       return true
-    } catch (error) { setMessage(errorMessage(error)); return false } finally { setBusy(false) }
+    } catch (error) {
+      if (uploadedPath) await getSupabase().storage.from('testimonial-images').remove([uploadedPath])
+      setMessage(errorMessage(error)); return false
+    } finally { setBusy(false) }
   }
 
   const deleteReview = async (review: Testimonial) => {
@@ -201,7 +220,8 @@ function AdminPage() {
     try {
       const { error } = await getSupabase().rpc('admin_delete_testimonial', { p_id: review.id })
       if (error) throw error
-      setMessage('Review removed.')
+      const cleanup = review.image_path ? await getSupabase().storage.from('testimonial-images').remove([review.image_path]) : { error: null }
+      setMessage(cleanup.error ? 'Review removed, but its image could not be cleaned up from storage.' : 'Review removed.')
       setRefresh(value => value + 1)
     } catch (error) { setMessage(errorMessage(error)) } finally { setBusy(false) }
   }

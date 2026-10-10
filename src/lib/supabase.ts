@@ -27,7 +27,8 @@ export type Listener = {
 }
 export type Slot = { id: string; listener_id: string; starts_at: string; ends_at: string; window_id?: string | null }
 export type Quote = { rate_code: string; label: string; amount_cents: number; duration_minutes: number }
-export type Testimonial = { id: string; quote: string; display_name: string; context: string; sort_order: number; published?: boolean; created_at?: string; updated_at?: string }
+export type Testimonial = { id: string; quote: string; display_name: string; context: string; sort_order: number; image_path?: string | null; published?: boolean; created_at?: string; updated_at?: string }
+export const testimonialImageUrl = (path?: string | null) => path ? getSupabase().storage.from('testimonial-images').getPublicUrl(path).data.publicUrl : ''
 export type BookingSelection = { listener: Listener; slot: Slot; quote: Quote; holdToken: string; holdExpiresAt: string; useCredit?: boolean }
 export type BundleProduct = { code: string; label: string; session_count: number; amount_cents: number }
 export type CreditSummary = { standard_credits: number; eligible_for_bundles: boolean }

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { getSupabase, type Testimonial } from '../../lib/supabase'
+import { getSupabase, testimonialImageUrl, type Testimonial } from '../../lib/supabase'
 import './testimonial-v2.css'
 
 // Keep the current illustrative content available while the database migration
@@ -41,7 +41,9 @@ export default function TestimonialsColumn() {
             <span className="testimonial-quote" aria-hidden="true">“</span>
             <blockquote>{review.quote}</blockquote>
             <figcaption>
-              <span className="testimonial-avatar" aria-hidden="true">{initials(review.display_name)}</span>
+              {review.image_path
+                ? <img className="testimonial-avatar" src={testimonialImageUrl(review.image_path)} alt="" />
+                : <span className="testimonial-avatar" aria-hidden="true">{initials(review.display_name)}</span>}
               <span><strong>{review.display_name}</strong><small>{review.context}</small></span>
             </figcaption>
           </figure>
