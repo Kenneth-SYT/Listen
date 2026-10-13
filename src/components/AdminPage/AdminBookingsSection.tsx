@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronLeft, ChevronRight, Search } from 'lucide-react'
+import { ChevronDown, ChevronLeft, ChevronRight, Search, SlidersHorizontal } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { money, type Appointment, type Listener } from '../../lib/supabase'
 import type { AdminUser, Intake } from './adminTypes'
@@ -36,17 +36,27 @@ export default function AdminBookingsSection({ bookings, intakes, listeners, use
   const currentPage = Math.min(page, totalPages)
   const pageStart = (currentPage - 1) * pageSize
   const visibleBookings = filteredBookings.slice(pageStart, pageStart + pageSize)
+  const activeFilterCount = [listenerFilter, appointmentFilter, statusFilter].filter(Boolean).length
 
-  return <section className="admin-section">
+  return <section className="admin-section admin-bookings-section">
     <div className="admin-section-heading">
       <div><h2>Bookings and consultants</h2><p>Every reservation is matched to its customer and assigned consultant.</p></div>
-      <div className="admin-section-tools"><label className="admin-search"><Search size={17} /><span className="sr-only">Search</span><input value={search} onChange={event => { setPage(1); onSearch(event.target.value) }} placeholder="Search bookings" /></label><span>{filteredBookings.length} results</span></div>
-    </div>
-    <div className="admin-booking-filters" aria-label="Filter bookings">
-      <label><span>Listener</span><select value={listenerFilter} onChange={event => { setPage(1); setListenerFilter(event.target.value) }}><option value="">All listeners</option>{Array.from(listeners.values()).sort((a, b) => a.name.localeCompare(b.name)).map(listener => <option key={listener.id} value={listener.id}>{listener.name}</option>)}</select></label>
-      <label><span>Appointment date</span><input type="date" value={appointmentFilter} onChange={event => { setPage(1); setAppointmentFilter(event.target.value) }} /></label>
-      <label><span>Status</span><select value={statusFilter} onChange={event => { setPage(1); setStatusFilter(event.target.value) }}><option value="">All statuses</option><option value="pending">Pending</option><option value="confirmed">Confirmed</option><option value="expired">Expired</option></select></label>
-      <button type="button" disabled={!listenerFilter && !appointmentFilter && !statusFilter} onClick={() => { setPage(1); setListenerFilter(''); setAppointmentFilter(''); setStatusFilter('') }}>Clear filters</button>
+      <div className="admin-booking-heading">
+        <label className="admin-search"><Search size={17} /><span className="sr-only">Search</span><input value={search} onChange={event => { setPage(1); onSearch(event.target.value) }} placeholder="Search bookings" /></label>
+        <span className="admin-booking-result-count"><strong>{filteredBookings.length}</strong> {filteredBookings.length === 1 ? 'result' : 'results'}</span>
+        <details className="admin-booking-filter-menu">
+          <summary><SlidersHorizontal />Filter{activeFilterCount > 0 && <b>{activeFilterCount}</b>}</summary>
+          <div className="admin-booking-filter-popover">
+            <div><strong>Filter bookings</strong><small>Narrow the current search results.</small></div>
+            <div className="admin-booking-filters" aria-label="Filter bookings">
+              <label><span>Listener</span><select value={listenerFilter} onChange={event => { setPage(1); setListenerFilter(event.target.value) }}><option value="">All listeners</option>{Array.from(listeners.values()).sort((a, b) => a.name.localeCompare(b.name)).map(listener => <option key={listener.id} value={listener.id}>{listener.name}</option>)}</select></label>
+              <label><span>Appointment date</span><input type="date" value={appointmentFilter} onChange={event => { setPage(1); setAppointmentFilter(event.target.value) }} /></label>
+              <label><span>Status</span><select value={statusFilter} onChange={event => { setPage(1); setStatusFilter(event.target.value) }}><option value="">All statuses</option><option value="pending">Pending</option><option value="confirmed">Confirmed</option><option value="expired">Expired</option></select></label>
+              <button type="button" disabled={!activeFilterCount} onClick={() => { setPage(1); setListenerFilter(''); setAppointmentFilter(''); setStatusFilter('') }}>Clear filters</button>
+            </div>
+          </div>
+        </details>
+      </div>
     </div>
     <div className="admin-booking-list">
       <div className="admin-booking-list-heading" aria-hidden="true"><span>Customer</span><span>Listener</span><span>Appointment</span><span>Status</span><span /></div>
