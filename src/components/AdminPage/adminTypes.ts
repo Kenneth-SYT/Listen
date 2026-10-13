@@ -1,6 +1,6 @@
 import type { Slot } from '../../lib/supabase'
 
-export type AdminView = 'bookings' | 'users' | 'availability' | 'management' | 'reviews' | 'audit'
+export type AdminView = 'bookings' | 'users' | 'availability' | 'management' | 'pricing' | 'reviews' | 'audit'
 export type UserRoleFilter = 'all' | 'admin' | 'listener' | 'user'
 
 export type AuditEntry = {

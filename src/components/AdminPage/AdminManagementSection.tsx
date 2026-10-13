@@ -8,14 +8,13 @@ type Props = {
   selectedListener?: Listener
   busy: boolean
   onSelect: (listenerId: string) => void
-  onSaveRate: (event: FormEvent<HTMLFormElement>) => void
   onSaveProfile: (event: FormEvent<HTMLFormElement>, listenerId: string) => Promise<boolean>
   onSetStatus: (listener: Listener, status: 'published' | 'suspended') => void
 }
 
 const isLive = (listener: Listener) => listener.profile_status === 'published' && listener.active !== false
 
-export default function AdminManagementSection({ listeners, selectedListener, busy, onSelect, onSaveRate, onSaveProfile, onSetStatus }: Props) {
+export default function AdminManagementSection({ listeners, selectedListener, busy, onSelect, onSaveProfile, onSetStatus }: Props) {
   const [editingListenerId, setEditingListenerId] = useState<string | null>(null)
   const editingProfile = selectedListener?.id === editingListenerId
 
@@ -33,7 +32,6 @@ export default function AdminManagementSection({ listeners, selectedListener, bu
         <div className="admin-management-sidebar-heading"><span>Listener directory</span><strong>Profiles</strong></div>
         <nav aria-label="Choose a listener">{listeners.map(person => <button type="button" key={person.id} className={selectedListener?.id === person.id ? 'active' : ''} aria-pressed={selectedListener?.id === person.id} onClick={() => onSelect(person.id)}><span>{person.name}</span><small>{person.focus}</small><i className={isLive(person) ? 'live' : ''}>{isLive(person) ? 'Live' : person.profile_status || 'Draft'}</i></button>)}</nav>
         {!listeners.length && <p className="admin-management-empty">No listener profiles yet.</p>}
-        <details className="admin-sidebar-pricing"><summary><span><small>Pricing</small><strong>Session rates</strong></span></summary><form className="admin-form-card" onSubmit={onSaveRate}><label>Session<select name="code"><option value="intro">Introductory (30 minutes)</option><option value="standard">Standard (50 minutes)</option><option value="extended">Extended (2 hours)</option></select></label><label>Price (AUD)<input name="amount" type="number" min="1" step="0.01" required /></label><button disabled={busy}>Update rate</button></form></details>
       </aside>
       <div className="admin-management-detail">{selectedListener ? <article className="admin-listener-detail" key={selectedListener.id}>
         <header><div className="admin-user-title"><div className="admin-avatar"><UserRound /></div><div><span>Listener profile</span><h3>{selectedListener.name}</h3><p>{selectedListener.focus}</p></div></div><div className="admin-listener-state"><span className={isLive(selectedListener) ? 'live' : ''}>{selectedListener.profile_status || 'draft'}</span>{selectedListener.active === false && <span className="inactive">Inactive</span>}</div></header>

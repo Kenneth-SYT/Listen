@@ -99,12 +99,13 @@ function App() {
   const isStrategyPage = path === '/strategy'
   const isConfirmationPage = path === '/booking-confirmation'
   const isLoginPage = path === '/login'
+  const isDashboard = path === '/admin' || path === '/listener'
 
   return (
     <>
     <Seo />
     <main className="page">
-      <Header />
+      {!isDashboard && <Header />}
       {path === '/listener' ? <ListenerPage /> : path === '/admin' ? <AdminPage /> : path === '/account' ? <AccountPage /> : isContactPage ? (
         <ContactPage />
       ) : isLoginPage ? (
@@ -134,7 +135,7 @@ function App() {
         </HomeMotion>
       )}
     </main>
-    <Footer />
+    {!isDashboard && <Footer />}
     </>
   )
 }

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { ShieldCheck } from 'lucide-react'
-import { errorMessage, getSupabase, type Appointment, type Listener, type Testimonial } from '../../lib/supabase'
+import { errorMessage, getSupabase, type Appointment, type Listener, type Quote, type Testimonial } from '../../lib/supabase'
 import { useSession } from '../../lib/useSession'
 import LoginPage from '../LoginPage/LoginPage'
 import './AdminPage.css'
@@ -9,8 +9,8 @@ import AdminAvailabilitySection from './AdminAvailabilitySection'
 import AdminBookingsSection from './AdminBookingsSection'
 import AdminDashboardSidebar from './AdminDashboardSidebar'
 import AdminManagementSection from './AdminManagementSection'
+import AdminPricingSection from './AdminPricingSection'
 import AdminReviewsSection from './AdminReviewsSection'
-import AdminStats from './AdminStats'
 import type { AdminSlot, AdminUser, AdminView, AuditEntry, Intake, UserRoleFilter } from './adminTypes'
 import { auditLabel, nameFor, shortId } from './adminUtils'
 import AdminUsersSection from './AdminUsersSection'
@@ -26,6 +26,7 @@ function AdminPage() {
   const [users, setUsers] = useState<AdminUser[]>([])
   const [intakes, setIntakes] = useState<Intake[]>([])
   const [audit, setAudit] = useState<AuditEntry[]>([])
+  const [rates, setRates] = useState<Quote[]>([])
   const [reviews, setReviews] = useState<Testimonial[]>([])
   const [reviewLoadError, setReviewLoadError] = useState('')
   const [refresh, setRefresh] = useState(0)
@@ -34,7 +35,6 @@ function AdminPage() {
   const [search, setSearch] = useState('')
   const [roleFilter, setRoleFilter] = useState<UserRoleFilter>('all')
   const [managementListenerId, setManagementListenerId] = useState('')
-  const [referenceTime, setReferenceTime] = useState(0)
   const userId = session?.user.id
 
   useEffect(() => {
@@ -52,9 +52,10 @@ function AdminPage() {
         client.rpc('admin_user_directory'),
         client.from('intake_responses').select('user_id,selected_slot_id,topics,questionnaire_type,k6_score,k10_score,listener_note'),
         client.from('role_audit_log').select('*').order('created_at', { ascending: false }).limit(200),
+        client.rpc('public_session_rates'),
         client.rpc('admin_testimonials'),
       ])
-      for (const result of results.slice(0, 6)) if (result.error) throw result.error
+      for (const result of results.slice(0, 7)) if (result.error) throw result.error
       if (!active) return
       setAllowed(true)
       const loadedListeners = results[0].data as Listener[]
@@ -65,9 +66,9 @@ function AdminPage() {
       setUsers((results[3].data || []) as AdminUser[])
       setIntakes(results[4].data as Intake[])
       setAudit((results[5].data || []) as AuditEntry[])
-      setReviews((results[6].data || []) as Testimonial[])
-      setReviewLoadError(results[6].error ? 'Reviews need the testimonials database migration before they can be managed.' : '')
-      setReferenceTime(Date.now())
+      setRates((results[6].data || []) as Quote[])
+      setReviews((results[7].data || []) as Testimonial[])
+      setReviewLoadError(results[7].error ? 'Reviews need the testimonials database migration before they can be managed.' : '')
       setMessage('')
     }
     void load().catch(error => { if (active) { setAllowed(false); setMessage(errorMessage(error)) } })
@@ -128,9 +129,6 @@ function AdminPage() {
       return [user?.email, nameFor(user), listener?.name, booking.status].some(value => value?.toLowerCase().includes(term))
     })
   }, [bookings, listenerById, search, userById])
-  const confirmed = bookings.filter(booking => booking.status === 'confirmed').length
-  const upcoming = bookings.filter(booking => booking.status === 'confirmed' && Date.parse(booking.starts_at) >= referenceTime).length
-
   const changeUserRole = async (person: AdminUser) => {
     const nextRole = person.listener_name ? 'user' : 'listener'
     const confirmation = nextRole === 'listener'
@@ -261,14 +259,14 @@ function AdminPage() {
     {allowed && <div className="admin-dashboard-layout">
       <AdminDashboardSidebar activeView={view} onChange={nextView => { setView(nextView); setSearch(''); setRoleFilter('all') }} />
       <div className="admin-dashboard-main">
-      <AdminStats accounts={users.length} bookings={bookings.length} confirmed={confirmed} upcoming={upcoming} />
       {view === 'bookings' && <AdminBookingsSection bookings={filteredBookings} intakes={intakes} listeners={listenerById} users={userById} search={search} onSearch={setSearch} />}
 
       {view === 'users' && <AdminUsersSection users={filteredUsers} search={search} roleFilter={roleFilter} roleCounts={roleCounts} roleBusy={roleBusy} onSearch={setSearch} onRoleFilter={setRoleFilter} onChangeRole={person => void changeUserRole(person)} />}
 
       {view === 'availability' && <AdminAvailabilitySection listeners={listeners} slots={slots} busy={busy} onAddWindow={event => save(event, 'slot')} setBusy={setBusy} setMessage={setMessage} refresh={() => setRefresh(value => value + 1)} />}
 
-      {view === 'management' && <AdminManagementSection listeners={listeners} selectedListener={managementListener} busy={busy} onSelect={setManagementListenerId} onSaveRate={event => save(event, 'default')} onSaveProfile={saveListenerProfile} onSetStatus={(listener, status) => void setListenerStatus(listener, status)} />}
+      {view === 'management' && <AdminManagementSection listeners={listeners} selectedListener={managementListener} busy={busy} onSelect={setManagementListenerId} onSaveProfile={saveListenerProfile} onSetStatus={(listener, status) => void setListenerStatus(listener, status)} />}
+      {view === 'pricing' && <AdminPricingSection rates={rates} busy={busy} onSave={event => void save(event, 'default')} />}
       {view === 'reviews' && <AdminReviewsSection reviews={reviews} busy={busy} loadError={reviewLoadError} onSave={saveReview} onDelete={review => void deleteReview(review)} />}
       {view === 'audit' && <AdminAuditSection entries={audit} identify={auditIdentity} />}
       </div>
