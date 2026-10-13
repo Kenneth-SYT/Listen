@@ -13,7 +13,7 @@
 .admin-dashboard-sidebar-heading { display: grid; gap: 4px; padding: 20px 18px; border-bottom: 1px solid #e5ebee; background: #f5f8fc; }
 .admin-dashboard-sidebar-heading span { color: var(--color-primary); font-size: .65rem; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; }
 .admin-dashboard-sidebar-heading strong { font-size: 1.1rem; }
-.admin-dashboard-sidebar nav { display: grid; padding: 8px; }
+.admin-dashboard-sidebar nav { display: grid; gap: 5px; padding: 8px; }
 .admin-dashboard-sidebar button, .admin-dashboard-sidebar > a { display: flex; gap: 10px; align-items: center; width: 100%; min-height: 48px; padding: 0 12px; border: 0; border-radius: 10px; background: #fff; color: var(--color-muted); cursor: pointer; font: inherit; font-size: .82rem; font-weight: 700; text-align: left; text-decoration: none; }
 .admin-dashboard-sidebar button svg, .admin-dashboard-sidebar > a svg { flex: 0 0 auto; width: 17px; }
 .admin-dashboard-sidebar button:hover, .admin-dashboard-sidebar button.active { background: var(--color-primary); color: #fff; }
