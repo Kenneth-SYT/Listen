@@ -15,6 +15,12 @@ import type { AdminSlot, AdminUser, AdminView, AuditEntry, Intake, UserRoleFilte
 import { auditLabel, nameFor, shortId } from './adminUtils'
 import AdminUsersSection from './AdminUsersSection'
 
+const listenerImagePath = (url: string) => {
+  const marker = '/storage/v1/object/public/listener-images/'
+  const markerIndex = url.indexOf(marker)
+  return markerIndex >= 0 ? decodeURIComponent(url.slice(markerIndex + marker.length)) : ''
+}
+
 function AdminPage() {
   const { session, loading } = useSession()
   const [allowed, setAllowed] = useState(false)
@@ -146,10 +152,25 @@ function AdminPage() {
 
   const saveListenerProfile = async (event: FormEvent<HTMLFormElement>, listenerId: string): Promise<boolean> => {
     event.preventDefault(); const data = new FormData(event.currentTarget); setBusy(true); setMessage('')
+    const currentImage = String(data.get('current-image') || '')
+    const imageFile = data.get('image')
+    let profileImageUrl = data.get('remove-image') === 'true' ? '' : currentImage
+    let uploadedPath = ''
     try {
+      const client = getSupabase()
+      if (imageFile instanceof File && imageFile.size) {
+        const extensions: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }
+        const extension = extensions[imageFile.type]
+        if (!extension) throw new Error('Choose a JPG, PNG or WebP image.')
+        if (imageFile.size > 5 * 1024 * 1024) throw new Error('The photo must be 5 MB or smaller.')
+        uploadedPath = `profiles/${listenerId}/${crypto.randomUUID()}.${extension}`
+        const { error: uploadError } = await client.storage.from('listener-images').upload(uploadedPath, imageFile, { contentType: imageFile.type, cacheControl: '31536000' })
+        if (uploadError) throw uploadError
+        profileImageUrl = client.storage.from('listener-images').getPublicUrl(uploadedPath).data.publicUrl
+      }
       const languages = String(data.get('languages')).split(',').map(value => value.trim()).filter(Boolean)
       const matches = data.getAll('matches').map(String)
-      const { error } = await getSupabase().rpc('admin_update_listener_profile', {
+      const { error } = await client.rpc('admin_update_listener_profile', {
         p_listener: listenerId,
         p_name: String(data.get('name')),
         p_focus: String(data.get('focus')),
@@ -158,13 +179,18 @@ function AdminPage() {
         p_pronouns: String(data.get('pronouns')),
         p_languages: languages,
         p_matches: matches,
-        p_profile_image_url: String(data.get('image')),
+        p_profile_image_url: profileImageUrl,
       })
       if (error) throw error
+      const oldImagePath = listenerImagePath(currentImage)
+      if (oldImagePath && currentImage !== profileImageUrl) await client.storage.from('listener-images').remove([oldImagePath])
       setMessage('Listener profile updated. Published profiles are updated on the public listener page.')
       setRefresh(value => value + 1)
       return true
-    } catch (error) { setMessage(errorMessage(error)); return false } finally { setBusy(false) }
+    } catch (error) {
+      if (uploadedPath) await getSupabase().storage.from('listener-images').remove([uploadedPath])
+      setMessage(errorMessage(error)); return false
+    } finally { setBusy(false) }
   }
 
   const setListenerStatus = async (listener: Listener, status: 'published' | 'suspended') => {
