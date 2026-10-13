@@ -133,7 +133,10 @@ function AdminPage() {
 
   const changeUserRole = async (person: AdminUser) => {
     const nextRole = person.listener_name ? 'user' : 'listener'
-    if (nextRole === 'user' && !window.confirm(`Return ${nameFor(person)} to a regular user account? Their listener profile will be suspended and they will lose listener dashboard access.`)) return
+    const confirmation = nextRole === 'listener'
+      ? `Make ${nameFor(person)} a listener? This will give them listener dashboard access and create a listener profile.`
+      : `Return ${nameFor(person)} to a regular user account? Their listener profile will be suspended and they will lose listener dashboard access.`
+    if (!window.confirm(confirmation)) return
     setRoleBusy(person.user_id); setMessage('')
     try {
       const { error } = await getSupabase().rpc('admin_set_user_role', { p_user: person.user_id, p_role: nextRole })

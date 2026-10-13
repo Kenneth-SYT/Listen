@@ -86,22 +86,28 @@
 .admin-role-filters button.active { border-color: var(--color-ink); background: var(--color-ink); color: #fff; }
 .admin-role-filters button.active strong { background: rgb(255 255 255 / .18); }
 .admin-user-list { display: grid; gap: 10px; padding: 18px 22px 24px; background: #f7f9fc; }
-.admin-user-row { display: grid; grid-template-columns: minmax(220px, 1.2fr) auto minmax(230px, .9fr) minmax(150px, auto); gap: 18px; align-items: center; padding: 15px 17px; border: 1px solid #dce6f3; border-radius: 16px; background: #fff; box-shadow: 0 5px 14px rgb(0 28 85 / .04); }
+.admin-user-row { overflow: hidden; border: 1px solid #dce6f3; border-radius: 16px; background: #fff; box-shadow: 0 5px 14px rgb(0 28 85 / .04); }
+.admin-user-row > summary { display: grid; grid-template-columns: minmax(220px, 1.2fr) auto minmax(230px, .9fr) 28px; gap: 18px; align-items: center; min-height: 76px; padding: 11px 17px; cursor: pointer; list-style: none; }
+.admin-user-row > summary::-webkit-details-marker { display: none; }
+.admin-user-row > summary:hover { background: #fafdff; }
+.admin-user-row > summary:focus-visible { outline: 3px solid rgb(30 73 137 / .16); outline-offset: -3px; }
+.admin-user-row[open] > summary { background: #f5f8fc; }
 .admin-role-badge { justify-self: start; padding: 6px 10px; border-radius: 999px; font-size: .72rem; font-weight: 800; letter-spacing: .04em; text-transform: capitalize; }
 .admin-role-badge.admin { background: #f2e7ff; color: #653695; }
 .admin-role-badge.listener { background: #dcf2e8; color: #075d47; }
 .admin-role-badge.user { background: #e7f0fc; color: #244b87; }
 .admin-user-summary { display: flex; flex-wrap: wrap; gap: 5px 16px; color: var(--color-muted); font-size: .78rem; }
 .admin-user-summary strong { color: var(--color-ink); font-weight: 700; }
-.admin-role-action { display: flex; justify-content: flex-end; }
+.admin-user-chevron { width: 18px; height: 18px; color: var(--color-muted); transition: transform .18s ease; }
+.admin-user-row[open] .admin-user-chevron { transform: rotate(180deg); }
+.admin-user-details { padding: 17px; border-top: 1px solid #e4ebf4; }
+.admin-role-action { display: flex; justify-content: flex-end; gap: 18px; align-items: center; margin-top: 17px; padding-top: 15px; border-top: 1px solid #e7edf5; }
+.admin-role-action > span { margin-right: auto; color: var(--color-muted); font-size: .78rem; }
 .admin-role-action button { min-width: 128px; padding: 9px 13px; border: 1px solid var(--color-ink); border-radius: 10px; background: var(--color-ink); color: #fff; font: inherit; font-size: .78rem; font-weight: 700; cursor: pointer; }
 .admin-role-action button.admin-secondary { background: #fff; color: var(--color-ink); }
 .admin-role-action button:disabled { cursor: wait; opacity: .55; }
-.admin-role-action small { max-width: 145px; color: var(--color-muted); text-align: right; }
-.admin-user-row details { grid-column: 1 / -1; padding-top: 2px; border-top: 1px solid transparent; }
-.admin-user-row details[open] { padding-top: 13px; border-top-color: #e7edf5; }
-.admin-user-row summary { width: max-content; color: #31558a; font-size: .76rem; font-weight: 700; cursor: pointer; }
-.admin-user-row dl { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 13px 18px; margin: 16px 0 2px; }
+.admin-role-action small { margin-right: auto; color: var(--color-muted); }
+.admin-user-row dl { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 13px 18px; margin: 0; }
 .admin-user-row dt { color: var(--color-muted); font-size: .66rem; font-weight: 700; text-transform: uppercase; }
 .admin-user-row dd { overflow-wrap: anywhere; margin: 3px 0 0; font-size: .8rem; }
 .admin-user-title { display: flex; gap: 13px; align-items: center; min-width: 0; }
@@ -358,10 +364,11 @@
   .admin-search { width: auto; }
   .admin-availability-heading { align-items: stretch; flex-direction: column; }
   .admin-availability-controls { justify-content: space-between; }
-  .admin-user-row { grid-template-columns: minmax(0, 1fr) auto; }
-  .admin-user-summary { grid-column: 1 / -1; }
-  .admin-role-action { grid-column: 1 / -1; justify-content: flex-start; }
-  .admin-role-action small { max-width: none; text-align: left; }
+  .admin-user-row > summary { grid-template-columns: minmax(0, 1fr) auto 24px; gap: 10px 14px; }
+  .admin-user-row > summary .admin-user-title { grid-column: 1; grid-row: 1; }
+  .admin-user-row > summary .admin-role-badge { grid-column: 2; grid-row: 1; }
+  .admin-user-row > summary .admin-user-chevron { grid-column: 3; grid-row: 1; }
+  .admin-user-summary { grid-column: 1 / -1; grid-row: 2; }
   .admin-user-row dl { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .admin-management-layout { grid-template-columns: 1fr; }
   .admin-management-sidebar { border-right: 0; border-bottom: 1px solid #dce6f3; }
@@ -411,14 +418,14 @@
   .admin-users-controls-row { align-items: stretch; flex-direction: column; }
   .admin-users-controls-row .admin-section-tools { width: 100%; }
   .admin-role-filters button { flex: 1 1 calc(50% - 8px); justify-content: space-between; }
-  .admin-user-row { grid-template-columns: minmax(0, 1fr); gap: 12px; }
-  .admin-role-badge { grid-row: 2; }
+  .admin-user-row > summary { min-height: 0; padding: 12px; }
+  .admin-user-details { padding: 14px; }
   .admin-review-list, .admin-review-editor { padding: 13px; }
   .admin-review-list article { grid-template-columns: 1fr; }
   .admin-review-list article > div, .admin-review-list article > footer { grid-column: 1; }
   .admin-review-list article > div { align-items: start; flex-direction: column; }
   .admin-review-form-actions { grid-template-columns: 1fr; }
-  .admin-user-summary, .admin-role-action, .admin-user-row details { grid-column: 1; }
+  .admin-role-action { align-items: stretch; flex-direction: column; gap: 10px; }
   .admin-role-action button { width: 100%; }
   .admin-user-row dl { grid-template-columns: 1fr; }
   .admin-availability { margin: 0; }
