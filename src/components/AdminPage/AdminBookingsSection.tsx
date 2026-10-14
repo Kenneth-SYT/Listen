@@ -1,8 +1,9 @@
-import { ChevronDown, ChevronLeft, ChevronRight, Search, SlidersHorizontal } from 'lucide-react'
+import { ChevronDown, Search, SlidersHorizontal } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { money, type Appointment, type Listener } from '../../lib/supabase'
 import type { AdminUser, Intake } from './adminTypes'
 import { nameFor } from './adminUtils'
+import AdminResultsPagination from './AdminResultsPagination'
 
 type Props = {
   bookings: Appointment[]
@@ -27,6 +28,7 @@ export default function AdminBookingsSection({ bookings, intakes, listeners, use
   const [appointmentFilter, setAppointmentFilter] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [page, setPage] = useState(1)
+  const [expandedBookingId, setExpandedBookingId] = useState<string | null>(null)
   const filteredBookings = useMemo(() => bookings.filter(booking =>
     (!listenerFilter || booking.listener_id === listenerFilter)
     && (!appointmentFilter || dateKey(booking.starts_at) === appointmentFilter)
@@ -60,22 +62,25 @@ export default function AdminBookingsSection({ bookings, intakes, listeners, use
         </div>
       </div>
     </div>
-    <div className="admin-booking-list">
-      <div className="admin-booking-list-heading" aria-hidden="true"><span>Customer</span><span>Listener</span><span>Appointment</span><span>Status</span><span /></div>
-      {visibleBookings.map(booking => {
+    <div className="admin-results-container">
+      <div className="admin-results-scroll admin-booking-list">
+        <div className="admin-booking-list-heading" aria-hidden="true"><span>Customer</span><span>Listener</span><span>Appointment</span><span>Status</span><span /></div>
+        {visibleBookings.map(booking => {
         const person = users.get(booking.user_id)
         const listener = listeners.get(booking.listener_id)
         const intake = intakes.find(item => item.user_id === booking.user_id && item.selected_slot_id === booking.slot_id)
         const duration = Math.round((Date.parse(booking.ends_at) - Date.parse(booking.starts_at)) / 60000)
         const score = intake ? intake.questionnaire_type === 'long' ? `K10 ${intake.k10_score ?? '—'}/50` : `K6 ${intake.k6_score ?? '—'}/24` : 'No intake saved'
 
-        return <details className="admin-booking-row" key={booking.id}>
-          <summary>
+        const isExpanded = expandedBookingId === booking.id
+
+        return <details className="admin-booking-row" key={booking.id} open={isExpanded}>
+          <summary aria-expanded={isExpanded} onClick={event => { event.preventDefault(); setExpandedBookingId(isExpanded ? null : booking.id) }}>
             <span className="admin-booking-customer"><strong>{nameFor(person)}</strong></span>
             <span className="admin-booking-listener"><strong>{listener?.name || 'Unassigned'}</strong></span>
             <span className="admin-booking-appointment"><strong>{bookingDate(booking.starts_at)}</strong><small>{bookingTime(booking.starts_at)}</small></span>
             <span className={'admin-status ' + booking.status}>{booking.status}</span>
-            <ChevronDown className="admin-booking-chevron" aria-hidden="true" />
+            <span className="admin-row-disclosure"><span>Details</span><ChevronDown className="admin-booking-chevron" aria-hidden="true" /></span>
           </summary>
           <div className="admin-booking-details">
             <dl>
@@ -91,9 +96,10 @@ export default function AdminBookingsSection({ bookings, intakes, listeners, use
             </dl>
           </div>
         </details>
-      })}
-      {!filteredBookings.length && <p className="admin-empty">No bookings match these search filters.</p>}
-      {filteredBookings.length > 0 && <nav className="admin-booking-pagination" aria-label="Booking results pages"><span>Showing {pageStart + 1}–{Math.min(pageStart + pageSize, filteredBookings.length)} of {filteredBookings.length}</span><div><button type="button" aria-label="Previous page" disabled={currentPage === 1} onClick={() => setPage(value => Math.max(1, value - 1))}><ChevronLeft /></button><strong>Page {currentPage} of {totalPages}</strong><button type="button" aria-label="Next page" disabled={currentPage === totalPages} onClick={() => setPage(value => Math.min(totalPages, value + 1))}><ChevronRight /></button></div></nav>}
+        })}
+        {!filteredBookings.length && <p className="admin-empty">No bookings match these search filters.</p>}
+      </div>
+      <AdminResultsPagination page={currentPage} totalItems={filteredBookings.length} onPageChange={setPage} />
     </div>
   </section>
 }
