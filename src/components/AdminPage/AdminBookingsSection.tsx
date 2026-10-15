@@ -42,7 +42,7 @@ export default function AdminBookingsSection({ bookings, intakes, listeners, use
 
   return <section className="admin-section admin-bookings-section">
     <div className="admin-section-heading">
-      <div><h2>Bookings and consultants</h2><p>Every reservation is matched to its customer and assigned consultant.</p></div>
+      <div><h2>Bookings and consultants</h2></div>
       <div className="admin-booking-heading">
         <label className="admin-search"><Search size={17} /><span className="sr-only">Search</span><input value={search} onChange={event => { setPage(1); onSearch(event.target.value) }} placeholder="Search bookings" /></label>
         <div className="admin-booking-filter-stack">
@@ -78,7 +78,7 @@ export default function AdminBookingsSection({ bookings, intakes, listeners, use
           <summary aria-expanded={isExpanded} onClick={event => { event.preventDefault(); setExpandedBookingId(isExpanded ? null : booking.id) }}>
             <span className="admin-booking-customer"><strong>{nameFor(person)}</strong></span>
             <span className="admin-booking-listener"><strong>{listener?.name || 'Unassigned'}</strong></span>
-            <span className="admin-booking-appointment"><strong>{bookingDate(booking.starts_at)}</strong><small>{bookingTime(booking.starts_at)}</small></span>
+            <span className="admin-booking-appointment"><strong>{bookingDate(booking.starts_at)} <span aria-hidden="true">–</span> {bookingTime(booking.starts_at)} <span aria-hidden="true">–</span> {duration} min</strong></span>
             <span className={'admin-status ' + booking.status}>{booking.status}</span>
             <span className="admin-row-disclosure"><span>Details</span><ChevronDown className="admin-booking-chevron" aria-hidden="true" /></span>
           </summary>
