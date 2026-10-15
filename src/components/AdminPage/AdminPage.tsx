@@ -150,10 +150,10 @@ function AdminPage() {
     } catch (error) { setMessage(errorMessage(error)) } finally { setRoleBusy(null) }
   }
 
-  const saveListenerProfile = async (event: FormEvent<HTMLFormElement>, listenerId: string): Promise<boolean> => {
+  const saveListenerProfile = async (event: FormEvent<HTMLFormElement>, listenerId: string, selectedPhoto: File | null): Promise<boolean> => {
     event.preventDefault(); const data = new FormData(event.currentTarget); setBusy(true); setMessage('')
     const currentImage = String(data.get('current-image') || '')
-    const imageFile = data.get('image')
+    const imageFile = selectedPhoto || data.get('image')
     let profileImageUrl = data.get('remove-image') === 'true' ? '' : currentImage
     let uploadedPath = ''
     try {
@@ -291,7 +291,7 @@ function AdminPage() {
 
       {view === 'availability' && <AdminAvailabilitySection listeners={listeners} slots={slots} busy={busy} onAddWindow={event => save(event, 'slot')} setBusy={setBusy} setMessage={setMessage} refresh={() => setRefresh(value => value + 1)} />}
 
-      {view === 'management' && <AdminManagementSection listeners={listeners} selectedListener={managementListener} busy={busy} onSelect={setManagementListenerId} onSaveProfile={saveListenerProfile} onSetStatus={(listener, status) => void setListenerStatus(listener, status)} />}
+      {view === 'management' && <AdminManagementSection listeners={listeners} selectedListener={managementListener} busy={busy} message={message} onSelect={setManagementListenerId} onSaveProfile={saveListenerProfile} onSetStatus={(listener, status) => void setListenerStatus(listener, status)} />}
       {view === 'pricing' && <AdminPricingSection rates={rates} busy={busy} onSave={event => void save(event, 'default')} />}
       {view === 'reviews' && <AdminReviewsSection reviews={reviews} busy={busy} loadError={reviewLoadError} onSave={saveReview} onDelete={review => void deleteReview(review)} />}
       {view === 'audit' && <AdminAuditSection entries={audit} identify={auditIdentity} />}
