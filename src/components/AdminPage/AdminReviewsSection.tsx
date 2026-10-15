@@ -63,5 +63,6 @@ export default function AdminReviewsSection({ reviews, busy, loadError, onSave, 
         </form>
       </aside>}
     </div>
+    <footer className="admin-reviews-footer"><span>Showing <strong>{reviews.length}</strong> {reviews.length === 1 ? 'review' : 'reviews'}</span></footer>
   </section>
 }
