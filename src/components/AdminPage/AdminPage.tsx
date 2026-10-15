@@ -56,7 +56,7 @@ function AdminPage() {
         client.from('availability').select('*').gte('ends_at', new Date().toISOString()).order('starts_at').limit(500),
         client.from('appointments').select('*').order('created_at', { ascending: false }).limit(500),
         client.rpc('admin_user_directory'),
-        client.from('intake_responses').select('user_id,selected_slot_id,topics,questionnaire_type,k6_score,k10_score,listener_note'),
+        client.from('intake_responses').select('user_id,selected_slot_id,topics,questionnaire_type,k6_score,k10_score,listener_note,listener_gender_preference,k6_answers,k10_answers,impact_score,long_answers'),
         client.from('role_audit_log').select('*').order('created_at', { ascending: false }).limit(200),
         client.rpc('public_session_rates'),
         client.rpc('admin_testimonials'),

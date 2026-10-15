@@ -42,6 +42,11 @@ export type Intake = {
   k6_score: number | null
   k10_score: number | null
   listener_note: string
+  listener_gender_preference: string
+  k6_answers: number[] | null
+  k10_answers: number[] | null
+  impact_score: number | null
+  long_answers: Record<string, unknown>
 }
 
 export type AuditIdentity = { name: string; detail: string }
