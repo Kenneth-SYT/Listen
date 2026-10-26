@@ -1,4 +1,4 @@
-import { ArrowRight, BookOpen, CalendarDays, CheckCircle2, Clock3, HeartHandshake, HelpCircle, History, Home, KeyRound, Layers3, ListChecks, LogOut, Mail, MessageCircle, Save, Settings, ShieldCheck, Trash2, UserRound, UsersRound, X, XCircle } from 'lucide-react'
+import { ArrowRight, BookOpen, CalendarDays, CheckCircle2, Clock3, HeartHandshake, HelpCircle, History, Home, KeyRound, Layers3, ListChecks, LogOut, MessageCircle, Save, ShieldCheck, Trash2, UserRound, UsersRound, X, XCircle } from 'lucide-react'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { cancelCheckout, createCheckout, errorMessage, getSupabase, money, reconcileBundleCheckout, verifyCurrentPassword, type Appointment, type CreditSummary } from '../../lib/supabase'
 import { useSession } from '../../lib/useSession'
@@ -14,9 +14,24 @@ const holdDeadline = (createdAt: string, checkoutExpiresAt: string) => new Date(
 )).toISOString()
 type CustomerProfile = { first_name: string; last_name: string; preferred_name: string; date_of_birth: string; mobile: string; contact_email: string; gender: string }
 type CreditAnimation = { from: number; added: number; to: number; phase: 'add' | 'merge' }
-type AccountView = 'home' | 'bookings' | 'messages' | 'todos' | 'between' | 'history' | 'profile' | 'settings'
-const accountViews: AccountView[] = ['home', 'bookings', 'messages', 'todos', 'between', 'history', 'profile', 'settings']
+type AccountView = 'home' | 'bookings' | 'messages' | 'todos' | 'between' | 'history' | 'profile'
+type SupportReadState = { messages: string; todos: string }
+const accountViews: AccountView[] = ['home', 'bookings', 'messages', 'todos', 'between', 'history', 'profile']
 const emptyProfile: CustomerProfile = { first_name: '', last_name: '', preferred_name: '', date_of_birth: '', mobile: '', contact_email: '', gender: '' }
+const unreadBaseline = '1970-01-01T00:00:00.000Z'
+
+const readSupportState = (userId: string): SupportReadState => {
+  try {
+    const saved = JSON.parse(localStorage.getItem(`listen-support-read-${userId}`) || '{}') as Partial<SupportReadState>
+    return { messages: saved.messages || unreadBaseline, todos: saved.todos || unreadBaseline }
+  } catch {
+    return { messages: unreadBaseline, todos: unreadBaseline }
+  }
+}
+
+const saveSupportState = (userId: string, state: SupportReadState) => {
+  localStorage.setItem(`listen-support-read-${userId}`, JSON.stringify(state))
+}
 
 function ListenerMark() {
   return <img className="account-listener-mark" src="/favicon-transparent-512x512.png" alt="" aria-hidden="true" />
@@ -63,6 +78,7 @@ function AccountPage() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
   const [deletingAccount, setDeletingAccount] = useState(false)
   const [deleteMessage, setDeleteMessage] = useState('')
+  const [unreadSupport, setUnreadSupport] = useState({ messages: 0, todos: 0 })
   const [refresh, setRefresh] = useState(0)
   const bundleReconciliationStarted = useRef(false)
   const [openedAt] = useState(() => Date.now())
@@ -96,6 +112,41 @@ function AccountPage() {
     })
     return () => { active = false }
   }, [userId, userEmail, refresh, bundleResult])
+  useEffect(() => {
+    if (!userId) return
+    let active = true
+    const client = getSupabase()
+    const refreshUnread = async () => {
+      const readAt = readSupportState(userId)
+      if (activeView === 'messages' || activeView === 'todos') {
+        readAt[activeView] = new Date().toISOString()
+        saveSupportState(userId, readAt)
+      }
+      const [messageResult, todoResult] = await Promise.all([
+        activeView === 'messages'
+          ? Promise.resolve({ count: 0, error: null })
+          : client.from('support_messages').select('id', { count: 'exact', head: true }).eq('user_id', userId).neq('sender_user_id', userId).gt('created_at', readAt.messages),
+        activeView === 'todos'
+          ? Promise.resolve({ count: 0, error: null })
+          : client.from('support_todos').select('id', { count: 'exact', head: true }).eq('user_id', userId).neq('created_by', userId).gt('updated_at', readAt.todos),
+      ])
+      if (!active) return
+      if (messageResult.error) console.error('Could not refresh unread messages', messageResult.error)
+      if (todoResult.error) console.error('Could not refresh unread to-dos', todoResult.error)
+      setUnreadSupport(current => ({
+        messages: messageResult.error ? current.messages : messageResult.count || 0,
+        todos: todoResult.error ? current.todos : todoResult.count || 0,
+      }))
+    }
+    void refreshUnread()
+    const timer = window.setInterval(() => void refreshUnread(), 20000)
+    window.addEventListener('focus', refreshUnread)
+    return () => {
+      active = false
+      window.clearInterval(timer)
+      window.removeEventListener('focus', refreshUnread)
+    }
+  }, [userId, activeView])
   useEffect(() => {
     if (!userId || bundleResult !== 'success' || bundleReconciliationStarted.current) return
     bundleReconciliationStarted.current = true
@@ -277,6 +328,17 @@ function AccountPage() {
       setDeletingAccount(false)
     }
   }
+  const changeView = (nextView: AccountView) => {
+    if (userId && (activeView === 'messages' || activeView === 'todos')) {
+      const readAt = readSupportState(userId)
+      readAt[activeView] = new Date().toISOString()
+      saveSupportState(userId, readAt)
+    }
+    if (nextView === 'messages' || nextView === 'todos') {
+      setUnreadSupport(current => ({ ...current, [nextView]: 0 }))
+    }
+    setActiveView(nextView)
+  }
   const navItems = [
     { id: 'home' as const, label: 'Home', icon: Home },
     { id: 'bookings' as const, label: 'Appointments', icon: CalendarDays },
@@ -285,7 +347,6 @@ function AccountPage() {
     { id: 'between' as const, label: 'Between sessions', icon: BookOpen },
     { id: 'history' as const, label: 'Past sessions', icon: History },
     { id: 'profile' as const, label: 'Profile', icon: UserRound },
-    { id: 'settings' as const, label: 'Settings', icon: Settings },
   ]
   const profileForm = () => <form className="account-settings-form account-profile-form" onSubmit={saveProfile}>
     <div className="account-settings-row"><label><span>First name</span><input value={profile.first_name} onChange={event => updateProfile('first_name', event.target.value)} maxLength={100} autoComplete="given-name" required /></label><label><span>Last name</span><input value={profile.last_name} onChange={event => updateProfile('last_name', event.target.value)} maxLength={100} autoComplete="family-name" required /></label></div>
@@ -298,7 +359,7 @@ function AccountPage() {
   const noBookings = <section className="account-empty"><div><HeartHandshake /></div><h2>No upcoming bookings</h2><p>You do not have any sessions scheduled. When you’re ready, complete a new check-in and choose a listener and time that works for you.</p><a href="/get-matched?fresh=1">Start a new check-in <ArrowRight /></a></section>
   return <main className="account-page">
     <div className={`account-dashboard-grid ${activeView === 'home' ? '' : 'account-dashboard-grid-wide'}`}>
-      <div className="account-sidebar-column"><aside className="account-sidebar" aria-label="Account navigation"><nav>{navItems.map(item => { const Icon = item.icon; return <button key={item.id} type="button" className={activeView === item.id ? 'active' : ''} onClick={() => setActiveView(item.id)}><Icon />{item.label}</button> })}</nav>{(listenerAccount || admin === userId) && <a href="/listener"><ListenerMark />Listener dashboard</a>}{admin === userId && <a href="/admin"><ShieldCheck />Admin dashboard</a>}</aside><button type="button" className="account-sidebar-signout" onClick={signOut}><LogOut />Sign out</button></div>
+      <div className="account-sidebar-column"><aside className="account-sidebar" aria-label="Account navigation"><nav>{navItems.map(item => { const Icon = item.icon; const count = item.id === 'messages' ? unreadSupport.messages : item.id === 'todos' ? unreadSupport.todos : 0; return <button key={item.id} type="button" className={activeView === item.id ? 'active' : ''} onClick={() => changeView(item.id)}><Icon /><span>{item.label}</span>{count > 0 && <span className="account-nav-badge" aria-label={`${count} unread ${item.label.toLowerCase()}`}>{count > 99 ? '99+' : count}</span>}</button> })}</nav>{(listenerAccount || admin === userId) && <a href="/listener"><ListenerMark />Listener dashboard</a>}{admin === userId && <a href="/admin"><ShieldCheck />Admin dashboard</a>}</aside><button type="button" className="account-sidebar-signout" onClick={signOut}><LogOut />Sign out</button></div>
       <div className="account-dashboard-main">
         {new URLSearchParams(location.search).has('checkout') && <div className="account-checkout-return" role="status"><Clock3 /><div><h2>Your payment wasn’t completed</h2><p>Your details are saved and the selected time remains held until the countdown ends.</p></div></div>}
         {message && <p className="account-message" role="status">{message}</p>}
@@ -310,10 +371,9 @@ function AccountPage() {
         {activeView === 'bookings' && <section className="account-section account-section-first"><div className="account-section-heading"><div><span>Your schedule</span><h2>Appointments</h2></div><p>Confirmed sessions and appointments awaiting payment.</p></div>{pendingBookings.length || upcomingBookings.length ? <div className="account-list">{[...pendingBookings, ...upcomingBookings].map((booking, index) => bookingCard(booking, booking.status === 'confirmed' && index === pendingBookings.length))}</div> : noBookings}</section>}
         {activeView === 'messages' && <SupportWorkspace role="customer" mode="messages" currentUserId={session.user.id} contacts={supportContacts} />}
         {activeView === 'todos' && <SupportWorkspace role="customer" mode="todos" currentUserId={session.user.id} contacts={supportContacts} />}
-        {activeView === 'between' && <section className="account-simple-panel account-feature-page"><div className="account-feature-icon"><BookOpen /></div><span className="account-card-label">Continued support</span><h2>Between sessions</h2><p>Resources, reflections and helpful material shared between appointments will live here.</p><div className="account-feature-empty"><strong>Nothing has been shared yet</strong><span>Any between-session resources will remain available from this page.</span></div></section>}
+        {activeView === 'between' && <section className="account-simple-panel account-between-page"><header><div className="account-feature-icon"><BookOpen /></div><div><span className="account-card-label">Continued support</span><h2>Between sessions</h2><p>Keep helpful resources from your listener together in one place.</p></div></header><div className="account-between-empty"><div className="account-between-empty-icon"><BookOpen /></div><div><strong>No resources have been shared yet</strong><span>Reflections, worksheets and useful links will appear here when your listener sends them.</span></div><button type="button" onClick={() => changeView('messages')}>View messages <ArrowRight /></button></div></section>}
         {activeView === 'history' && <section className="account-section account-section-first account-history"><div className="account-section-heading"><div><span>Your records</span><h2>Past sessions</h2></div><p>Previous and expired booking records are kept here.</p></div>{historyBookings.length ? <div className="account-list">{historyBookings.map(booking => bookingCard(booking, false, false))}</div> : noBookings}</section>}
         {activeView === 'profile' && <section className="account-simple-panel"><span className="account-card-label">Your details</span><h2>My information</h2>{profileForm()}</section>}
-        {activeView === 'settings' && <section className="account-simple-panel"><span className="account-card-label">Account access</span><h2>Settings</h2><div className="account-profile-row"><div><Mail /></div><p><strong>Sign-in email</strong><small>{session.user.email}</small></p></div><button type="button" className="account-settings-signout" onClick={signOut}><LogOut />Sign out</button><p className="account-panel-note">Your verified sign-in email identifies your account. Contact support if you need help changing it.</p></section>}
       </div>
       {activeView === 'home' && <aside className="account-dashboard-rail"><section className="account-rail-credit"><div className="account-rail-credit-label"><Layers3 /><span>Standard-session credits</span></div><strong className={creditAnimation ? `account-credit-value ${creditAnimation.phase}` : 'account-credit-value'} aria-label={`${credits.standard_credits} session credits`}><b>{creditAnimation?.phase === 'add' ? creditAnimation.from : credits.standard_credits}</b>{creditAnimation && <em aria-hidden="true">+{creditAnimation.added}</em>}</strong><p>50-minute standard sessions</p><div className="account-credit-actions">{credits.standard_credits > 0 && <a href="/get-matched?repeat=previous">Book with a credit <ArrowRight /></a>}<a className="account-credit-topup" href="/pricing">Top up credits</a></div></section><section className="account-assistance"><div className="account-help-icon"><HelpCircle /></div><h2>Need assistance?</h2><p>Have a question about choosing a listener, your booking, or payment? We’re here to help.</p><a href="/contact">Contact us <ArrowRight /></a><hr /><span>Listen offers peer support</span><small>For immediate danger or a crisis, call 000 or Lifeline on 13 11 14.</small></section></aside>}
     </div>
