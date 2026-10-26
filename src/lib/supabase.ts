@@ -14,6 +14,14 @@ export function getSupabase() {
   if (!supabase) throw new Error('Online booking is not configured yet. Please contact us to arrange a session.')
   return supabase
 }
+export async function verifyCurrentPassword(email: string, password: string) {
+  if (!url || !key) throw new Error('Online account access is not configured yet.')
+  const verifier = createClient(url, key, {
+    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+  })
+  const { error } = await verifier.auth.signInWithPassword({ email, password })
+  if (error) throw new Error('We could not verify your current password.')
+}
 export const money = (cents: number) => new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD' }).format(cents / 100)
 export const errorMessage = (error: unknown) => {
   if (error instanceof Error) return error.message

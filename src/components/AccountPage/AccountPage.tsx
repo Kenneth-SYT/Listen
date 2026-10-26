@@ -1,6 +1,6 @@
-import { ArrowRight, BookOpen, CalendarDays, CalendarPlus, CheckCircle2, Clock3, HeartHandshake, HelpCircle, History, Home, Layers3, ListChecks, LogOut, Mail, MessageCircle, Phone, Save, Settings, ShieldCheck, UserRound, UsersRound, XCircle } from 'lucide-react'
+import { ArrowRight, BookOpen, CalendarDays, CheckCircle2, Clock3, HeartHandshake, HelpCircle, History, Home, KeyRound, Layers3, ListChecks, LogOut, Mail, MessageCircle, Save, Settings, ShieldCheck, Trash2, UserRound, UsersRound, X, XCircle } from 'lucide-react'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { cancelCheckout, createBundleCheckout, createCheckout, errorMessage, getSupabase, money, reconcileBundleCheckout, type Appointment, type BundleProduct, type CreditSummary } from '../../lib/supabase'
+import { cancelCheckout, createCheckout, errorMessage, getSupabase, money, reconcileBundleCheckout, verifyCurrentPassword, type Appointment, type CreditSummary } from '../../lib/supabase'
 import { useSession } from '../../lib/useSession'
 import LoginPage from '../LoginPage/LoginPage'
 import SupportWorkspace, { type SupportContact } from '../SupportWorkspace/SupportWorkspace'
@@ -52,13 +52,18 @@ function AccountPage() {
   const [message, setMessage] = useState(() => bundleResult === 'cancelled' ? 'Bundle checkout was cancelled. No credits were added and you were not charged.' : '')
   const [busy, setBusy] = useState(false)
   const [cancellingId, setCancellingId] = useState('')
-  const [bundles, setBundles] = useState<BundleProduct[]>([])
   const [credits, setCredits] = useState<CreditSummary>({ standard_credits: 0, eligible_for_bundles: false })
   const [creditAnimation, setCreditAnimation] = useState<CreditAnimation | null>(null)
   const [profile, setProfile] = useState<CustomerProfile>(emptyProfile)
   const [savingProfile, setSavingProfile] = useState(false)
+  const [passwordModalOpen, setPasswordModalOpen] = useState(false)
+  const [changingPassword, setChangingPassword] = useState(false)
+  const [passwordMessage, setPasswordMessage] = useState('')
+  const [passwordSuccess, setPasswordSuccess] = useState('')
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [deletingAccount, setDeletingAccount] = useState(false)
+  const [deleteMessage, setDeleteMessage] = useState('')
   const [refresh, setRefresh] = useState(0)
-  const bundleStarted = useRef(false)
   const bundleReconciliationStarted = useRef(false)
   const [openedAt] = useState(() => Date.now())
   const [activeView, setActiveView] = useState<AccountView>(() => {
@@ -79,10 +84,14 @@ function AccountPage() {
         setNames(Object.fromEntries(people.data.map(person => [person.id, person.name])))
         if (profileResult.data) setProfile({ ...emptyProfile, ...profileResult.data, contact_email: profileResult.data.contact_email || userEmail, gender: profileResult.data.gender || '' })
         setAdmin(role.data === true ? userId : ''); setListenerAccount(Boolean(listenerResult.data)); setMessage(current => bundleResult ? current : '')
-      }).catch(error => { if (active) setMessage(errorMessage(error)) })
-    void Promise.all([client.rpc('bundle_options'), client.rpc('credit_summary')]).then(([products, creditResult]) => {
+      }).catch(error => {
+        if (!active) return
+        const detail = errorMessage(error)
+        if (/jwt issued at future/i.test(detail)) console.error('Account session timing error', error)
+        else setMessage(detail)
+      })
+    void client.rpc('credit_summary').then(creditResult => {
       if (!active) return
-      if (!products.error) setBundles((products.data || []) as BundleProduct[])
       if (!creditResult.error) setCredits(creditResult.data as CreditSummary)
     })
     return () => { active = false }
@@ -128,6 +137,28 @@ function AccountPage() {
     void check(0)
     return () => { active = false; if (timer) window.clearTimeout(timer) }
   }, [userId, bundleResult])
+  useEffect(() => {
+    if (!passwordModalOpen) return
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !changingPassword) {
+        setPasswordModalOpen(false)
+        setPasswordMessage('')
+      }
+    }
+    window.addEventListener('keydown', closeOnEscape)
+    return () => window.removeEventListener('keydown', closeOnEscape)
+  }, [passwordModalOpen, changingPassword])
+  useEffect(() => {
+    if (!deleteModalOpen) return
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !deletingAccount) {
+        setDeleteModalOpen(false)
+        setDeleteMessage('')
+      }
+    }
+    window.addEventListener('keydown', closeOnEscape)
+    return () => window.removeEventListener('keydown', closeOnEscape)
+  }, [deleteModalOpen, deletingAccount])
   if (loading) return <p role="status">Checking your account…</p>
   if (!session) return <LoginPage />
   const resume = async (slotId: string) => {
@@ -138,14 +169,6 @@ function AccountPage() {
       window.location.assign(checkoutUrl)
     }
     catch (error) { setMessage(errorMessage(error)); setBusy(false) }
-  }
-  const purchaseBundle = async (code: string) => {
-    if (busy || bundleStarted.current) return
-    bundleStarted.current = true; setBusy(true); setMessage('Opening secure bundle checkout…')
-    try {
-      const checkoutUrl = await createBundleCheckout(code)
-      window.location.assign(checkoutUrl)
-    } catch (error) { bundleStarted.current = false; setBusy(false); setMessage(errorMessage(error)) }
   }
   const removeExpired = (bookingId: string) => setAppointments(current => current.filter(booking => booking.id !== bookingId))
   const cancelBooking = async (bookingId: string, askForConfirmation = true) => {
@@ -193,6 +216,67 @@ function AccountPage() {
       setMessage('Your profile details have been updated.')
     } catch (error) { setMessage(errorMessage(error)) } finally { setSavingProfile(false) }
   }
+  const changePassword = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const values = new FormData(event.currentTarget)
+    const currentPassword = String(values.get('current_password') || '')
+    const newPassword = String(values.get('new_password') || '')
+    const confirmPassword = String(values.get('confirm_password') || '')
+    if (newPassword !== confirmPassword) {
+      setPasswordMessage('The new passwords do not match.')
+      return
+    }
+    if (currentPassword === newPassword) {
+      setPasswordMessage('Choose a new password that is different from your current password.')
+      return
+    }
+    if (!session.user.email) {
+      setPasswordMessage('This account does not have an email address available for password verification.')
+      return
+    }
+    setChangingPassword(true)
+    setPasswordMessage('')
+    try {
+      const client = getSupabase()
+      await verifyCurrentPassword(session.user.email, currentPassword)
+      const update = await client.auth.updateUser({ password: newPassword })
+      if (update.error) throw update.error
+      setPasswordModalOpen(false)
+      setMessage('')
+      setPasswordSuccess('Your password has been changed.')
+    } catch (error) {
+      setPasswordMessage(errorMessage(error))
+    } finally {
+      setChangingPassword(false)
+    }
+  }
+  const deleteAccount = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const confirmation = String(new FormData(event.currentTarget).get('delete_confirmation') || '').trim()
+    if (confirmation !== 'DELETE') {
+      setDeleteMessage('Type DELETE exactly to confirm account deletion.')
+      return
+    }
+    setDeletingAccount(true)
+    setDeleteMessage('')
+    try {
+      const client = getSupabase()
+      const { error } = await client.functions.invoke('delete-account', { body: { confirmation } })
+      if (error) {
+        let detail = error.message
+        if ('context' in error && error.context instanceof Response) {
+          const body = await error.context.json().catch(() => null)
+          detail = body?.error || detail
+        }
+        throw new Error(detail)
+      }
+      await client.auth.signOut({ scope: 'local' }).catch(() => undefined)
+      window.location.assign('/')
+    } catch (error) {
+      setDeleteMessage(errorMessage(error))
+      setDeletingAccount(false)
+    }
+  }
   const navItems = [
     { id: 'home' as const, label: 'Home', icon: Home },
     { id: 'bookings' as const, label: 'Appointments', icon: CalendarDays },
@@ -203,10 +287,17 @@ function AccountPage() {
     { id: 'profile' as const, label: 'Profile', icon: UserRound },
     { id: 'settings' as const, label: 'Settings', icon: Settings },
   ]
+  const profileForm = () => <form className="account-settings-form account-profile-form" onSubmit={saveProfile}>
+    <div className="account-settings-row"><label><span>First name</span><input value={profile.first_name} onChange={event => updateProfile('first_name', event.target.value)} maxLength={100} autoComplete="given-name" required /></label><label><span>Last name</span><input value={profile.last_name} onChange={event => updateProfile('last_name', event.target.value)} maxLength={100} autoComplete="family-name" required /></label></div>
+    <div className="account-settings-row"><label><span>Preferred name <small>Optional</small></span><input value={profile.preferred_name} onChange={event => updateProfile('preferred_name', event.target.value)} maxLength={100} autoComplete="nickname" /></label><label><span>Account email</span><input type="email" value={profile.contact_email || session.user.email || ''} readOnly aria-describedby="account-email-help" /></label></div>
+    <div className="account-settings-row"><label><span>Mobile number</span><input type="tel" inputMode="numeric" value={profile.mobile} onChange={event => updateProfile('mobile', event.target.value.replace(/\D/g, '').slice(0, 10))} pattern="04[0-9]{8}" title="Enter 10 digits starting with 04" autoComplete="tel" required /></label><label><span>Date of birth</span><input type="date" value={profile.date_of_birth} onChange={event => updateProfile('date_of_birth', event.target.value)} max={new Date().toISOString().slice(0, 10)} autoComplete="bday" required /></label></div>
+    <label><span>Gender <small>Optional</small></span><select value={profile.gender} onChange={event => updateProfile('gender', event.target.value)}><option value="">Prefer not to say</option><option value="male">Male</option><option value="female">Female</option><option value="other">Other</option></select></label>
+    <small id="account-email-help" className="account-field-help">Your verified sign-in email cannot be changed here.</small>
+    <div className="account-settings-actions"><button type="button" className="account-delete-link" onClick={() => { setDeleteMessage(''); setDeleteModalOpen(true) }}><Trash2 />Delete account</button><div className="account-profile-actions"><div className="account-password-action">{passwordSuccess && <span className="account-password-success" role="status">{passwordSuccess}</span>}<button type="button" className="account-change-password" onClick={() => { setMessage(''); setPasswordMessage(''); setPasswordSuccess(''); setPasswordModalOpen(true) }}><KeyRound />Change password</button></div><button type="submit" className="account-save-profile" disabled={savingProfile}><Save />{savingProfile ? 'Saving…' : 'Save changes'}</button></div></div>
+  </form>
   const noBookings = <section className="account-empty"><div><HeartHandshake /></div><h2>No upcoming bookings</h2><p>You do not have any sessions scheduled. When you’re ready, complete a new check-in and choose a listener and time that works for you.</p><a href="/get-matched?fresh=1">Start a new check-in <ArrowRight /></a></section>
   return <main className="account-page">
-    <header className="account-dashboard-heading"><div><span className="account-eyebrow">My support space</span><h1>Welcome back.</h1><p>Signed in as {session.user.email}</p></div><a className="account-book" href="/get-matched?repeat=previous"><CalendarPlus />Book a session</a></header>
-    <div className="account-dashboard-grid">
+    <div className={`account-dashboard-grid ${activeView === 'home' ? '' : 'account-dashboard-grid-wide'}`}>
       <div className="account-sidebar-column"><aside className="account-sidebar" aria-label="Account navigation"><nav>{navItems.map(item => { const Icon = item.icon; return <button key={item.id} type="button" className={activeView === item.id ? 'active' : ''} onClick={() => setActiveView(item.id)}><Icon />{item.label}</button> })}</nav>{(listenerAccount || admin === userId) && <a href="/listener"><ListenerMark />Listener dashboard</a>}{admin === userId && <a href="/admin"><ShieldCheck />Admin dashboard</a>}</aside><button type="button" className="account-sidebar-signout" onClick={signOut}><LogOut />Sign out</button></div>
       <div className="account-dashboard-main">
         {new URLSearchParams(location.search).has('checkout') && <div className="account-checkout-return" role="status"><Clock3 /><div><h2>Your payment wasn’t completed</h2><p>Your details are saved and the selected time remains held until the countdown ends.</p></div></div>}
@@ -215,21 +306,19 @@ function AccountPage() {
           <section className="account-listener-overview"><div><span className="account-card-label">My listener</span><h2>{primaryListener ? names[primaryListener.listener_id] || 'Your listener' : 'Find someone who feels right for you'}</h2><p>{primaryListener ? 'Your chosen listener will support your upcoming conversation.' : 'Complete the matching questions to receive a listener recommendation based on what you want to talk about.'}</p></div><a href="/get-matched?repeat=previous"><UsersRound />{primaryListener ? 'Get matched again' : 'Get matched'}</a></section>
           {pendingBookings.length > 0 && <section className="account-section"><div className="account-section-heading"><div><span>Action needed</span><h2>Complete your booking</h2></div><p>Your appointment is held for 15 minutes while you finish payment.</p></div><div className="account-list">{pendingBookings.map(booking => bookingCard(booking))}</div></section>}
           <section className="account-section"><div className="account-section-heading"><div><span>Coming up</span><h2>Upcoming booking</h2></div></div>{upcomingBookings.length ? <div className="account-list">{upcomingBookings.slice(0, 1).map(booking => bookingCard(booking, true))}</div> : noBookings}</section>
-          <section className="account-section account-bundles"><div className="account-section-heading"><div><span>Save on follow-up support</span><h2>Session bundles</h2></div><p>Buy a bundle now, then schedule each included appointment separately.</p></div><div className="account-bundle-grid">{bundles.map(bundle => <article key={bundle.code}><span>{bundle.session_count} sessions</span><h3>{bundle.label}</h3><strong>{money(bundle.amount_cents)} AUD</strong><small>{money(Math.round(bundle.amount_cents / bundle.session_count))} per session</small><button type="button" disabled={busy} onClick={() => void purchaseBundle(bundle.code)}>{busy ? 'Opening checkout…' : 'Buy bundle'}</button></article>)}</div><p className="account-bundle-locked">Bundle credits cover standard sessions. If you have not completed your introductory session, book that first and use your credits for later appointments.</p></section>
         </>}
         {activeView === 'bookings' && <section className="account-section account-section-first"><div className="account-section-heading"><div><span>Your schedule</span><h2>Appointments</h2></div><p>Confirmed sessions and appointments awaiting payment.</p></div>{pendingBookings.length || upcomingBookings.length ? <div className="account-list">{[...pendingBookings, ...upcomingBookings].map((booking, index) => bookingCard(booking, booking.status === 'confirmed' && index === pendingBookings.length))}</div> : noBookings}</section>}
         {activeView === 'messages' && <SupportWorkspace role="customer" mode="messages" currentUserId={session.user.id} contacts={supportContacts} />}
         {activeView === 'todos' && <SupportWorkspace role="customer" mode="todos" currentUserId={session.user.id} contacts={supportContacts} />}
         {activeView === 'between' && <section className="account-simple-panel account-feature-page"><div className="account-feature-icon"><BookOpen /></div><span className="account-card-label">Continued support</span><h2>Between sessions</h2><p>Resources, reflections and helpful material shared between appointments will live here.</p><div className="account-feature-empty"><strong>Nothing has been shared yet</strong><span>Any between-session resources will remain available from this page.</span></div></section>}
         {activeView === 'history' && <section className="account-section account-section-first account-history"><div className="account-section-heading"><div><span>Your records</span><h2>Past sessions</h2></div><p>Previous and expired booking records are kept here.</p></div>{historyBookings.length ? <div className="account-list">{historyBookings.map(booking => bookingCard(booking, false, false))}</div> : noBookings}</section>}
-        {activeView === 'profile' && <section className="account-simple-panel"><span className="account-card-label">Your details</span><h2>Profile</h2><div className="account-profile-name"><div><UserRound /></div><div><small>Preferred name</small><h3>{profile.preferred_name || profile.first_name || 'Your profile'}</h3><p>{[profile.first_name, profile.last_name].filter(Boolean).join(' ') || 'Complete your details in Settings'}</p></div></div><dl className="account-profile-details"><div><dt><Mail />Email</dt><dd>{profile.contact_email || session.user.email || '—'}</dd></div><div><dt><Phone />Mobile</dt><dd>{profile.mobile || '—'}</dd></div><div><dt><CalendarDays />Date of birth</dt><dd>{profile.date_of_birth ? new Date(`${profile.date_of_birth}T12:00:00`).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' }) : '—'}</dd></div><div><dt><UserRound />Gender</dt><dd>{profile.gender ? profile.gender.charAt(0).toUpperCase() + profile.gender.slice(1) : 'Prefer not to say'}</dd></div></dl><button type="button" className="account-edit-profile" onClick={() => setActiveView('settings')}>Edit profile <ArrowRight /></button><p className="account-panel-note">These contact details are used for your bookings. Your questionnaire answers remain private and are not displayed here.</p></section>}
-        {activeView === 'settings' && <section className="account-simple-panel"><span className="account-card-label">Account details</span><h2>Settings</h2><form className="account-settings-form" onSubmit={saveProfile}><div className="account-settings-row"><label><span>First name</span><input value={profile.first_name} onChange={event => updateProfile('first_name', event.target.value)} maxLength={100} autoComplete="given-name" required /></label><label><span>Last name</span><input value={profile.last_name} onChange={event => updateProfile('last_name', event.target.value)} maxLength={100} autoComplete="family-name" required /></label></div><label><span>Preferred name <small>Optional</small></span><input value={profile.preferred_name} onChange={event => updateProfile('preferred_name', event.target.value)} maxLength={100} autoComplete="nickname" /></label><div className="account-settings-row"><label><span>Mobile</span><input type="tel" inputMode="numeric" value={profile.mobile} onChange={event => updateProfile('mobile', event.target.value.replace(/\D/g, '').slice(0, 10))} pattern="04[0-9]{8}" title="Enter 10 digits starting with 04" autoComplete="tel" required /></label><label><span>Date of birth</span><input type="date" value={profile.date_of_birth} onChange={event => updateProfile('date_of_birth', event.target.value)} max={new Date().toISOString().slice(0, 10)} autoComplete="bday" required /></label></div><label><span>Gender <small>Optional</small></span><select value={profile.gender} onChange={event => updateProfile('gender', event.target.value)}><option value="">Prefer not to say</option><option value="male">Male</option><option value="female">Female</option><option value="other">Other</option></select></label><label><span>Account email</span><input type="email" value={profile.contact_email || session.user.email || ''} readOnly aria-describedby="account-email-help" /></label><small id="account-email-help" className="account-field-help">Your verified sign-in email cannot be changed here.</small><div className="account-settings-actions"><button type="submit" className="account-save-profile" disabled={savingProfile}><Save />{savingProfile ? 'Saving…' : 'Save changes'}</button></div></form></section>}
+        {activeView === 'profile' && <section className="account-simple-panel"><span className="account-card-label">Your details</span><h2>My information</h2>{profileForm()}</section>}
+        {activeView === 'settings' && <section className="account-simple-panel"><span className="account-card-label">Account access</span><h2>Settings</h2><div className="account-profile-row"><div><Mail /></div><p><strong>Sign-in email</strong><small>{session.user.email}</small></p></div><button type="button" className="account-settings-signout" onClick={signOut}><LogOut />Sign out</button><p className="account-panel-note">Your verified sign-in email identifies your account. Contact support if you need help changing it.</p></section>}
       </div>
-      <aside className="account-dashboard-rail">
-        {activeView === 'home' && <section className="account-rail-credit"><div className="account-rail-credit-label"><Layers3 /><span>Standard-session credits</span></div><strong className={creditAnimation ? `account-credit-value ${creditAnimation.phase}` : 'account-credit-value'} aria-label={`${credits.standard_credits} session credits`}><b>{creditAnimation?.phase === 'add' ? creditAnimation.from : credits.standard_credits}</b>{creditAnimation && <em aria-hidden="true">+{creditAnimation.added}</em>}</strong><p>50-minute standard sessions</p>{credits.standard_credits > 0 && <a href="/get-matched?repeat=previous">Book with a credit <ArrowRight /></a>}</section>}
-        <section className="account-assistance"><div className="account-help-icon"><HelpCircle /></div><h2>Need assistance?</h2><p>Have a question about choosing a listener, your booking, or payment? We’re here to help.</p><a href="/contact">Contact us <ArrowRight /></a><hr /><span>Listen offers peer support</span><small>For immediate danger or a crisis, call 000 or Lifeline on 13 11 14.</small></section>
-      </aside>
+      {activeView === 'home' && <aside className="account-dashboard-rail"><section className="account-rail-credit"><div className="account-rail-credit-label"><Layers3 /><span>Standard-session credits</span></div><strong className={creditAnimation ? `account-credit-value ${creditAnimation.phase}` : 'account-credit-value'} aria-label={`${credits.standard_credits} session credits`}><b>{creditAnimation?.phase === 'add' ? creditAnimation.from : credits.standard_credits}</b>{creditAnimation && <em aria-hidden="true">+{creditAnimation.added}</em>}</strong><p>50-minute standard sessions</p><div className="account-credit-actions">{credits.standard_credits > 0 && <a href="/get-matched?repeat=previous">Book with a credit <ArrowRight /></a>}<a className="account-credit-topup" href="/pricing">Top up credits</a></div></section><section className="account-assistance"><div className="account-help-icon"><HelpCircle /></div><h2>Need assistance?</h2><p>Have a question about choosing a listener, your booking, or payment? We’re here to help.</p><a href="/contact">Contact us <ArrowRight /></a><hr /><span>Listen offers peer support</span><small>For immediate danger or a crisis, call 000 or Lifeline on 13 11 14.</small></section></aside>}
     </div>
+    {passwordModalOpen && <div className="account-password-backdrop" onMouseDown={event => { if (event.target === event.currentTarget && !changingPassword) { setPasswordModalOpen(false); setPasswordMessage('') } }}><section className="account-password-modal" role="dialog" aria-modal="true" aria-labelledby="account-password-title"><header><div><span className="account-card-label">Account security</span><h2 id="account-password-title">Change password</h2></div><button type="button" aria-label="Close password dialog" disabled={changingPassword} onClick={() => { setPasswordModalOpen(false); setPasswordMessage('') }}><X /></button></header><form onSubmit={changePassword}><label><span>Current password</span><input type="password" name="current_password" autoComplete="current-password" required autoFocus /></label><label><span>New password</span><input type="password" name="new_password" autoComplete="new-password" minLength={8} required /></label><label><span>Confirm new password</span><input type="password" name="confirm_password" autoComplete="new-password" minLength={8} required /></label><small>Use at least 8 characters.</small>{passwordMessage && <p className="account-password-message" role="alert">{passwordMessage}</p>}<div><button type="button" className="account-password-cancel" disabled={changingPassword} onClick={() => { setPasswordModalOpen(false); setPasswordMessage('') }}>Cancel</button><button type="submit" className="account-password-submit" disabled={changingPassword}>{changingPassword ? 'Changing…' : 'Change password'}</button></div></form></section></div>}
+    {deleteModalOpen && <div className="account-password-backdrop" onMouseDown={event => { if (event.target === event.currentTarget && !deletingAccount) { setDeleteModalOpen(false); setDeleteMessage('') } }}><section className="account-password-modal account-delete-modal" role="dialog" aria-modal="true" aria-labelledby="account-delete-title"><header><div><span className="account-card-label">Permanent action</span><h2 id="account-delete-title">Delete your account?</h2></div><button type="button" aria-label="Close delete account dialog" disabled={deletingAccount} onClick={() => { setDeleteModalOpen(false); setDeleteMessage('') }}><X /></button></header><form onSubmit={deleteAccount}><p>This permanently removes your profile, appointments, messages, to-dos and unused credits. This action cannot be undone.</p><label><span>Type DELETE to confirm</span><input name="delete_confirmation" autoComplete="off" spellCheck={false} required autoFocus /></label>{deleteMessage && <p className="account-password-message" role="alert">{deleteMessage}</p>}<div><button type="button" className="account-password-cancel" disabled={deletingAccount} onClick={() => { setDeleteModalOpen(false); setDeleteMessage('') }}>Cancel</button><button type="submit" className="account-delete-confirm" disabled={deletingAccount}>{deletingAccount ? 'Deleting…' : 'Delete account'}</button></div></form></section></div>}
   </main>
 }
 export default AccountPage

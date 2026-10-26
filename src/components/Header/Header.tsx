@@ -66,7 +66,7 @@ function Header() {
               <summary aria-label={`Open account menu for ${fullName}`}><span>{initials}</span><ChevronDown aria-hidden="true" /></summary>
               <div className="header-account-dropdown">
                 <header><strong>{fullName}</strong><small>{session.user.email}</small></header>
-                <nav aria-label="Account menu"><a href="/account?view=settings"><UserRound />Profile settings</a><a href="/account?view=bookings"><CalendarDays />Appointments</a><a href="/account?view=messages"><MessageCircle />Messages</a></nav>
+                <nav aria-label="Account menu"><a href="/account?view=profile"><UserRound />Profile settings</a><a href="/account?view=bookings"><CalendarDays />Appointments</a><a href="/account?view=messages"><MessageCircle />Messages</a></nav>
                 <button type="button" onClick={() => void signOut()}><LogOut />Sign out</button>
               </div>
             </details>
