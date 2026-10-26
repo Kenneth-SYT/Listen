@@ -117,6 +117,7 @@ function AccountPage() {
     let active = true
     const client = getSupabase()
     const refreshUnread = async () => {
+      if (!active) return
       const readAt = readSupportState(userId)
       if (activeView === 'messages' || activeView === 'todos') {
         readAt[activeView] = new Date().toISOString()
@@ -139,12 +140,17 @@ function AccountPage() {
       }))
     }
     void refreshUnread()
-    const timer = window.setInterval(() => void refreshUnread(), 20000)
+    const channel = client.channel(`account-support-notifications-${userId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'support_messages', filter: `user_id=eq.${userId}` }, () => void refreshUnread())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'support_todos', filter: `user_id=eq.${userId}` }, () => void refreshUnread())
+      .subscribe()
+    const timer = window.setInterval(() => void refreshUnread(), 5000)
     window.addEventListener('focus', refreshUnread)
     return () => {
       active = false
       window.clearInterval(timer)
       window.removeEventListener('focus', refreshUnread)
+      void client.removeChannel(channel)
     }
   }, [userId, activeView])
   useEffect(() => {

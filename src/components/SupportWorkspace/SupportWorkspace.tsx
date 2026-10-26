@@ -33,6 +33,22 @@ export default function SupportWorkspace({ role, mode, currentUserId, contacts }
     }).catch(error => { if (active) setNotice(errorMessage(error)) })
     return () => { active = false }
   }, [contacts.length, refresh])
+  useEffect(() => {
+    if (!contacts.length) return
+    const client = getSupabase()
+    const table = mode === 'messages' ? 'support_messages' : 'support_todos'
+    const channel = client.channel(`support-workspace-${mode}-${currentUserId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table }, () => setRefresh(value => value + 1))
+      .subscribe()
+    const timer = window.setInterval(() => setRefresh(value => value + 1), 5000)
+    const refreshOnFocus = () => setRefresh(value => value + 1)
+    window.addEventListener('focus', refreshOnFocus)
+    return () => {
+      window.clearInterval(timer)
+      window.removeEventListener('focus', refreshOnFocus)
+      void client.removeChannel(channel)
+    }
+  }, [contacts.length, currentUserId, mode])
 
   const thread = useMemo(() => selected ? messages.filter(item => item.listener_id === selected.listenerId && item.user_id === selected.userId) : [], [messages, selected])
   const assignedTodos = useMemo(() => selected ? todos.filter(item => item.listener_id === selected.listenerId && item.user_id === selected.userId && item.status !== 'cancelled') : [], [todos, selected])
@@ -72,7 +88,7 @@ export default function SupportWorkspace({ role, mode, currentUserId, contacts }
     {notice && <p className="support-notice" role="status">{notice}</p>}
     {mode === 'messages' ? <>
       <div className="support-thread" aria-live="polite">{thread.map(item => <article className={item.sender_user_id === currentUserId ? 'mine' : ''} key={item.id}><p>{item.body}</p><time>{new Date(item.created_at).toLocaleString('en-AU', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })}</time></article>)}{thread.length === 0 && <div className="support-thread-empty"><MessageCircle /><strong>No messages yet</strong><span>Start the conversation with {selected?.name}.</span></div>}</div>
-      <form className="support-composer" onSubmit={sendMessage}><div><textarea id="support-message" aria-label="Message" value={draft} onChange={event => setDraft(event.target.value)} maxLength={2000} rows={3} placeholder="Type a message" required /><button disabled={busy || !draft.trim()}><Send />Send</button></div></form>
+      <form className="support-composer" onSubmit={sendMessage}><div><textarea id="support-message" aria-label="Message" value={draft} onChange={event => setDraft(event.target.value)} onKeyDown={event => { if (event.key === 'Enter' && !event.shiftKey && !event.nativeEvent.isComposing) { event.preventDefault(); if (!busy && draft.trim()) event.currentTarget.form?.requestSubmit() } }} maxLength={2000} rows={3} placeholder="Type a message" required /><button disabled={busy || !draft.trim()}><Send />Send</button></div></form>
     </> : <>
       {role === 'listener' && <form className="support-todo-form" onSubmit={createTodo}><label><span>Task</span><input name="title" maxLength={160} placeholder="e.g. Write down one thing that helped this week" required /></label><label><span>Notes <small>Optional</small></span><textarea name="details" maxLength={1000} rows={2} placeholder="Add helpful context for the customer" /></label><label><span>Due date <small>Optional</small></span><input name="dueDate" type="date" min={new Date().toISOString().slice(0, 10)} /></label><button disabled={busy}><Plus />Add to-do</button></form>}
       <div className="support-todo-list">{assignedTodos.map(todo => <article className={todo.status} key={todo.id}><button className="support-todo-check" type="button" disabled={busy} onClick={() => setTodoStatus(todo.id, todo.status === 'completed' ? 'open' : 'completed')} aria-label={todo.status === 'completed' ? 'Reopen task' : 'Complete task'}>{todo.status === 'completed' ? <Check /> : <Circle />}</button><div><h3>{todo.title}</h3>{todo.details && <p>{todo.details}</p>}<span>{todo.due_date ? `Due ${new Date(`${todo.due_date}T12:00:00`).toLocaleDateString('en-AU', { day: 'numeric', month: 'long' })}` : 'No due date'} · {todo.status}</span></div>{role === 'listener' && <button className="support-todo-remove" type="button" disabled={busy} onClick={() => setTodoStatus(todo.id, 'cancelled')} aria-label="Remove task"><X /></button>}</article>)}{assignedTodos.length === 0 && <div className="support-thread-empty"><Check /><strong>You’re all caught up</strong><span>{role === 'listener' ? 'Add a useful next step for this customer.' : 'New tasks from your listener will appear here.'}</span></div>}</div>
