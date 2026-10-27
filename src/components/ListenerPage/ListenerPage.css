@@ -35,6 +35,8 @@
 .listener-profile-form input,
 .listener-profile-form select,
 .listener-profile-form textarea { min-width: 0; border-color: #bdcee0; background: #fbfdff; color: #173d78; transition: border-color .15s ease, box-shadow .15s ease, background .15s ease; }
+.listener-profile-form input,
+.listener-profile-form select { box-sizing: border-box; height: 50px; }
 .listener-profile-form input:focus,
 .listener-profile-form select:focus,
 .listener-profile-form textarea:focus { outline: 0; border-color: #315f9c; background: #fff; box-shadow: 0 0 0 3px rgb(49 95 156 / .12); }

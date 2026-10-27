@@ -200,7 +200,7 @@ function ListenerPage() {
         </div>
         <div className="listener-profile-fields listener-profile-fields-two">
           <label>Gender<select name="gender" defaultValue={listener.gender}><option value="">Prefer not to say</option><option>Woman</option><option>Man</option><option>Non-binary or another gender</option></select></label>
-          <label>Pronouns <small>Optional</small><input name="pronouns" defaultValue={listener.pronouns} placeholder="e.g. he/him" /></label>
+          <label>Pronouns<input name="pronouns" defaultValue={listener.pronouns} placeholder="e.g. he/him" /></label>
           <label className="listener-profile-field-wide">Languages, separated by commas<input name="languages" defaultValue={listener.languages?.join(', ')} required /></label>
         </div>
       </section>
