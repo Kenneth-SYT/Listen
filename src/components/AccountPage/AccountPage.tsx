@@ -20,7 +20,7 @@ const accountViews: AccountView[] = ['home', 'bookings', 'messages', 'todos', 'b
 const emptyProfile: CustomerProfile = { first_name: '', last_name: '', preferred_name: '', date_of_birth: '', mobile: '', contact_email: '', gender: '' }
 const unreadBaseline = '1970-01-01T00:00:00.000Z'
 
-const readSupportState = (userId: string): SupportReadState => {
+const readLocalSupportState = (userId: string): SupportReadState => {
   try {
     const saved = JSON.parse(localStorage.getItem(`listen-support-read-${userId}`) || '{}') as Partial<SupportReadState>
     return { messages: saved.messages || unreadBaseline, todos: saved.todos || unreadBaseline }
@@ -29,7 +29,7 @@ const readSupportState = (userId: string): SupportReadState => {
   }
 }
 
-const saveSupportState = (userId: string, state: SupportReadState) => {
+const saveLocalSupportState = (userId: string, state: SupportReadState) => {
   localStorage.setItem(`listen-support-read-${userId}`, JSON.stringify(state))
 }
 
@@ -118,10 +118,38 @@ function AccountPage() {
     const client = getSupabase()
     const refreshUnread = async () => {
       if (!active) return
-      const readAt = readSupportState(userId)
+      const receiptResult = await client.from('support_read_receipts').select('messages_read_at,todos_read_at').eq('user_id', userId).maybeSingle()
+      let usingDatabase = !receiptResult.error
+      let readAt: SupportReadState
+      if (receiptResult.data) {
+        readAt = { messages: receiptResult.data.messages_read_at, todos: receiptResult.data.todos_read_at }
+      } else {
+        const localKey = `listen-support-read-${userId}`
+        const hasLocalState = Boolean(localStorage.getItem(localKey))
+        readAt = hasLocalState ? readLocalSupportState(userId) : { messages: new Date().toISOString(), todos: new Date().toISOString() }
+        if (usingDatabase) {
+          const createResult = await client.from('support_read_receipts').upsert({ user_id: userId, messages_read_at: readAt.messages, todos_read_at: readAt.todos }, { onConflict: 'user_id' })
+          if (createResult.error) {
+            usingDatabase = false
+            console.error('Could not create shared notification read state', createResult.error)
+          } else {
+            localStorage.removeItem(localKey)
+          }
+        } else if (receiptResult.error) {
+          console.error('Could not load shared notification read state', receiptResult.error)
+        }
+      }
       if (activeView === 'messages' || activeView === 'todos') {
         readAt[activeView] = new Date().toISOString()
-        saveSupportState(userId, readAt)
+        if (usingDatabase) {
+          const markResult = await client.rpc('mark_support_section_read', { p_section: activeView })
+          if (markResult.error) {
+            console.error(`Could not mark ${activeView} as read`, markResult.error)
+            saveLocalSupportState(userId, readAt)
+          }
+        } else {
+          saveLocalSupportState(userId, readAt)
+        }
       }
       const [messageResult, todoResult] = await Promise.all([
         activeView === 'messages'
@@ -336,9 +364,14 @@ function AccountPage() {
   }
   const changeView = (nextView: AccountView) => {
     if (userId && (activeView === 'messages' || activeView === 'todos')) {
-      const readAt = readSupportState(userId)
-      readAt[activeView] = new Date().toISOString()
-      saveSupportState(userId, readAt)
+      const section = activeView
+      void getSupabase().rpc('mark_support_section_read', { p_section: section }).then(result => {
+        if (!result.error) return
+        console.error(`Could not mark ${section} as read`, result.error)
+        const readAt = readLocalSupportState(userId)
+        readAt[section] = new Date().toISOString()
+        saveLocalSupportState(userId, readAt)
+      })
     }
     if (nextView === 'messages' || nextView === 'todos') {
       setUnreadSupport(current => ({ ...current, [nextView]: 0 }))

@@ -3,3 +3,5 @@
 @media(max-width:900px){.support-todo-form{grid-template-columns:1fr 1fr}.support-todo-form>button{justify-self:start}.support-workspace>header{align-items:flex-start;flex-direction:column}.support-workspace>header label{width:100%}}
 @media(max-width:600px){.support-todo-form{grid-template-columns:1fr}.support-composer>div{align-items:stretch;flex-direction:column}.support-composer button{align-self:flex-end}.support-thread article{max-width:88%}}
 .support-composer textarea{height:52px;min-height:52px;max-height:160px}
+.support-thread{box-sizing:border-box;height:350px;min-height:350px;max-height:350px;overscroll-behavior:contain;scrollbar-gutter:stable}
+.support-thread article p{overflow-wrap:anywhere}
