@@ -9,9 +9,16 @@ import { getSupabase } from '../../lib/supabase'
 function Header() {
   const { session } = useSession()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [scrolled, setScrolled] = useState(false)
   const [workspace, setWorkspace] = useState<'admin' | 'listener' | null>(null)
   const [identity, setIdentity] = useState<{ first_name?: string; last_name?: string; preferred_name?: string } | null>(null)
   const accountMenu = useRef<HTMLDetailsElement>(null)
+  useEffect(() => {
+    const updateShadow = () => setScrolled(window.scrollY > 4)
+    updateShadow()
+    window.addEventListener('scroll', updateShadow, { passive: true })
+    return () => window.removeEventListener('scroll', updateShadow)
+  }, [])
   useEffect(() => {
     if (!session?.user.id) return
     let active = true
@@ -40,7 +47,7 @@ function Header() {
     if (!error) window.location.assign('/')
   }
   return (
-    <header className={`site-header shadow-[0_20px_8px_-3px_rgb(0_0_0_/_0.15)]${mobileMenuOpen ? ' mobile-menu-open' : ''}`}>
+    <header className={`site-header${scrolled ? ' is-scrolled' : ''}${mobileMenuOpen ? ' mobile-menu-open' : ''}`}>
       <div className="header-inner">
         <a className="logo" href="/" aria-label="Listen Mental Health home">
           <img src={logoImage} alt="Listen Mental Health" />

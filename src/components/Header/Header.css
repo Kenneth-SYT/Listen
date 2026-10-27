@@ -7,7 +7,11 @@
   min-height: 72px;
   border-bottom: 1px solid var(--color-sage);
   background: var(--color-cream);
+  box-shadow: 0 0 0 rgb(0 28 85 / 0);
+  transition: box-shadow .2s ease;
 }
+
+.site-header.is-scrolled { box-shadow: 0 10px 24px -12px rgb(0 28 85 / .42); }
 
 .header-inner {
   display: grid;
