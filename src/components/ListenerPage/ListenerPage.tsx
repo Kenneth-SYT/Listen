@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { ArrowLeft, CalendarCheck2, CalendarDays, ListChecks, MessageCircle, UserRound } from 'lucide-react'
 import { errorMessage, getSupabase, type Appointment, type Listener } from '../../lib/supabase'
 import { supportTopics } from '../../lib/intake'
@@ -25,7 +25,10 @@ function ListenerPage() {
   const [message, setMessage] = useState('Loading your listener dashboard…')
   const [busy, setBusy] = useState(false)
   const [refresh, setRefresh] = useState(0)
+  const [unreadMessages, setUnreadMessages] = useState(0)
+  const [notificationRefresh, setNotificationRefresh] = useState(0)
   const [openedAt] = useState(() => Date.now())
+  const refreshSupportNotifications = useCallback(() => setNotificationRefresh(value => value + 1), [])
   useEffect(() => {
     if (!session?.user.id) return
     let active = true
@@ -48,6 +51,37 @@ function ListenerPage() {
     void load().catch(error => { if (active) setMessage(errorMessage(error)) })
     return () => { active = false }
   }, [session?.user.id, refresh])
+  useEffect(() => {
+    if (!session?.user.id || !listener?.id) return
+    let active = true
+    const client = getSupabase()
+    const refreshUnread = async () => {
+      const [messageResult, receiptResult] = await Promise.all([
+        client.from('support_messages').select('listener_id,user_id,sender_user_id,created_at').eq('listener_id', listener.id),
+        client.from('support_thread_read_receipts').select('listener_id,user_id,messages_read_at').eq('listener_id', listener.id).eq('reader_user_id', session.user.id),
+      ])
+      if (!active) return
+      if (messageResult.error || receiptResult.error) {
+        console.error('Could not refresh listener message notifications', messageResult.error || receiptResult.error)
+        return
+      }
+      const readAt = new Map((receiptResult.data || []).map(item => [`${item.listener_id}:${item.user_id}`, Date.parse(item.messages_read_at)]))
+      const count = (messageResult.data || []).filter(item => item.sender_user_id !== session.user.id && Date.parse(item.created_at) > (readAt.get(`${item.listener_id}:${item.user_id}`) || 0)).length
+      setUnreadMessages(count)
+    }
+    void refreshUnread()
+    const channel = client.channel(`listener-message-notifications-${listener.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'support_messages', filter: `listener_id=eq.${listener.id}` }, () => void refreshUnread())
+      .subscribe()
+    const timer = window.setInterval(() => void refreshUnread(), 5000)
+    window.addEventListener('focus', refreshUnread)
+    return () => {
+      active = false
+      window.clearInterval(timer)
+      window.removeEventListener('focus', refreshUnread)
+      void client.removeChannel(channel)
+    }
+  }, [listener?.id, notificationRefresh, session?.user.id])
   const submitProfile = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault(); const data = new FormData(event.currentTarget); setBusy(true); setMessage('')
     try {
@@ -76,11 +110,11 @@ function ListenerPage() {
       { id: 'todos', label: 'To-do list', icon: ListChecks },
       { id: 'profile', label: 'Public profile', icon: UserRound },
       { id: 'availability', label: 'Availability', icon: CalendarDays },
-    ] as { id: View; label: string; icon: typeof CalendarCheck2 }[]).map(item => { const Icon = item.icon; return <button type="button" className={view === item.id ? 'active' : ''} aria-current={view === item.id ? 'page' : undefined} onClick={() => { setView(item.id); setMessage('') }} key={item.id}><Icon size={18} />{item.label}</button> })}</nav><a className="listener-account-link" href="/account"><ArrowLeft size={17} /> My account</a></aside>
+    ] as { id: View; label: string; icon: typeof CalendarCheck2 }[]).map(item => { const Icon = item.icon; const count = item.id === 'messages' ? unreadMessages : 0; return <button type="button" title={item.label} className={view === item.id ? 'active' : ''} aria-current={view === item.id ? 'page' : undefined} onClick={() => { setView(item.id); setMessage('') }} key={item.id}><Icon size={18} /><span>{item.label}</span>{count > 0 && <b className="listener-nav-badge" aria-label={`${count} unread messages`}>{count > 99 ? '99+' : count}</b>}</button> })}</nav><a className="listener-account-link" href="/account" title="My account"><ArrowLeft size={17} /><span>My account</span></a></aside>
     <div className="listener-dashboard-main">
     {message && <p className="listener-notice" role="status">{message}</p>}
     {listener && view === 'sessions' && <div className="account-list">{upcomingBookings.map(booking => { const profile = profiles.find(item => item.id === booking.user_id); const intake = intakes.find(item => item.user_id === booking.user_id && item.selected_slot_id === booking.slot_id); return <article className="account-card" key={booking.id}><h2>{profile?.preferred_name || profile?.first_name || 'Your customer'}</h2><p>{new Date(booking.starts_at).toLocaleString('en-AU')}</p>{intake && <><p><strong>{intake.questionnaire_type === 'long' ? `K10 wellbeing score: ${intake.k10_score}/50` : `K6 distress score: ${intake.k6_score}/24`}</strong></p><p><strong>Topics:</strong> {intake.topics.join(', ')}</p><p><strong>Listener preference:</strong> {intake.listener_gender_preference}</p>{intake.listener_note && <p><strong>Note:</strong> {intake.listener_note}</p>}</>}</article> })}{upcomingBookings.length === 0 && <p>You have no upcoming confirmed sessions.</p>}</div>}
-    {listener && view === 'messages' && <SupportWorkspace role="listener" mode="messages" currentUserId={session.user.id} contacts={supportContacts} />}
+    {listener && view === 'messages' && <SupportWorkspace role="listener" mode="messages" currentUserId={session.user.id} contacts={supportContacts} onUnreadChange={refreshSupportNotifications} />}
     {listener && view === 'todos' && <SupportWorkspace role="listener" mode="todos" currentUserId={session.user.id} contacts={supportContacts} />}
     {listener && view === 'profile' && <form className="listener-form" onSubmit={submitProfile}><div className="listener-form-heading"><div><h2>Public listener profile</h2><p>{listener.profile_status === 'suspended' || listener.active === false ? 'Your profile is paused. An administrator must reactivate your listener access.' : listener.profile_status === 'published' ? 'Saved changes appear on the Our listeners page immediately.' : 'Complete the required details and save to publish your profile and availability.'}</p></div><span className={`profile-state ${listener.profile_status}`}>{listener.profile_status}</span></div><label>Display name<input name="name" defaultValue={listener.name} maxLength={100} required /></label><label>Role or focus<input name="focus" defaultValue={listener.focus} maxLength={200} required /></label><label>About you<textarea name="bio" defaultValue={listener.bio} maxLength={2000} rows={5} required /></label><div className="listener-form-row"><label>Gender<select name="gender" defaultValue={listener.gender}><option value="">Prefer not to say</option><option>Woman</option><option>Man</option><option>Non-binary or another gender</option></select></label><label>Pronouns<input name="pronouns" defaultValue={listener.pronouns} placeholder="e.g. he/him" /></label></div><label>Languages, separated by commas<input name="languages" defaultValue={listener.languages?.join(', ')} required /></label><label>Profile image URL<input name="image" type="url" defaultValue={listener.profile_image_url || ''} placeholder="https://…" /></label><fieldset><legend>Topics you support</legend><div className="listener-topic-grid">{supportTopics.filter(value => value !== 'I’m not sure yet').map(value => <label key={value}><input type="checkbox" name="matches" value={value} defaultChecked={listener.matches.includes(value)} />{value}</label>)}</div></fieldset><button disabled={busy || listener.profile_status === 'suspended' || listener.active === false}>{listener.profile_status === 'published' ? 'Update public profile' : 'Save and publish profile'}</button></form>}
     {listener && view === 'availability' && <ListenerAvailability listenerId={listener.id} profileStatus={listener.profile_status} active={listener.active} onOpenProfile={() => setView('profile')} slots={slots} busy={busy} setBusy={setBusy} setMessage={setMessage} refresh={() => setRefresh(value => value + 1)} toggleSlot={toggleSlot} deleteSlot={deleteSlot} />}

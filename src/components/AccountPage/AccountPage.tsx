@@ -79,6 +79,7 @@ function AccountPage() {
   const [deletingAccount, setDeletingAccount] = useState(false)
   const [deleteMessage, setDeleteMessage] = useState('')
   const [unreadSupport, setUnreadSupport] = useState({ messages: 0, todos: 0 })
+  const [supportNotificationRefresh, setSupportNotificationRefresh] = useState(0)
   const [refresh, setRefresh] = useState(0)
   const bundleReconciliationStarted = useRef(false)
   const [openedAt] = useState(() => Date.now())
@@ -139,31 +140,33 @@ function AccountPage() {
           console.error('Could not load shared notification read state', receiptResult.error)
         }
       }
-      if (activeView === 'messages' || activeView === 'todos') {
-        readAt[activeView] = new Date().toISOString()
+      if (activeView === 'todos') {
+        readAt.todos = new Date().toISOString()
         if (usingDatabase) {
-          const markResult = await client.rpc('mark_support_section_read', { p_section: activeView })
+          const markResult = await client.rpc('mark_support_section_read', { p_section: 'todos' })
           if (markResult.error) {
-            console.error(`Could not mark ${activeView} as read`, markResult.error)
+            console.error('Could not mark todos as read', markResult.error)
             saveLocalSupportState(userId, readAt)
           }
         } else {
           saveLocalSupportState(userId, readAt)
         }
       }
-      const [messageResult, todoResult] = await Promise.all([
-        activeView === 'messages'
-          ? Promise.resolve({ count: 0, error: null })
-          : client.from('support_messages').select('id', { count: 'exact', head: true }).eq('user_id', userId).neq('sender_user_id', userId).gt('created_at', readAt.messages),
+      const [messageResult, threadReceiptResult, todoResult] = await Promise.all([
+        client.from('support_messages').select('listener_id,user_id,sender_user_id,created_at').eq('user_id', userId),
+        client.from('support_thread_read_receipts').select('listener_id,user_id,messages_read_at').eq('reader_user_id', userId).eq('user_id', userId),
         activeView === 'todos'
           ? Promise.resolve({ count: 0, error: null })
           : client.from('support_todos').select('id', { count: 'exact', head: true }).eq('user_id', userId).neq('created_by', userId).gt('updated_at', readAt.todos),
       ])
       if (!active) return
       if (messageResult.error) console.error('Could not refresh unread messages', messageResult.error)
+      if (threadReceiptResult.error) console.error('Could not refresh conversation read state', threadReceiptResult.error)
       if (todoResult.error) console.error('Could not refresh unread to-dos', todoResult.error)
+      const threadReadAt = new Map((threadReceiptResult.data || []).map(item => [`${item.listener_id}:${item.user_id}`, Date.parse(item.messages_read_at)]))
+      const unreadMessages = messageResult.error || threadReceiptResult.error ? null : (messageResult.data || []).filter(item => item.sender_user_id !== userId && Date.parse(item.created_at) > (threadReadAt.get(`${item.listener_id}:${item.user_id}`) || 0)).length
       setUnreadSupport(current => ({
-        messages: messageResult.error ? current.messages : messageResult.count || 0,
+        messages: unreadMessages === null ? current.messages : unreadMessages,
         todos: todoResult.error ? current.todos : todoResult.count || 0,
       }))
     }
@@ -180,7 +183,7 @@ function AccountPage() {
       window.removeEventListener('focus', refreshUnread)
       void client.removeChannel(channel)
     }
-  }, [userId, activeView])
+  }, [userId, activeView, supportNotificationRefresh])
   useEffect(() => {
     if (!userId || bundleResult !== 'success' || bundleReconciliationStarted.current) return
     bundleReconciliationStarted.current = true
@@ -363,17 +366,16 @@ function AccountPage() {
     }
   }
   const changeView = (nextView: AccountView) => {
-    if (userId && (activeView === 'messages' || activeView === 'todos')) {
-      const section = activeView
-      void getSupabase().rpc('mark_support_section_read', { p_section: section }).then(result => {
+    if (userId && activeView === 'todos') {
+      void getSupabase().rpc('mark_support_section_read', { p_section: 'todos' }).then(result => {
         if (!result.error) return
-        console.error(`Could not mark ${section} as read`, result.error)
+        console.error('Could not mark todos as read', result.error)
         const readAt = readLocalSupportState(userId)
-        readAt[section] = new Date().toISOString()
+        readAt.todos = new Date().toISOString()
         saveLocalSupportState(userId, readAt)
       })
     }
-    if (nextView === 'messages' || nextView === 'todos') {
+    if (nextView === 'todos') {
       setUnreadSupport(current => ({ ...current, [nextView]: 0 }))
     }
     setActiveView(nextView)
@@ -408,7 +410,7 @@ function AccountPage() {
           <section className="account-section"><div className="account-section-heading"><div><span>Coming up</span><h2>Upcoming booking</h2></div></div>{upcomingBookings.length ? <div className="account-list">{upcomingBookings.slice(0, 1).map(booking => bookingCard(booking, true))}</div> : noBookings}</section>
         </>}
         {activeView === 'bookings' && <section className="account-section account-section-first"><div className="account-section-heading"><div><span>Your schedule</span><h2>Appointments</h2></div><p>Confirmed sessions and appointments awaiting payment.</p></div>{pendingBookings.length || upcomingBookings.length ? <div className="account-list">{[...pendingBookings, ...upcomingBookings].map((booking, index) => bookingCard(booking, booking.status === 'confirmed' && index === pendingBookings.length))}</div> : noBookings}</section>}
-        {activeView === 'messages' && <SupportWorkspace role="customer" mode="messages" currentUserId={session.user.id} contacts={supportContacts} />}
+        {activeView === 'messages' && <SupportWorkspace role="customer" mode="messages" currentUserId={session.user.id} contacts={supportContacts} onUnreadChange={() => setSupportNotificationRefresh(value => value + 1)} />}
         {activeView === 'todos' && <SupportWorkspace role="customer" mode="todos" currentUserId={session.user.id} contacts={supportContacts} />}
         {activeView === 'between' && <section className="account-simple-panel account-between-page"><header><div className="account-feature-icon"><BookOpen /></div><div><span className="account-card-label">Continued support</span><h2>Between sessions</h2><p>Keep helpful resources from your listener together in one place.</p></div></header><div className="account-between-empty"><div className="account-between-empty-icon"><BookOpen /></div><div><strong>No resources have been shared yet</strong><span>Reflections, worksheets and useful links will appear here when your listener sends them.</span></div><button type="button" onClick={() => changeView('messages')}>View messages <ArrowRight /></button></div></section>}
         {activeView === 'history' && <section className="account-section account-section-first account-history"><div className="account-section-heading"><div><span>Your records</span><h2>Past sessions</h2></div><p>Previous and expired booking records are kept here.</p></div>{historyBookings.length ? <div className="account-list">{historyBookings.map(booking => bookingCard(booking, false, false))}</div> : noBookings}</section>}
