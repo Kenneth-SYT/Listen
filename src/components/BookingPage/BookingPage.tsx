@@ -8,7 +8,7 @@ import './BookingPage.css'
 
 const localDayKey = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 const dayKey = (value: string) => localDayKey(new Date(value))
-function BookingPage({ answers, onContinue }: { answers: IntakeAnswers; onContinue: (selection: BookingSelection) => void | Promise<void> }) {
+function BookingPage({ answers, onContinue, preferredListenerId = '', repeatBooking = false }: { answers: IntakeAnswers; onContinue: (selection: BookingSelection) => void | Promise<void>; preferredListenerId?: string; repeatBooking?: boolean }) {
   const { session, loading: authLoading } = useSession()
   const [listeners, setListeners] = useState<Listener[]>([])
   const [fixedSlots, setFixedSlots] = useState<Slot[]>([])
@@ -54,11 +54,11 @@ function BookingPage({ answers, onContinue }: { answers: IntakeAnswers; onContin
       setListeners(list); setFixedSlots(fixed); setWindowSlots(windows); setQuotes(rates)
       setCredits(((creditResult.data as CreditSummary | null)?.standard_credits) || 0)
       setSelectedRate(current => rates.some(option => option.rate_code === current) ? current : rate.rate_code)
-      setSelectedListener(current => list.some(person => person.id === current) ? current : suggested?.listener.id || ranked[0]?.listener.id || '')
+      setSelectedListener(current => list.some(person => person.id === current) ? current : list.some(person => person.id === preferredListenerId) ? preferredListenerId : suggested?.listener.id || ranked[0]?.listener.id || '')
       setMessage('')
     }).catch(error => { if (active) setMessage(errorMessage(error)) }).finally(() => { if (active) setLoading(false) })
     return () => { active = false }
-  }, [signedIn, authLoading, topics, refresh, selectedRate])
+  }, [signedIn, authLoading, topics, refresh, selectedRate, preferredListenerId])
 
   const activeQuote = quotes.find(option => option.rate_code === selectedRate) || quotes[0] || null
   useEffect(() => {
@@ -141,9 +141,9 @@ function BookingPage({ answers, onContinue }: { answers: IntakeAnswers; onContin
     <header className="booking-heading"><h1 id="match-heading">Choose your listener and a time.</h1><p>Times are shown in your timezone ({Intl.DateTimeFormat().resolvedOptions().timeZone}).</p></header>
     {authLoading || loading ? <p role="status">Loading available appointments…</p> : <div className="booking-layout">
       <div className="booking-main">
-        <section className="booking-panel"><h2>1. Choose a listener</h2><p className="booking-match-intro">{suggested?.matchedTopics.length ? 'Recommended based on the topics you selected. You can choose any listener.' : listeners.length === 1 ? `${listeners[0].name} is currently the only listed listener. You can review their available times below.` : 'Choose the listener you feel comfortable with.'}</p><div className="booking-listeners">
+        <section className="booking-panel"><h2>1. Choose a listener</h2><p className="booking-match-intro">{repeatBooking && preferredListenerId ? 'Your previous listener has been selected. You can choose someone else if you prefer.' : suggested?.matchedTopics.length ? 'Recommended based on the topics you selected. You can choose any listener.' : listeners.length === 1 ? `${listeners[0].name} is currently the only listed listener. You can review their available times below.` : 'Choose the listener you feel comfortable with.'}</p><div className="booking-listeners">
           {rankedListeners.map(({ listener: person, matchedTopics, availableSlots }) => <button key={person.id} className={'booking-listener' + (person.id === selectedListener ? ' selected' : '')} type="button" aria-pressed={person.id === selectedListener} onClick={() => { setSelectedListener(person.id); setSelectedDay(''); setSelectedSlot(''); setViewedMonth('') }}>
-            {person.id === suggested?.listener.id && <span className="recommended-label">Recommended for you</span>}
+            {!repeatBooking && person.id === suggested?.listener.id && <span className="recommended-label">Recommended for you</span>}
             <strong>{person.name}</strong><small>{person.focus}</small>
             {matchedTopics.length > 0 ? <small className="booking-match-reason">Matches: {matchedTopics.join(', ')}</small> : listeners.length === 1 ? <small className="booking-match-reason">Available listener</small> : null}
             {!availableSlots && <small className="booking-no-times">No times available</small>}

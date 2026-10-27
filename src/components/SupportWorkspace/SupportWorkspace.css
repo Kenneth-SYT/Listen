@@ -92,3 +92,49 @@
 .support-composer textarea{height:52px;min-height:52px;max-height:160px}
 .support-thread{box-sizing:border-box;height:350px;min-height:350px;max-height:350px;overscroll-behavior:contain;scrollbar-gutter:stable}
 .support-thread article p{overflow-wrap:anywhere}
+
+@media (max-width: 700px) {
+  .support-workspace,
+  .support-empty { border-radius: 17px; }
+  .support-workspace > header { padding: 18px 17px; }
+  .support-workspace > header h2 { margin: 3px 0; font-size: 1.4rem; }
+  .support-workspace > header p { font-size: .82rem; line-height: 1.4; }
+  .support-workspace-todos > header { align-items: center; flex-direction: row; }
+  .support-add-todo { min-height: 40px; padding: 8px 13px; }
+  .support-workspace-messages .support-inbox,
+  .support-workspace-todos .support-inbox { min-height: 0; }
+  .support-contact-list { min-height: 73px; }
+  .support-contact-list > button { flex-basis: 180px; min-height: 72px; padding: 10px; }
+  .support-contact-avatar { width: 34px; height: 34px; }
+  .support-conversation-heading { min-height: 51px; padding: 8px 15px; }
+  .support-inbox .support-thread { height: min(48vh, 390px); min-height: 280px; max-height: 390px; padding: 17px 14px; }
+  .support-thread article { max-width: 84%; padding: 11px 13px; }
+  .support-composer { padding: 12px; }
+  .support-composer > div { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 8px; }
+  .support-composer textarea { height: 46px; min-height: 46px; padding: 10px 11px; }
+  .support-composer button { align-self: stretch; min-height: 46px; padding-inline: 14px; }
+  .support-todo-panel .support-todo-list { padding: 13px; }
+  .support-todo-panel .support-todo-list article { min-height: 78px; gap: 9px; padding: 13px 11px; }
+  .support-todo-check,
+  .support-todo-remove { width: 30px; height: 30px; }
+  .support-todo-title strong { font-size: .92rem; }
+  .support-modal-backdrop { align-items: end; padding: 0; }
+  .support-todo-modal { width: 100%; max-height: min(86dvh, 720px); overflow-y: auto; border-width: 1px 0 0; border-radius: 20px 20px 0 0; }
+  .support-todo-modal > header { position: sticky; z-index: 1; top: 0; padding: 19px 18px 16px; }
+  .support-todo-modal > header h3 { font-size: 1.12rem; }
+  .support-todo-modal .support-todo-form,
+  .support-todo-detail-body { padding: 19px 18px 24px; }
+}
+
+@media (max-width: 420px) {
+  .support-workspace > header p { display: none; }
+  .support-contact-list-heading { display: none; }
+  .support-contact-list > button { flex-basis: 165px; }
+  .support-contact-copy strong { font-size: .78rem; }
+  .support-composer > div { grid-template-columns: 1fr; }
+  .support-composer button { width: 100%; }
+  .support-todo-panel .support-todo-list article { grid-template-columns: auto minmax(0, 1fr) auto; }
+  .support-todo-title { align-items: flex-start; flex-direction: column; gap: 5px; }
+  .support-todo-title em { align-self: flex-start; }
+  .support-todo-due { align-items: flex-start; flex-direction: column; gap: 5px; }
+}

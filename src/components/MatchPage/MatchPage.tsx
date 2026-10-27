@@ -45,6 +45,7 @@ function MatchPage() {
   const entryParams = new URLSearchParams(window.location.search)
   const [remoteDraftToken] = useState(() => entryParams.get('signup_draft')?.trim() ?? '')
   const repeatRequested = entryParams.has('repeat')
+  const [preferredListenerId, setPreferredListenerId] = useState(() => entryParams.get('listener')?.trim() ?? '')
   const freshRequested = entryParams.has('fresh')
   const restorePrevious = !freshRequested && (repeatRequested || (!entryParams.has('resume') && !entryParams.has('code') && !entryParams.has('token_hash') && !remoteDraftToken))
   const [draft] = useState(() => remoteDraftToken ? null : readDraft())
@@ -105,16 +106,21 @@ function MatchPage() {
       const client = getSupabase()
       const { data: auth, error: authError } = await client.auth.getUser()
       if (authError || !auth.user) return
-      const { data, error } = await client.from('intake_responses')
-        .select('listener_gender_preference,topics,k6_answers,k10_answers,listener_note,questionnaire_type,impact_score,long_answers')
-        .eq('user_id', auth.user.id).order('updated_at', { ascending: false }).limit(1).maybeSingle()
-      if (error) throw error
+      const [intakeResult, appointmentResult] = await Promise.all([
+        client.from('intake_responses')
+          .select('listener_gender_preference,topics,k6_answers,k10_answers,listener_note,questionnaire_type,impact_score,long_answers')
+          .eq('user_id', auth.user.id).order('updated_at', { ascending: false }).limit(1).maybeSingle(),
+        client.from('appointments').select('listener_id').eq('user_id', auth.user.id).eq('status', 'confirmed').order('created_at', { ascending: false }).limit(1).maybeSingle(),
+      ])
+      if (intakeResult.error || appointmentResult.error) throw intakeResult.error || appointmentResult.error
+      const data = intakeResult.data
       if (!data) {
         if (repeatRequested) throw new Error('Complete a questionnaire before booking from previous answers.')
         return
       }
       const saved = data as SavedIntake
       if (!active) return
+      if (repeatRequested) setPreferredListenerId(current => current || appointmentResult.data?.listener_id || '')
       const restoredAnswers: IntakeAnswers = {
         questionnaire: saved.questionnaire_type,
         adult: true,
@@ -300,7 +306,7 @@ function MatchPage() {
 
       <div className="match-actions"><button type="button" className="match-back" onClick={() => step === 0 ? setStage('intro') : setStep(value => value - 1)}>Back</button><button type="submit" disabled={!canContinue}>{step === totalSteps - 1 ? session ? 'Choose a listener and time' : 'Create your account' : 'Continue'}</button></div>
     </form> : stage === 'safety' ? <SafetySupportPage />
-      : stage === 'booking' ? <BookingPage answers={answers} onContinue={continueFromBooking} />
+      : stage === 'booking' ? <BookingPage answers={answers} onContinue={continueFromBooking} preferredListenerId={preferredListenerId} repeatBooking={repeatRequested} />
       : <DetailsPage initialDetails={customerDetails} answers={answers} resumeDraftToken={remoteDraftState === 'ready' ? remoteDraftToken : ''} onBack={() => { setStep(totalSteps - 1); setStage('questions') }} onDetailsChange={setCustomerDetails} onAccountReady={() => { setSelection(null); setStage('booking') }} />}
   </section>
 }

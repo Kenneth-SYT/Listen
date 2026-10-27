@@ -411,3 +411,96 @@
   .listener-sidebar .listener-tabs button { gap: 6px; padding: 10px 7px; font-size: .78rem; }
   .listener-sidebar .listener-tabs button svg { width: 16px; height: 16px; }
 }
+
+@media (max-width: 700px) {
+  .account-page.listener-dashboard {
+    --listener-layout-gap: 14px;
+    width: calc(100% - 16px);
+    margin-bottom: 48px;
+  }
+  .listener-dashboard > header {
+    margin-bottom: 14px;
+    padding: 19px 18px;
+    border-radius: 17px;
+  }
+  .listener-dashboard > header h1 { margin: 5px 0; font-size: 1.75rem; }
+  .listener-dashboard > header p { font-size: .86rem; }
+  .listener-kicker { font-size: .68rem; }
+  .listener-dashboard-layout { gap: 14px; }
+  .listener-sidebar { overflow: visible; border-radius: 15px; }
+  .listener-sidebar .listener-tabs {
+    display: flex;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    gap: 4px;
+    padding: 7px;
+    scrollbar-width: none;
+    scroll-snap-type: x proximity;
+  }
+  .listener-sidebar .listener-tabs::-webkit-scrollbar { display: none; }
+  .listener-sidebar .listener-tabs button {
+    flex: 0 0 78px;
+    min-height: 58px;
+    flex-direction: column;
+    gap: 4px;
+    padding: 7px 5px;
+    border-radius: 9px;
+    font-size: .67rem;
+    line-height: 1.15;
+    scroll-snap-align: start;
+    text-align: center;
+  }
+  .listener-sidebar .listener-tabs button svg { width: 18px; height: 18px; }
+  .listener-sidebar .listener-tabs button > span { overflow: hidden; width: 100%; text-overflow: ellipsis; white-space: nowrap; }
+  .listener-nav-badge { position: absolute; top: 3px; right: 3px; min-width: 17px; height: 17px; margin: 0; padding: 0 3px; font-size: .56rem; }
+  .listener-sidebar .listener-tabs button { position: relative; }
+  .listener-account-link { justify-content: center; width: auto; margin: 0; padding: 10px; border-top: 1px solid #e2eaf2; font-size: .75rem; }
+  .listener-form,
+  .listener-slot-list,
+  .listener-shift-builder,
+  .listener-calendar-card { border-radius: 17px; }
+  .listener-profile-header,
+  .listener-profile-section,
+  .listener-profile-actions { padding: 19px 17px; }
+  .listener-profile-header { gap: 13px; }
+  .listener-profile-header p { font-size: .84rem; }
+  .listener-profile-form .profile-state { align-self: flex-start; }
+  .listener-profile-section { gap: 17px; }
+  .listener-profile-photo { gap: 14px; min-height: 0; padding: 13px; }
+  .listener-profile-photo-preview { width: 112px; height: 112px; justify-self: center; }
+  .listener-profile-photo-copy { justify-items: center; text-align: center; }
+  .listener-profile-photo-copy > div { width: 100%; justify-content: center; }
+  .listener-profile-topics-section .listener-topic-grid label { min-height: 46px; }
+  .listener-section-heading,
+  .listener-hours-panel,
+  .listener-calendar,
+  .listener-day-panel { padding: 18px 16px; }
+  .listener-section-heading h2 { font-size: 1.35rem; }
+  .listener-section-heading p { font-size: .84rem; }
+  .listener-hours-layout,
+  .listener-calendar-layout { border-radius: 0; }
+  .listener-panel-heading { min-height: 0; }
+  .listener-add-shift,
+  .listener-date-fields { grid-template-columns: 1fr; }
+  .listener-add-shift button,
+  .listener-apply-shifts button { width: 100%; }
+  .listener-saved-shifts > div { width: 100%; justify-content: space-between; }
+  .listener-calendar-toolbar strong { font-size: 1rem; }
+  .listener-calendar-weekdays span { padding-block: 7px 9px; font-size: .58rem; }
+  .listener-calendar-grid > button,
+  .listener-calendar-blank { min-height: 52px; }
+  .listener-calendar-grid > button { padding: 5px 3px; }
+  .listener-calendar-grid > button > span { width: 23px; height: 23px; font-size: .72rem; }
+  .listener-calendar-grid small { max-width: 100%; overflow: hidden; font-size: .49rem; text-overflow: ellipsis; white-space: nowrap; }
+  .listener-visibility-notice { align-items: stretch; flex-direction: column; }
+  .listener-visibility-notice button { width: 100%; }
+}
+
+@media (max-width: 420px) {
+  .listener-sidebar .listener-tabs button { flex-basis: 72px; }
+  .listener-profile-photo-copy > div { flex-direction: column; }
+  .listener-form .listener-profile-photo-copy button { width: 100%; }
+  .listener-topic-grid { grid-template-columns: 1fr; }
+  .listener-calendar { padding-inline: 10px; }
+  .listener-calendar-toolbar { padding-inline: 5px; }
+}
