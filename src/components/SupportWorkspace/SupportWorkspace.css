@@ -3,11 +3,17 @@
 @media(max-width:900px){.support-todo-form{grid-template-columns:1fr 1fr}.support-todo-form>button{justify-self:start}.support-workspace>header{align-items:flex-start;flex-direction:column}.support-workspace>header label{width:100%}}
 
 .support-workspace-messages > header { align-items: center; }
-.support-workspace-messages { display: flex; min-height: 560px; height: calc(100dvh - 160px); flex-direction: column; }
+.support-workspace-messages,
+.support-workspace-todos { display: flex; min-height: 560px; height: calc(100dvh - 160px); flex-direction: column; }
+.support-add-todo { display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center; gap: 7px; min-height: 44px; padding: 10px 18px; border: 0; border-radius: 11px; background: #173d78; color: #fff; cursor: pointer; font: inherit; font-weight: 800; }
+.support-add-todo:hover { background: #245599; }
+.support-add-todo svg { width: 18px; height: 18px; }
 .support-inbox { display: grid; grid-template-columns: minmax(210px, 28%) minmax(0, 1fr); min-height: 510px; }
-.support-workspace-messages .support-inbox { flex: 1; min-height: 0; }
+.support-workspace-messages .support-inbox,
+.support-workspace-todos .support-inbox { flex: 1; min-height: 0; }
 .support-contact-list { overflow-y: auto; min-width: 0; max-height: 590px; border-right: 1px solid #dce7f0; background: #fff; }
 .support-workspace-messages .support-contact-list { max-height: none; }
+.support-workspace-todos .support-contact-list { max-height: none; }
 .support-contact-list-heading { display: flex; align-items: center; justify-content: space-between; min-height: 54px; padding: 0 17px; border-bottom: 1px solid #e3ebf2; color: #173d78; font-size: .82rem; }
 .support-contact-list-heading span { display: grid; place-items: center; min-width: 24px; height: 24px; border-radius: 999px; background: #e6f1fb; color: #315d91; font-size: .72rem; font-weight: 800; }
 .support-contact-list > button { display: grid; grid-template-columns: 38px minmax(0, 1fr) auto; align-items: center; gap: 10px; width: 100%; min-height: 76px; padding: 12px 13px; border: 0; border-bottom: 1px solid #edf2f6; background: #fff; color: #173d78; cursor: pointer; font: inherit; text-align: left; }
@@ -28,10 +34,30 @@
 .support-inbox .support-thread { min-height: 330px; max-height: 440px; }
 .support-workspace-messages .support-thread { height: auto; min-height: 0; max-height: none; }
 .support-inbox .support-composer { border-top: 1px solid #dce7f0; background: #fff; }
+.support-todo-panel { display: grid; overflow: hidden; min-width: 0; min-height: 0; grid-template-rows: auto minmax(0, 1fr); background: #f7fafd; }
+.support-todo-panel .support-todo-list { overflow-y: auto; min-height: 0; }
+.support-todo-panel .support-todo-list { align-content: start; }
+.support-todo-panel .support-todo-list article { box-sizing: border-box; min-height: 106px; }
+.support-modal-backdrop { position: fixed; z-index: 1000; inset: 0; display: grid; place-items: center; padding: 24px; background: rgba(10, 31, 61, .48); backdrop-filter: blur(3px); }
+.support-todo-modal { overflow: hidden; width: min(560px, 100%); border: 1px solid #cbddeb; border-radius: 20px; background: #fff; box-shadow: 0 24px 70px rgba(17, 47, 94, .24); }
+.support-todo-modal > header { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; padding: 23px 25px 20px; border-bottom: 1px solid #dce7f0; background: #f7fbfe; }
+.support-todo-modal > header span { color: #536f92; font-size: .7rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+.support-todo-modal > header h3 { margin: 6px 0 0; color: #173d78; font-size: 1.25rem; }
+.support-todo-modal > header > button { display: grid; flex: 0 0 auto; place-items: center; width: 36px; height: 36px; border: 1px solid #c6d8e8; border-radius: 50%; background: #fff; color: #173d78; cursor: pointer; }
+.support-todo-modal > header > button svg { width: 18px; }
+.support-todo-modal .support-todo-form { display: grid; grid-template-columns: 1fr; gap: 16px; padding: 24px 25px 26px; border: 0; }
+.support-todo-modal .support-todo-form textarea { resize: vertical; }
+.support-todo-modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 4px; }
+.support-todo-modal-actions button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 43px; padding: 9px 16px; border: 0; border-radius: 10px; background: #173d78; color: #fff; cursor: pointer; font: inherit; font-weight: 800; }
+.support-todo-modal-actions button.secondary { border: 1px solid #b9ccdf; background: #fff; color: #173d78; }
+.support-todo-modal-actions button:disabled { opacity: .55; cursor: not-allowed; }
+.support-todo-modal-actions button svg { width: 17px; }
 
 @media(max-width:760px){
-  .support-workspace-messages { height: auto; min-height: 0; }
-  .support-workspace-messages .support-inbox { min-height: 510px; }
+  .support-workspace-messages,
+  .support-workspace-todos { height: auto; min-height: 0; }
+  .support-workspace-messages .support-inbox,
+  .support-workspace-todos .support-inbox { min-height: 510px; }
   .support-inbox { grid-template-columns: 1fr; }
   .support-contact-list { display: flex; max-height: none; overflow-x: auto; border-right: 0; border-bottom: 1px solid #dce7f0; }
   .support-contact-list-heading { position: sticky; left: 0; flex: 0 0 90px; background: #fff; }
