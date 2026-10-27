@@ -5,7 +5,7 @@ import './SupportWorkspace.css'
 
 export type SupportContact = { listenerId: string; userId: string; name: string }
 type SupportMessage = { id: string; listener_id: string; user_id: string; sender_user_id: string; body: string; created_at: string }
-type SupportTodo = { id: string; listener_id: string; user_id: string; title: string; details: string; due_date: string | null; status: 'open' | 'completed' | 'cancelled'; created_at: string }
+type SupportTodo = { id: string; listener_id: string; user_id: string; title: string; details: string; due_date: string | null; status: 'open' | 'completed' | 'cancelled'; created_at: string; customer_read_at: string | null }
 type ThreadReadReceipt = { listener_id: string; user_id: string; messages_read_at: string }
 
 export default function SupportWorkspace({ role, mode, currentUserId, contacts, onUnreadChange }: { role: 'listener' | 'customer'; mode: 'messages' | 'todos'; currentUserId: string; contacts: SupportContact[]; onUnreadChange?: () => void }) {
@@ -18,6 +18,7 @@ export default function SupportWorkspace({ role, mode, currentUserId, contacts, 
   const [notice, setNotice] = useState('')
   const [refresh, setRefresh] = useState(0)
   const [todoModalOpen, setTodoModalOpen] = useState(false)
+  const [openedTodo, setOpenedTodo] = useState<SupportTodo | null>(null)
   const threadRef = useRef<HTMLDivElement>(null)
   const keyFor = (contact: SupportContact) => `${contact.listenerId}:${contact.userId}`
   const selected = contacts.find(contact => keyFor(contact) === selectedKey) || contacts[0]
@@ -125,6 +126,20 @@ export default function SupportWorkspace({ role, mode, currentUserId, contacts, 
       setRefresh(value => value + 1)
     } catch (error) { setNotice(errorMessage(error)) } finally { setBusy(false) }
   }
+  const openTodo = async (todo: SupportTodo) => {
+    setOpenedTodo(todo)
+    if (role !== 'customer' || todo.customer_read_at) return
+    const readAt = new Date().toISOString()
+    setTodos(current => current.map(item => item.id === todo.id ? { ...item, customer_read_at: readAt } : item))
+    setOpenedTodo(current => current?.id === todo.id ? { ...current, customer_read_at: readAt } : current)
+    const { error } = await getSupabase().rpc('mark_support_todo_read', { p_todo: todo.id })
+    if (error) {
+      setNotice(errorMessage(error))
+      setRefresh(value => value + 1)
+      return
+    }
+    onUnreadChange?.()
+  }
 
   if (!contacts.length) return <section className="support-empty"><MessageCircle /><h2>{mode === 'messages' ? 'Messages' : 'To-do list'}</h2><p>{role === 'listener' ? 'This area becomes available after your first confirmed session.' : 'Book a session to start communicating with your listener.'}</p></section>
   return <section className={`support-workspace${mode === 'messages' ? ' support-workspace-messages' : ' support-workspace-todos'}`}>
@@ -139,9 +154,10 @@ export default function SupportWorkspace({ role, mode, currentUserId, contacts, 
     </> : <>
       <div className="support-inbox support-todo-inbox">
         <aside className="support-contact-list" aria-label={role === 'listener' ? 'Customer task lists' : 'Listener task lists'}><div className="support-contact-list-heading"><strong>{role === 'listener' ? 'Customers' : 'Listeners'}</strong><span>{contacts.length}</span></div>{contacts.map(contact => { const key = keyFor(contact); const summary = todoSummary(contact); return <button type="button" className={key === effectiveSelectedKey ? 'active' : ''} aria-current={key === effectiveSelectedKey ? 'true' : undefined} onClick={() => setSelectedKey(key)} key={key}><span className="support-contact-avatar" aria-hidden="true">{contact.name.trim().charAt(0).toUpperCase()}</span><span className="support-contact-copy"><strong>{contact.name}</strong><small>{summary.preview}</small></span><span className="support-contact-meta">{summary.count > 0 && <b aria-label={`${summary.count} open tasks`}>{summary.count > 99 ? '99+' : summary.count}</b>}</span></button> })}</aside>
-        <div className="support-todo-panel"><div className="support-conversation-heading"><span className="support-contact-avatar" aria-hidden="true">{selected?.name.trim().charAt(0).toUpperCase()}</span><div><strong>{selected?.name}</strong><span>{role === 'listener' ? 'Customer tasks' : 'Tasks from your listener'}</span></div></div><div className="support-todo-list">{assignedTodos.map(todo => <article className={todo.status} key={todo.id}><button className="support-todo-check" type="button" disabled={busy} onClick={() => setTodoStatus(todo.id, todo.status === 'completed' ? 'open' : 'completed')} aria-label={todo.status === 'completed' ? 'Reopen task' : 'Complete task'}>{todo.status === 'completed' ? <Check /> : <Circle />}</button><div><h3>{todo.title}</h3>{todo.details && <p>{todo.details}</p>}<span>{todo.due_date && <>Due {new Date(`${todo.due_date}T12:00:00`).toLocaleDateString('en-AU', { day: 'numeric', month: 'long' })} · </>}{todo.status}</span></div>{role === 'listener' && <button className="support-todo-remove" type="button" disabled={busy} onClick={() => setTodoStatus(todo.id, 'cancelled')} aria-label="Remove task"><X /></button>}</article>)}{assignedTodos.length === 0 && <div className="support-thread-empty"><Check /><strong>You’re all caught up</strong><span>{role === 'listener' ? 'Add a useful next step for this customer.' : 'New tasks from your listener will appear here.'}</span></div>}</div></div>
+        <div className="support-todo-panel"><div className="support-conversation-heading"><span className="support-contact-avatar" aria-hidden="true">{selected?.name.trim().charAt(0).toUpperCase()}</span><div><strong>{selected?.name}</strong><span>{role === 'listener' ? 'Customer tasks' : 'Tasks from your listener'}</span></div></div><div className="support-todo-list">{assignedTodos.map(todo => <article className={todo.status} key={todo.id}><button className="support-todo-check" type="button" disabled={busy} onClick={() => setTodoStatus(todo.id, todo.status === 'completed' ? 'open' : 'completed')} aria-label={todo.status === 'completed' ? 'Reopen task' : 'Complete task'}>{todo.status === 'completed' ? <Check /> : <Circle />}</button><button className="support-todo-open" type="button" onClick={() => void openTodo(todo)}><span className="support-todo-title"><strong>{todo.title}</strong>{role === 'customer' && !todo.customer_read_at && <em className="new">New</em>}{role === 'listener' && <em className={todo.customer_read_at ? 'read' : 'unread'}>{todo.customer_read_at ? 'Read' : 'Unread'}</em>}</span><span className="support-todo-meta">{todo.due_date && <>Due {new Date(`${todo.due_date}T12:00:00`).toLocaleDateString('en-AU', { day: 'numeric', month: 'long' })} · </>}{todo.status}</span></button>{role === 'listener' && <button className="support-todo-remove" type="button" disabled={busy} onClick={() => setTodoStatus(todo.id, 'cancelled')} aria-label="Remove task"><X /></button>}</article>)}{assignedTodos.length === 0 && <div className="support-thread-empty"><Check /><strong>You’re all caught up</strong><span>{role === 'listener' ? 'Add a useful next step for this customer.' : 'New tasks from your listener will appear here.'}</span></div>}</div></div>
       </div>
       {role === 'listener' && todoModalOpen && <div className="support-modal-backdrop" onMouseDown={event => { if (event.target === event.currentTarget && !busy) setTodoModalOpen(false) }}><section className="support-todo-modal" role="dialog" aria-modal="true" aria-labelledby="support-todo-modal-title"><header><div><span>New shared task</span><h3 id="support-todo-modal-title">Add a to-do for {selected?.name}</h3></div><button type="button" aria-label="Close add to-do dialog" disabled={busy} onClick={() => setTodoModalOpen(false)}><X /></button></header><form className="support-todo-form" onSubmit={createTodo}><label><span>Task</span><input name="title" maxLength={160} placeholder="e.g. Write down one thing that helped this week" required autoFocus /></label><label><span>Notes <small>Optional</small></span><textarea name="details" maxLength={1000} rows={4} placeholder="Add helpful context for the customer" /></label><label><span>Due date <small>Optional</small></span><input name="dueDate" type="date" min={new Date().toISOString().slice(0, 10)} /></label><div className="support-todo-modal-actions"><button type="button" className="secondary" disabled={busy} onClick={() => setTodoModalOpen(false)}>Cancel</button><button type="submit" disabled={busy}><Plus />{busy ? 'Adding…' : 'Add to-do'}</button></div></form></section></div>}
+      {openedTodo && <div className="support-modal-backdrop" onMouseDown={event => { if (event.target === event.currentTarget) setOpenedTodo(null) }}><section className="support-todo-modal support-todo-detail-modal" role="dialog" aria-modal="true" aria-labelledby="support-todo-detail-title"><header><div><span>Shared next step</span><h3 id="support-todo-detail-title">{openedTodo.title}</h3></div><button type="button" aria-label="Close task details" onClick={() => setOpenedTodo(null)}><X /></button></header><div className="support-todo-detail-body">{openedTodo.details ? <p>{openedTodo.details}</p> : <p className="empty">No additional notes were added.</p>}{openedTodo.due_date && <div className="support-todo-due"><span>Due date</span><strong>{new Date(`${openedTodo.due_date}T12:00:00`).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })}</strong></div>}</div></section></div>}
     </>}
   </section>
 }
