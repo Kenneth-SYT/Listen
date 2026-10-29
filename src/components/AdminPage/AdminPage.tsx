@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { ShieldCheck } from 'lucide-react'
-import { errorMessage, getSupabase, type Appointment, type Listener, type Quote, type Testimonial } from '../../lib/supabase'
+import { errorMessage, getSupabase, type Appointment, type BundleProduct, type Listener, type Quote, type Testimonial } from '../../lib/supabase'
 import { useSession } from '../../lib/useSession'
 import LoginPage from '../LoginPage/LoginPage'
 import './AdminPage.css'
@@ -33,6 +33,7 @@ function AdminPage() {
   const [intakes, setIntakes] = useState<Intake[]>([])
   const [audit, setAudit] = useState<AuditEntry[]>([])
   const [rates, setRates] = useState<Quote[]>([])
+  const [bundleProducts, setBundleProducts] = useState<BundleProduct[]>([])
   const [reviews, setReviews] = useState<Testimonial[]>([])
   const [reviewLoadError, setReviewLoadError] = useState('')
   const [refresh, setRefresh] = useState(0)
@@ -59,9 +60,10 @@ function AdminPage() {
         client.from('intake_responses').select('user_id,selected_slot_id,topics,questionnaire_type,k6_score,k10_score,listener_note,listener_gender_preference,k6_answers,k10_answers,impact_score,long_answers'),
         client.from('role_audit_log').select('*').order('created_at', { ascending: false }).limit(200),
         client.rpc('public_session_rates'),
+        client.rpc('bundle_options'),
         client.rpc('admin_testimonials'),
       ])
-      for (const result of results.slice(0, 7)) if (result.error) throw result.error
+      for (const result of results.slice(0, 8)) if (result.error) throw result.error
       if (!active) return
       setAllowed(true)
       const loadedListeners = results[0].data as Listener[]
@@ -73,8 +75,9 @@ function AdminPage() {
       setIntakes(results[4].data as Intake[])
       setAudit((results[5].data || []) as AuditEntry[])
       setRates((results[6].data || []) as Quote[])
-      setReviews((results[7].data || []) as Testimonial[])
-      setReviewLoadError(results[7].error ? 'Reviews need the testimonials database migration before they can be managed.' : '')
+      setBundleProducts((results[7].data || []) as BundleProduct[])
+      setReviews((results[8].data || []) as Testimonial[])
+      setReviewLoadError(results[8].error ? 'Reviews need the testimonials database migration before they can be managed.' : '')
       setMessage('')
     }
     void load().catch(error => { if (active) { setAllowed(false); setMessage(errorMessage(error)) } })
@@ -254,7 +257,7 @@ function AdminPage() {
     } catch (error) { setMessage(errorMessage(error)) } finally { setBusy(false) }
   }
 
-  const save = async (event: FormEvent<HTMLFormElement>, kind: 'listener' | 'slot' | 'rate' | 'default'): Promise<boolean> => {
+  const save = async (event: FormEvent<HTMLFormElement>, kind: 'listener' | 'slot' | 'rate' | 'default' | 'bundle'): Promise<boolean> => {
     event.preventDefault(); const form = event.currentTarget; const values = new FormData(form)
     setBusy(true); setMessage('')
     try {
@@ -270,7 +273,11 @@ function AdminPage() {
       } else {
         const amount = Math.round(Number(values.get('amount')) * 100)
         if (!Number.isSafeInteger(amount) || amount < 100) throw new Error('Enter an amount of at least $1.')
-        result = kind === 'rate' ? await client.from('customer_rates').upsert({ user_id: values.get('customer'), amount_cents: amount }) : await client.from('rates').update({ amount_cents: amount }).eq('code', String(values.get('code')))
+        result = kind === 'rate'
+          ? await client.from('customer_rates').upsert({ user_id: values.get('customer'), amount_cents: amount })
+          : kind === 'bundle'
+            ? await client.from('bundle_products').update({ amount_cents: amount }).eq('code', String(values.get('code')))
+            : await client.from('rates').update({ amount_cents: amount }).eq('code', String(values.get('code')))
       }
       if (result.error) throw result.error
       form.reset(); setMessage('Saved successfully.'); setRefresh(value => value + 1); return true
@@ -292,7 +299,7 @@ function AdminPage() {
       {view === 'availability' && <AdminAvailabilitySection listeners={listeners} slots={slots} busy={busy} onAddWindow={event => save(event, 'slot')} setBusy={setBusy} setMessage={setMessage} refresh={() => setRefresh(value => value + 1)} />}
 
       {view === 'management' && <AdminManagementSection listeners={listeners} selectedListener={managementListener} busy={busy} message={message} onSelect={setManagementListenerId} onSaveProfile={saveListenerProfile} onSetStatus={(listener, status) => void setListenerStatus(listener, status)} />}
-      {view === 'pricing' && <AdminPricingSection rates={rates} busy={busy} onSave={event => void save(event, 'default')} />}
+      {view === 'pricing' && <AdminPricingSection rates={rates} bundles={bundleProducts} busy={busy} onSaveRate={event => void save(event, 'default')} onSaveBundle={event => void save(event, 'bundle')} />}
       {view === 'reviews' && <AdminReviewsSection reviews={reviews} busy={busy} loadError={reviewLoadError} onSave={saveReview} onDelete={review => void deleteReview(review)} />}
       {view === 'audit' && <AdminAuditSection entries={audit} identify={auditIdentity} />}
       </div>

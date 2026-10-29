@@ -1,6 +1,6 @@
 import { Clock3, MessageCircleHeart, Timer } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { createBundleCheckout, errorMessage, getSupabase, money, type Quote } from '../../lib/supabase'
+import { createBundleCheckout, errorMessage, getSupabase, money, type BundleProduct, type Quote } from '../../lib/supabase'
 import { useSession } from '../../lib/useSession'
 import './PricingPage.css'
 
@@ -30,16 +30,12 @@ const sessionDetails = [
     note: 'Extra time for a deeper conversation',
   },
 ]
-const bundles = [
-  { code: 'standard_3', sessions: 3, title: 'Three-session bundle', price: '$99 AUD', detail: '$33 per session · save $6' },
-  { code: 'standard_5', sessions: 5, title: 'Five-session bundle', price: '$160 AUD', detail: '$32 per session · save $15' },
-]
-
 function PricingPage() {
   const { session, loading } = useSession()
   const [buying, setBuying] = useState('')
   const [message, setMessage] = useState('')
   const [quotes, setQuotes] = useState<Quote[]>([])
+  const [bundleProducts, setBundleProducts] = useState<BundleProduct[]>([])
   const [pricingLoading, setPricingLoading] = useState(true)
   const [pricingMessage, setPricingMessage] = useState('')
 
@@ -47,10 +43,14 @@ function PricingPage() {
     let active = true
     const loadRates = async () => {
       try {
-        const { data, error } = await getSupabase().rpc('public_session_rates')
-        if (error) throw error
+        const [rateResult, bundleResult] = await Promise.all([
+          getSupabase().rpc('public_session_rates'),
+          getSupabase().rpc('bundle_options'),
+        ])
+        if (rateResult.error || bundleResult.error) throw rateResult.error || bundleResult.error
         if (active) {
-          setQuotes((data || []) as Quote[])
+          setQuotes((rateResult.data || []) as Quote[])
+          setBundleProducts((bundleResult.data || []) as BundleProduct[])
           setPricingMessage('')
         }
       } catch (error) {
@@ -79,6 +79,18 @@ function PricingPage() {
       ...details,
       label: quote ? quote.duration_minutes === 120 ? '2 hours' : `${quote.duration_minutes} minutes` : details.label,
       price: quote ? money(quote.amount_cents) : pricingLoading ? '…' : '—',
+    }
+  })
+  const standardRate = quotes.find(option => option.rate_code === 'standard')?.amount_cents
+  const bundles = bundleProducts.map(bundle => {
+    const regularTotal = standardRate ? standardRate * bundle.session_count : 0
+    const saving = regularTotal > bundle.amount_cents ? regularTotal - bundle.amount_cents : 0
+    return {
+      code: bundle.code,
+      sessions: bundle.session_count,
+      title: bundle.label,
+      price: money(bundle.amount_cents),
+      detail: `${money(Math.round(bundle.amount_cents / bundle.session_count))} per session${saving ? ` · save ${money(saving)}` : ''}`,
     }
   })
 
