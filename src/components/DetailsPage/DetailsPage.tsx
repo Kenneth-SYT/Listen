@@ -3,6 +3,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { bookWithCredit, createCheckout, errorMessage, getSupabase, money, supabase, type BookingSelection, type Quote } from '../../lib/supabase'
 import { wellbeingScore, wellbeingScoreLabel, type IntakeAnswers } from '../../lib/intake'
 import { useSession } from '../../lib/useSession'
+import DateOfBirthPicker from './DateOfBirthPicker'
 import './DetailsPage.css'
 
 export type CustomerDetails = {
@@ -17,6 +18,12 @@ const phoneVerificationEnabled = import.meta.env.VITE_ENABLE_PHONE_VERIFICATION 
 const emailVerificationRequired = import.meta.env.VITE_REQUIRE_EMAIL_VERIFICATION !== 'false'
 const toInternational = (mobile: string) => '+61' + mobile.slice(1)
 const toLocal = (phone: string) => phone.startsWith('+61') ? '0' + phone.slice(3) : phone
+const adultCutoff = () => {
+  const date = new Date()
+  date.setHours(12, 0, 0, 0)
+  date.setFullYear(date.getFullYear() - 18)
+  return date
+}
 
 function DetailsPage({ initialDetails, selection, answers, onBack, onDetailsChange, onAccountReady, resumeDraftToken = '' }: Props) {
   const [details, setDetails] = useState(initialDetails)
@@ -43,6 +50,7 @@ function DetailsPage({ initialDetails, selection, answers, onBack, onDetailsChan
   const [holdSeconds, setHoldSeconds] = useState(selection ? 0 : 1)
   const [holdValid, setHoldValid] = useState(!selection)
   const [holdChecking, setHoldChecking] = useState(!!selection)
+  useEffect(() => onDetailsChange(details), [details, onDetailsChange])
   const verifiedPhone = session?.user.phone_confirmed_at ? toLocal(session.user.phone || '') : ''
   const activeVerifiedPhone = phoneVerificationEnabled ? verifiedPhone : ''
   const verifiedEmail = session?.user.email_confirmed_at ? session.user.email?.toLowerCase() : ''
@@ -96,16 +104,12 @@ function DetailsPage({ initialDetails, selection, answers, onBack, onDetailsChan
     let active = true
     void getSupabase().from('profiles').select('first_name,last_name,preferred_name,date_of_birth,mobile,contact_email,gender').eq('id', session.user.id).maybeSingle().then(({ data }) => {
       if (!active || !data) return
-      setDetails(current => {
-        const next: CustomerDetails = {
+      setDetails(current => ({
           firstName: current.firstName || data.first_name, lastName: current.lastName || data.last_name,
           preferredName: current.preferredName || data.preferred_name, dateOfBirth: current.dateOfBirth || data.date_of_birth,
           mobile: current.mobile || data.mobile, email: session.user.email || data.contact_email,
           gender: current.gender || data.gender || '',
-        }
-        onDetailsChange(next)
-        return next
-      })
+      }))
     })
     return () => { active = false }
   }, [session?.user.id, session?.user.email, onDetailsChange])
@@ -120,7 +124,7 @@ function DetailsPage({ initialDetails, selection, answers, onBack, onDetailsChan
       const { error } = await getSupabase().auth.signOut({ scope: 'local' })
       if (error) throw error
       const emptyDetails: CustomerDetails = { firstName: '', lastName: '', preferredName: '', dateOfBirth: '', mobile: '', email: '', gender: '' }
-      setDetails(emptyDetails); onDetailsChange(emptyDetails)
+      setDetails(emptyDetails)
       setAccountMode('signin'); setPassword(''); setConfirmPassword(''); setSignupPassword(''); setAwaitingConfirmation(false); setEmailInUse(false); setDuplicateEmail(''); setAccountCreatedThisVisit(false)
     } catch (error) { setMessage(errorMessage(error)) }
     finally { setBusy(false) }
@@ -129,7 +133,7 @@ function DetailsPage({ initialDetails, selection, answers, onBack, onDetailsChan
     if (field === 'email' && emailInUse && value.trim().toLowerCase() !== duplicateEmail) {
       setEmailInUse(false); setDuplicateEmail(''); setMessage('')
     }
-    setDetails(current => { const next = { ...current, [field]: value }; onDetailsChange(next); return next })
+    setDetails(current => ({ ...current, [field]: value }))
   }
 
   const sendCode = async () => {
@@ -365,7 +369,7 @@ function DetailsPage({ initialDetails, selection, answers, onBack, onDetailsChan
         <label><span>First name</span><input autoComplete="given-name" value={details.firstName} onChange={event => update('firstName', event.target.value)} required /></label>
         <label><span>Last name</span><input autoComplete="family-name" value={details.lastName} onChange={event => update('lastName', event.target.value)} required /></label>
         <label className="details-wide"><span>Preferred name <small>Optional</small></span><input autoComplete="nickname" value={details.preferredName} onChange={event => update('preferredName', event.target.value)} /></label>
-        <label><span>Date of birth</span><input type="date" autoComplete="bday" max={new Date(new Date().setFullYear(new Date().getFullYear() - 18)).toISOString().split('T')[0]} value={details.dateOfBirth} onChange={event => update('dateOfBirth', event.target.value)} required /></label>
+        <label><span>Date of birth</span><DateOfBirthPicker max={adultCutoff()} value={details.dateOfBirth} onChange={value => update('dateOfBirth', value)} /></label>
         <div className="details-mobile-field"><label htmlFor="details-mobile"><span>Mobile</span></label><div className="details-mobile-row"><input id="details-mobile" type="tel" inputMode="numeric" autoComplete="tel" placeholder="04xxxxxxxx" pattern="04[0-9]{8}" title="Enter 10 digits starting with 04" maxLength={10} value={activeVerifiedPhone || details.mobile} onChange={event => update('mobile', event.target.value.replace(/\D/g, '').slice(0, 10))} readOnly={!!activeVerifiedPhone} required />{phoneVerificationEnabled && session && (verifiedPhone ? <span className="details-verified"><CheckCircle2 size={18} /> Verified</span> : <button type="button" onClick={sendCode} disabled={busy || retrySeconds > 0 || !supabase}>{retrySeconds > 0 ? `Retry ${retrySeconds}s` : 'Verify'}</button>)}</div></div>
         </>}
         <label className={verifiedEmail ? 'details-email-verified' : awaitingConfirmation ? 'details-email-pending' : duplicateEmailEntered ? 'details-email-error' : ''}><span>Email {verifiedEmail ? <small className="details-email-status details-email-status-verified"><LockKeyhole size={12} aria-hidden="true" /> Verified</small> : awaitingConfirmation && <small className="details-email-status"><LockKeyhole size={12} aria-hidden="true" /> Verification pending</small>}</span><span className="details-email-input"><input type="email" autoComplete="email" placeholder="you@example.com" pattern="[^\s@]+@[^\s@]+\.[^\s@]{2,}" title={verifiedEmail ? 'This verified email is linked to the signed-in account.' : awaitingConfirmation ? 'Use “Change email address” below before entering another address.' : 'Enter a valid email address, including university and international domains.'} value={session?.user.email ?? details.email} onChange={event => update('email', event.target.value)} readOnly={!!session || awaitingConfirmation} aria-invalid={duplicateEmailEntered || undefined} aria-describedby={duplicateEmailEntered ? 'details-email-error' : undefined} required />{(verifiedEmail || awaitingConfirmation) && <LockKeyhole size={18} aria-hidden="true" />}</span></label>
