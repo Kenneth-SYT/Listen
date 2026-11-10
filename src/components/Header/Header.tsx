@@ -66,9 +66,9 @@ function Header() {
 
         <Navigation />
 
-        <div className="header-actions">
+        <div className={`header-actions${session ? ' signed-in' : ''}`}>
           {session ? <>
-            {workspace && <a className="login-button" href={workspace === 'admin' ? '/admin' : '/listener'}>{workspace === 'admin' ? 'Admin' : 'Listener dashboard'}</a>}
+            {workspace && <a className="login-button workspace-button" href={workspace === 'admin' ? '/admin' : '/listener'}>{workspace === 'admin' ? 'Admin' : 'Listener dashboard'}</a>}
             <details className="header-account-menu" ref={accountMenu}>
               <summary aria-label={`Open account menu for ${fullName}`}><span>{initials}</span><ChevronDown aria-hidden="true" /></summary>
               <div className="header-account-dropdown">
@@ -77,6 +77,19 @@ function Header() {
                 <button type="button" onClick={() => void signOut()}><LogOut />Sign out</button>
               </div>
             </details>
+            <section className="mobile-account-panel" aria-label="Account shortcuts">
+              <header>
+                <span className="mobile-account-avatar" aria-hidden="true">{initials}</span>
+                <div><strong>{fullName}</strong><a href="/account?view=profile">View profile</a></div>
+                <button type="button" onClick={() => void signOut()}><LogOut aria-hidden="true" />Sign out</button>
+              </header>
+              <nav aria-label="Mobile account menu">
+                {workspace && <a href={workspace === 'admin' ? '/admin' : '/listener'}><UserRound aria-hidden="true" /><span>{workspace === 'admin' ? 'Admin dashboard' : 'Listener dashboard'}</span></a>}
+                <a href="/account?view=profile"><UserRound aria-hidden="true" /><span>Profile settings</span></a>
+                <a href="/account?view=bookings"><CalendarDays aria-hidden="true" /><span>Appointments</span></a>
+                <a href="/account?view=messages"><MessageCircle aria-hidden="true" /><span>Messages</span></a>
+              </nav>
+            </section>
           </> : <><a className="login-button" href="/login">Login</a><a className="match-button" href="/get-matched">Get matched</a></>}
         </div>
       </div>

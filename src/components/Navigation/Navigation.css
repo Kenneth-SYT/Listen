@@ -8,6 +8,9 @@
   border-left: 0;
 }
 
+.nav-item-icon,
+.nav-item-chevron { display: none; }
+
 .primary-nav a,
 .nav-dropdown button {
   display: inline-flex;
@@ -154,21 +157,26 @@
   .primary-nav {
     display: grid;
     grid-template-columns: 1fr;
-    gap: 4px;
+    gap: 0;
     width: 100%;
-    padding: 8px 0;
-    border-top: 1px solid var(--color-border);
+    padding: 6px;
+    border: 1px solid #d7e1eb;
+    border-radius: 13px;
+    background: #fff;
+    box-shadow: 0 10px 28px rgb(0 28 85 / .08);
   }
 
   .primary-nav a,
   .nav-dropdown button {
     position: relative;
+    display: grid;
+    grid-template-columns: 22px minmax(0, 1fr) auto;
+    gap: 9px;
     width: 100%;
-    justify-content: space-between;
-    padding-right: 18px;
-    padding-left: 18px;
+    min-height: 43px;
+    padding: 0 10px;
     border: 1px solid transparent;
-    border-radius: 12px;
+    border-radius: 9px;
     opacity: 0;
     transform: translateX(-14px);
     transition: opacity .24s ease, transform .28s cubic-bezier(.2, .8, .2, 1), color .18s ease, background-color .18s ease, border-color .18s ease, box-shadow .18s ease;
@@ -177,9 +185,9 @@
   .primary-nav > a:not(:last-child)::after,
   .primary-nav > .nav-dropdown:not(:last-child) > button::after {
     position: absolute;
-    right: 18px;
-    bottom: -3px;
-    left: 18px;
+    right: 10px;
+    bottom: -1px;
+    left: 41px;
     height: 1px;
     background: var(--color-border);
     content: "";
@@ -192,7 +200,12 @@
   .mobile-menu-open .primary-nav > :nth-child(2) { transition-delay: .11s; }
   .mobile-menu-open .primary-nav > :nth-child(3) { transition-delay: .15s; }
   .mobile-menu-open .primary-nav > :nth-child(4) { transition-delay: .19s; }
-  .primary-nav a:hover, .primary-nav a:focus-visible, .primary-nav a[aria-current] { border-color: #c8d8e5; border-radius: 12px; background: #fff; box-shadow: 0 8px 20px rgb(0 28 85 / .09); color: var(--color-primary); transform: translateX(5px); }
+  .nav-item-icon,
+  .nav-item-chevron { display: block; color: var(--color-muted); }
+  .nav-item-chevron { justify-self: end; transition: transform .18s ease; }
+  .primary-nav a:hover, .primary-nav a:focus-visible, .primary-nav a[aria-current] { border-color: #d7e1eb; background: var(--color-accent-light); box-shadow: none; color: var(--color-primary); transform: translateX(2px); }
+  .primary-nav a:hover .nav-item-chevron,
+  .primary-nav a:focus-visible .nav-item-chevron { transform: translateX(2px); }
 
   .dropdown-menu {
     position: static;

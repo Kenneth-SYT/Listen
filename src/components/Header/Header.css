@@ -61,6 +61,7 @@
 }
 
 .header-actions { display: flex; align-items: center; justify-self: end; gap: 10px; }
+.mobile-account-panel { display: none; }
 .login-button { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 16px; border-radius: 8px; color: var(--color-ink); font-weight: 700; text-decoration: none; }
 .login-button:hover, .login-button:focus-visible { background: var(--color-accent-light); }
 .header-account-menu { position: relative; }
@@ -141,15 +142,93 @@
     transition: max-height .38s cubic-bezier(.2, .8, .2, 1), margin .3s ease, opacity .22s ease, transform .32s cubic-bezier(.2, .8, .2, 1), visibility 0s linear .38s;
   }
 
-  .primary-nav { display: grid; }
-  .header-actions { display: flex; }
-  .mobile-menu-open .primary-nav { max-height: 360px; margin-top: 10px; opacity: 1; pointer-events: auto; visibility: visible; transform: translateY(0); transition-delay: 0s; }
-  .mobile-menu-open .header-actions { max-height: 620px; margin: 14px 0 10px; overflow: visible; opacity: 1; pointer-events: auto; visibility: visible; transform: translateY(0); transition-delay: .08s, 0s, .08s, .08s, 0s; }
+  .primary-nav { display: grid; order: 3; }
+  .header-actions { display: flex; order: 2; }
+  .mobile-menu-open .header-actions { max-height: 620px; margin: 14px 0 8px; overflow: visible; opacity: 1; pointer-events: auto; visibility: visible; transform: translateY(0); transition-delay: 0s; }
+  .mobile-menu-open .primary-nav { max-height: 360px; margin: 0 0 10px; opacity: 1; pointer-events: auto; visibility: visible; transform: translateY(0); transition-delay: .06s; }
 
   .header-actions {
     width: 100%;
     flex-wrap: wrap;
   }
+
+  .header-actions.signed-in > .workspace-button,
+  .header-actions.signed-in > .header-account-menu { display: none; }
+
+  .mobile-account-panel {
+    display: grid;
+    width: 100%;
+    overflow: hidden;
+    border: 1px solid #d7e1eb;
+    border-radius: 13px;
+    background: #fff;
+    box-shadow: 0 10px 28px rgb(0 28 85 / .08);
+  }
+
+  .mobile-account-panel > header {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 10px;
+    align-items: center;
+    padding: 12px;
+    border-bottom: 1px solid #e6ecf2;
+  }
+
+  .mobile-account-avatar {
+    display: grid;
+    width: 36px;
+    height: 36px;
+    place-items: center;
+    border-radius: 50%;
+    background: #c88a37;
+    color: #fff;
+    font-size: .76rem;
+    font-weight: 800;
+    letter-spacing: .03em;
+  }
+
+  .mobile-account-panel > header > div { display: grid; min-width: 0; gap: 1px; }
+  .mobile-account-panel > header strong { overflow: hidden; color: var(--color-ink); font-size: .86rem; text-overflow: ellipsis; white-space: nowrap; }
+  .mobile-account-panel > header a { color: #a8621e; font-size: .7rem; text-decoration: none; }
+  .mobile-account-panel > header a:hover,
+  .mobile-account-panel > header a:focus-visible { text-decoration: underline; }
+
+  .mobile-account-panel > header button {
+    display: inline-flex;
+    gap: 5px;
+    align-items: center;
+    min-height: 34px;
+    padding: 0 4px;
+    border: 0;
+    background: transparent;
+    color: #6d7783;
+    cursor: pointer;
+    font: inherit;
+    font-size: .72rem;
+  }
+
+  .mobile-account-panel > header button svg { width: 14px; }
+  .mobile-account-panel > header button:hover,
+  .mobile-account-panel > header button:focus-visible { color: #9f3232; }
+
+  .mobile-account-panel > nav { display: grid; padding: 6px; }
+  .mobile-account-panel > nav a {
+    display: grid;
+    grid-template-columns: 22px minmax(0, 1fr);
+    gap: 9px;
+    align-items: center;
+    min-height: 41px;
+    padding: 0 10px;
+    border-radius: 9px;
+    color: var(--color-ink);
+    font-size: .8rem;
+    text-decoration: none;
+    transition: background-color .18s ease, color .18s ease, transform .18s ease;
+  }
+
+  .mobile-account-panel > nav a svg { width: 17px; color: var(--color-muted); }
+  .mobile-account-panel > nav a:hover,
+  .mobile-account-panel > nav a:focus-visible { background: var(--color-accent-light); color: var(--color-primary); transform: translateX(2px); }
 
   .match-button {
     width: 100%;
