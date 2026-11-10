@@ -28,8 +28,23 @@ function BookingPage({ answers, onContinue, preferredListenerId = '', repeatBook
   const [listenerCarouselPage, setListenerCarouselPage] = useState(0)
   const [listenerCarouselPageSize, setListenerCarouselPageSize] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 560px)').matches ? 1 : 2)
   const listenerCarouselRef = useRef<HTMLDivElement>(null)
+  const dateSectionRef = useRef<HTMLElement>(null)
+  const bookingSummaryRef = useRef<HTMLElement>(null)
+  const scrolledToDate = useRef(false)
+  const scrolledToSummary = useRef(false)
   const topics = answers.topics.join('|')
   const signedIn = Boolean(session)
+
+  const scrollToDateOnce = () => {
+    if (scrolledToDate.current || !window.matchMedia('(max-width: 560px)').matches) return
+    scrolledToDate.current = true
+    window.requestAnimationFrame(() => dateSectionRef.current?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' }))
+  }
+  const scrollToSummaryOnce = () => {
+    if (scrolledToSummary.current || !window.matchMedia('(max-width: 560px)').matches) return
+    scrolledToSummary.current = true
+    window.requestAnimationFrame(() => bookingSummaryRef.current?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' }))
+  }
 
   useEffect(() => {
     const media = window.matchMedia('(max-width: 560px)')
@@ -169,16 +184,16 @@ function BookingPage({ answers, onContinue, preferredListenerId = '', repeatBook
     {authLoading || loading ? <p role="status">Loading available appointments…</p> : <div className="booking-layout">
       <div className="booking-main">
         <section className="booking-panel"><h2>1. Choose a listener</h2><p className="booking-match-intro">{repeatBooking && preferredListenerId ? 'Your previous listener has been selected. You can choose someone else if you prefer.' : suggested?.matchedTopics.length ? 'Recommended based on the topics you selected. You can choose any listener.' : listeners.length === 1 ? `${listeners[0].name} is currently the only listed listener. You can review their available times below.` : 'Choose the listener you feel comfortable with.'}</p><div ref={listenerCarouselRef} className="booking-listeners" role="region" aria-roledescription="carousel" aria-label="Available listeners" tabIndex={0} onScroll={updateListenerCarouselPage}>
-          {rankedListeners.map(({ listener: person, matchedTopics, availableSlots }) => <button key={person.id} className={'booking-listener' + (person.id === selectedListener ? ' selected' : '')} type="button" aria-pressed={person.id === selectedListener} disabled={!availableSlots} onClick={() => { setSelectedListener(person.id); setSelectedDay(''); setSelectedSlot(''); setViewedMonth('') }}>
+          {rankedListeners.map(({ listener: person, matchedTopics, availableSlots }) => <button key={person.id} className={'booking-listener' + (person.id === selectedListener ? ' selected' : '')} type="button" aria-pressed={person.id === selectedListener} disabled={!availableSlots} onClick={() => { setSelectedListener(person.id); setSelectedDay(''); setSelectedSlot(''); setViewedMonth(''); scrollToDateOnce() }}>
             {!repeatBooking && person.id === suggested?.listener.id && <span className="recommended-label">Recommended for you</span>}
             <span className="booking-listener-avatar" aria-hidden="true">{person.profile_image_url ? <img src={person.profile_image_url} alt="" /> : person.name.trim().charAt(0).toUpperCase()}</span>
-            <strong>{person.name}</strong><small>{person.focus}</small>
+            <strong>{person.name}</strong>
             {matchedTopics.length > 0 ? <small className="booking-match-reason">Matches: {matchedTopics.join(', ')}</small> : listeners.length === 1 ? <small className="booking-match-reason">Available listener</small> : null}
             {!availableSlots && <small className="booking-no-times">No times available</small>}
           </button>)}
           {!listeners.length && <p>No listeners are available for booking yet. Please contact us.</p>}
         </div>{rankedListeners.length > 2 && <div className="booking-carousel-tracker" aria-label={`Listener page ${visibleListenerCarouselPage + 1} of ${listenerCarouselPages}`}><button type="button" aria-label="Previous listeners" disabled={visibleListenerCarouselPage === 0} onClick={() => goToListenerCarouselPage(visibleListenerCarouselPage - 1)}><ChevronLeft /></button><div>{Array.from({ length: listenerCarouselPages }, (_, page) => <button key={page} type="button" className={page === visibleListenerCarouselPage ? 'active' : ''} aria-label={`Show listener page ${page + 1}`} aria-current={page === visibleListenerCarouselPage ? 'true' : undefined} onClick={() => goToListenerCarouselPage(page)} />)}</div><span>{visibleListenerCarouselPage + 1} of {listenerCarouselPages}</span><button type="button" aria-label="Next listeners" disabled={visibleListenerCarouselPage === listenerCarouselPages - 1} onClick={() => goToListenerCarouselPage(visibleListenerCarouselPage + 1)}><ChevronRight /></button></div>}</section>
-        <section className="booking-panel"><h2>2. Select an available date</h2>
+        <section ref={dateSectionRef} className="booking-panel"><h2>2. Select an available date</h2>
           {days.length ? <div className="booking-schedule"><div className="booking-calendar">
             <div className="calendar-toolbar"><strong>{monthDate.toLocaleDateString('en-AU', { month: 'long', year: 'numeric' })}</strong><div>
               <button type="button" aria-label="Previous month" disabled={monthKey <= firstMonth} onClick={() => shiftMonth(-1)}><ChevronLeft size={19} /></button>
@@ -192,11 +207,11 @@ function BookingPage({ answers, onContinue, preferredListenerId = '', repeatBook
                 return <button type="button" key={key} disabled={!calendarDays.has(key)} className={chosenDay === key ? 'selected' : ''} aria-label={date.toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} aria-pressed={chosenDay === key} onClick={() => { setSelectedDay(key); setSelectedSlot('') }}>{index + 1}</button>
               })}</div>
           </div><div className="booking-time-panel"><p className="time-heading"><Clock3 size={17} />Available times</p><span className="time-date">{new Date(`${chosenDay}T12:00:00`).toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long' })}</span>
-            <div className="booking-times">{daySlots.map(slot => <button type="button" key={slot.id} className={chosenSlot?.id === slot.id ? 'selected' : ''} aria-pressed={chosenSlot?.id === slot.id} onClick={() => setSelectedSlot(slot.id)}>{new Date(slot.starts_at).toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })}</button>)}</div>
+            <div className="booking-times">{daySlots.map(slot => <button type="button" key={slot.id} className={chosenSlot?.id === slot.id ? 'selected' : ''} aria-pressed={chosenSlot?.id === slot.id} onClick={() => { setSelectedSlot(slot.id); scrollToSummaryOnce() }}>{new Date(slot.starts_at).toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })}</button>)}</div>
           </div></div> : <p>No suitable times are currently available for this listener. Try another listener or contact us.</p>}
         </section>
       </div>
-      <aside className="booking-summary"><CalendarDays size={25} /><h2>Your booking</h2>
+      <aside ref={bookingSummaryRef} className="booking-summary"><CalendarDays size={25} /><h2>Your booking</h2>
         {quotes.length > 1 && <div className="booking-summary-session"><span>Choose your session</span><div role="group" aria-label="Session length">{quotes.map(option => <button key={option.rate_code} type="button" className={option.rate_code === quote?.rate_code ? 'selected' : ''} aria-pressed={option.rate_code === quote?.rate_code} onClick={() => { setSelectedRate(option.rate_code); setSelectedDay(''); setSelectedSlot(''); setViewedMonth('') }}>
           <strong>{option.duration_minutes === 120 ? '2 hours' : `${option.duration_minutes} min`}</strong><small>{money(option.amount_cents)}</small>
         </button>)}</div></div>}
