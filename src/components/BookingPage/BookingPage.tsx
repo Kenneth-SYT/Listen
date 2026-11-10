@@ -1,5 +1,5 @@
 import { CalendarDays, ChevronLeft, ChevronRight, Clock3 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { errorMessage, getSupabase, money, type BookingSelection, type CreditSummary, type Listener, type Quote, type Slot } from '../../lib/supabase'
 import { useSession } from '../../lib/useSession'
 import type { IntakeAnswers } from '../../lib/intake'
@@ -25,8 +25,18 @@ function BookingPage({ answers, onContinue, preferredListenerId = '', repeatBook
   const [credits, setCredits] = useState(0)
   const [useCredit, setUseCredit] = useState(false)
   const [refresh, setRefresh] = useState(0)
+  const [listenerCarouselPage, setListenerCarouselPage] = useState(0)
+  const [listenerCarouselPageSize, setListenerCarouselPageSize] = useState(() => typeof window !== 'undefined' && window.matchMedia('(max-width: 560px)').matches ? 1 : 2)
+  const listenerCarouselRef = useRef<HTMLDivElement>(null)
   const topics = answers.topics.join('|')
   const signedIn = Boolean(session)
+
+  useEffect(() => {
+    const media = window.matchMedia('(max-width: 560px)')
+    const updatePageSize = (event: MediaQueryListEvent) => setListenerCarouselPageSize(event.matches ? 1 : 2)
+    media.addEventListener('change', updatePageSize)
+    return () => media.removeEventListener('change', updatePageSize)
+  }, [])
 
   useEffect(() => {
     if (authLoading) return
@@ -54,7 +64,8 @@ function BookingPage({ answers, onContinue, preferredListenerId = '', repeatBook
       setListeners(list); setFixedSlots(fixed); setWindowSlots(windows); setQuotes(rates)
       setCredits(((creditResult.data as CreditSummary | null)?.standard_credits) || 0)
       setSelectedRate(current => rates.some(option => option.rate_code === current) ? current : rate.rate_code)
-      setSelectedListener(current => list.some(person => person.id === current) ? current : list.some(person => person.id === preferredListenerId) ? preferredListenerId : suggested?.listener.id || ranked[0]?.listener.id || '')
+      const bookable = ranked.filter(item => item.availableSlots > 0)
+      setSelectedListener(current => bookable.some(item => item.listener.id === current) ? current : bookable.some(item => item.listener.id === preferredListenerId) ? preferredListenerId : suggested?.listener.id || bookable[0]?.listener.id || '')
       setMessage('')
     }).catch(error => { if (active) setMessage(errorMessage(error)) }).finally(() => { if (active) setLoading(false) })
     return () => { active = false }
@@ -91,6 +102,22 @@ function BookingPage({ answers, onContinue, preferredListenerId = '', repeatBook
   const slots = [...fixedSlots, ...windowSlots]
   const rankedListeners = rankListeners(listeners, slots, answers.topics, quote?.duration_minutes ?? 0)
   const suggested = recommendedListener(rankedListeners)
+  const listenerCarouselPages = Math.max(1, Math.ceil(rankedListeners.length / listenerCarouselPageSize))
+  const visibleListenerCarouselPage = Math.min(listenerCarouselPage, listenerCarouselPages - 1)
+  const goToListenerCarouselPage = (page: number) => {
+    const container = listenerCarouselRef.current
+    const nextPage = Math.max(0, Math.min(page, listenerCarouselPages - 1))
+    setListenerCarouselPage(nextPage)
+    const card = container?.querySelectorAll<HTMLElement>('.booking-listener')[nextPage * listenerCarouselPageSize]
+    if (container && card) container.scrollTo({ left: card.offsetLeft - container.offsetLeft, behavior: 'smooth' })
+  }
+  const updateListenerCarouselPage = () => {
+    const container = listenerCarouselRef.current
+    if (!container) return
+    const maxScroll = container.scrollWidth - container.clientWidth
+    const nextPage = maxScroll > 0 ? Math.round((container.scrollLeft / maxScroll) * (listenerCarouselPages - 1)) : 0
+    setListenerCarouselPage(nextPage)
+  }
   const usableSlots = slots.filter(slot => {
     if (slot.listener_id !== selectedListener || !quote) return false
     const duration = Date.parse(slot.ends_at) - Date.parse(slot.starts_at)
@@ -141,15 +168,16 @@ function BookingPage({ answers, onContinue, preferredListenerId = '', repeatBook
     <header className="booking-heading"><h1 id="match-heading">Choose your listener and a time.</h1><p>Times are shown in your timezone ({Intl.DateTimeFormat().resolvedOptions().timeZone}).</p></header>
     {authLoading || loading ? <p role="status">Loading available appointments…</p> : <div className="booking-layout">
       <div className="booking-main">
-        <section className="booking-panel"><h2>1. Choose a listener</h2><p className="booking-match-intro">{repeatBooking && preferredListenerId ? 'Your previous listener has been selected. You can choose someone else if you prefer.' : suggested?.matchedTopics.length ? 'Recommended based on the topics you selected. You can choose any listener.' : listeners.length === 1 ? `${listeners[0].name} is currently the only listed listener. You can review their available times below.` : 'Choose the listener you feel comfortable with.'}</p><div className="booking-listeners" role="region" aria-roledescription="carousel" aria-label="Available listeners" tabIndex={0}>
-          {rankedListeners.map(({ listener: person, matchedTopics, availableSlots }) => <button key={person.id} className={'booking-listener' + (person.id === selectedListener ? ' selected' : '')} type="button" aria-pressed={person.id === selectedListener} onClick={() => { setSelectedListener(person.id); setSelectedDay(''); setSelectedSlot(''); setViewedMonth('') }}>
+        <section className="booking-panel"><h2>1. Choose a listener</h2><p className="booking-match-intro">{repeatBooking && preferredListenerId ? 'Your previous listener has been selected. You can choose someone else if you prefer.' : suggested?.matchedTopics.length ? 'Recommended based on the topics you selected. You can choose any listener.' : listeners.length === 1 ? `${listeners[0].name} is currently the only listed listener. You can review their available times below.` : 'Choose the listener you feel comfortable with.'}</p><div ref={listenerCarouselRef} className="booking-listeners" role="region" aria-roledescription="carousel" aria-label="Available listeners" tabIndex={0} onScroll={updateListenerCarouselPage}>
+          {rankedListeners.map(({ listener: person, matchedTopics, availableSlots }) => <button key={person.id} className={'booking-listener' + (person.id === selectedListener ? ' selected' : '')} type="button" aria-pressed={person.id === selectedListener} disabled={!availableSlots} onClick={() => { setSelectedListener(person.id); setSelectedDay(''); setSelectedSlot(''); setViewedMonth('') }}>
             {!repeatBooking && person.id === suggested?.listener.id && <span className="recommended-label">Recommended for you</span>}
+            <span className="booking-listener-avatar" aria-hidden="true">{person.profile_image_url ? <img src={person.profile_image_url} alt="" /> : person.name.trim().charAt(0).toUpperCase()}</span>
             <strong>{person.name}</strong><small>{person.focus}</small>
             {matchedTopics.length > 0 ? <small className="booking-match-reason">Matches: {matchedTopics.join(', ')}</small> : listeners.length === 1 ? <small className="booking-match-reason">Available listener</small> : null}
             {!availableSlots && <small className="booking-no-times">No times available</small>}
           </button>)}
           {!listeners.length && <p>No listeners are available for booking yet. Please contact us.</p>}
-        </div></section>
+        </div>{rankedListeners.length > 2 && <div className="booking-carousel-tracker" aria-label={`Listener page ${visibleListenerCarouselPage + 1} of ${listenerCarouselPages}`}><button type="button" aria-label="Previous listeners" disabled={visibleListenerCarouselPage === 0} onClick={() => goToListenerCarouselPage(visibleListenerCarouselPage - 1)}><ChevronLeft /></button><div>{Array.from({ length: listenerCarouselPages }, (_, page) => <button key={page} type="button" className={page === visibleListenerCarouselPage ? 'active' : ''} aria-label={`Show listener page ${page + 1}`} aria-current={page === visibleListenerCarouselPage ? 'true' : undefined} onClick={() => goToListenerCarouselPage(page)} />)}</div><span>{visibleListenerCarouselPage + 1} of {listenerCarouselPages}</span><button type="button" aria-label="Next listeners" disabled={visibleListenerCarouselPage === listenerCarouselPages - 1} onClick={() => goToListenerCarouselPage(visibleListenerCarouselPage + 1)}><ChevronRight /></button></div>}</section>
         <section className="booking-panel"><h2>2. Select an available date</h2>
           {days.length ? <div className="booking-schedule"><div className="booking-calendar">
             <div className="calendar-toolbar"><strong>{monthDate.toLocaleDateString('en-AU', { month: 'long', year: 'numeric' })}</strong><div>
@@ -166,7 +194,6 @@ function BookingPage({ answers, onContinue, preferredListenerId = '', repeatBook
           </div><div className="booking-time-panel"><p className="time-heading"><Clock3 size={17} />Available times</p><span className="time-date">{new Date(`${chosenDay}T12:00:00`).toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long' })}</span>
             <div className="booking-times">{daySlots.map(slot => <button type="button" key={slot.id} className={chosenSlot?.id === slot.id ? 'selected' : ''} aria-pressed={chosenSlot?.id === slot.id} onClick={() => setSelectedSlot(slot.id)}>{new Date(slot.starts_at).toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })}</button>)}</div>
           </div></div> : <p>No suitable times are currently available for this listener. Try another listener or contact us.</p>}
-          <button type="button" onClick={() => { setLoading(true); setRefresh(value => value + 1) }}>Refresh availability</button>
         </section>
       </div>
       <aside className="booking-summary"><CalendarDays size={25} /><h2>Your booking</h2>
