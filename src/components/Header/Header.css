@@ -120,22 +120,35 @@
     background: #fff;
     color: var(--color-ink);
     cursor: pointer;
+    transition: border-color .2s ease, background-color .2s ease, color .2s ease, box-shadow .2s ease, transform .28s cubic-bezier(.2, .8, .2, 1);
   }
 
+  .mobile-menu-toggle:hover { border-color: #9eb6ca; background: var(--color-accent-light); color: var(--color-primary); box-shadow: 0 8px 20px rgb(0 28 85 / .11); transform: translateY(-2px); }
   .mobile-menu-toggle:focus-visible { outline: 3px solid var(--color-accent); outline-offset: 3px; }
+  .mobile-menu-open .mobile-menu-toggle { border-color: var(--color-primary); background: #fff; color: var(--color-primary); transform: rotate(90deg); }
 
   .primary-nav,
   .header-actions {
-    display: none;
     grid-column: 1 / -1;
+    max-height: 0;
+    margin-top: 0;
+    margin-bottom: 0;
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+    visibility: hidden;
+    transform: translateY(-12px);
+    transition: max-height .38s cubic-bezier(.2, .8, .2, 1), margin .3s ease, opacity .22s ease, transform .32s cubic-bezier(.2, .8, .2, 1), visibility 0s linear .38s;
   }
 
-  .mobile-menu-open .primary-nav { display: grid; }
-  .mobile-menu-open .header-actions { display: flex; }
+  .primary-nav { display: grid; }
+  .header-actions { display: flex; }
+  .mobile-menu-open .primary-nav { max-height: 360px; margin-top: 10px; opacity: 1; pointer-events: auto; visibility: visible; transform: translateY(0); transition-delay: 0s; }
+  .mobile-menu-open .header-actions { max-height: 620px; margin: 14px 0 10px; overflow: visible; opacity: 1; pointer-events: auto; visibility: visible; transform: translateY(0); transition-delay: .08s, 0s, .08s, .08s, 0s; }
 
   .header-actions {
     width: 100%;
-    margin: 14px 0 10px;
+    flex-wrap: wrap;
   }
 
   .match-button {
@@ -145,7 +158,9 @@
 
   .login-button { flex: 0 0 auto; }
   .header-account-menu { margin-left: auto; }
-  .header-account-dropdown { top: calc(100% + 8px); }
+  .header-account-menu[open] { display: grid; flex: 1 0 100%; margin-top: 8px; }
+  .header-account-menu[open] > summary { justify-self: end; }
+  .header-account-dropdown { position: static; width: 100%; max-height: min(420px, calc(100dvh - 32px)); margin-top: 9px; overflow-y: auto; }
 }
 
 @media (max-width: 420px) {
@@ -153,4 +168,8 @@
   .header-actions { gap: 8px; }
   .login-button { padding: 0 10px; }
   .match-button { padding: 0 16px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mobile-menu-toggle, .primary-nav, .header-actions { transition-duration: .01ms !important; }
 }
