@@ -297,10 +297,10 @@ function AccountPage() {
     const startsAt = new Date(booking.starts_at)
     const duration = Math.round((Date.parse(booking.ends_at) - Date.parse(booking.starts_at)) / 60000)
     const sessionName = booking.rate_code === 'intro' ? 'Introductory chat' : booking.rate_code === 'extended' ? 'Extended support session' : 'Support session'
-    return <article className="account-history-row" key={booking.id}>
+    return <article className={`account-history-row${upcoming ? ' upcoming' : ''}`} key={booking.id}>
       <time dateTime={booking.starts_at}><strong>{startsAt.toLocaleDateString('en-AU', { day: 'numeric' })}</strong><span>{startsAt.toLocaleDateString('en-AU', { month: 'short', year: 'numeric' })}</span></time>
       <div className="account-history-main"><span>{sessionName}</span><h3>{names[booking.listener_id] || 'Your listener'}</h3><p>{startsAt.toLocaleDateString('en-AU', { weekday: 'long' })} at {startsAt.toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })}</p></div>
-      <div className="account-history-payment"><span className={`account-status ${booking.status}`}>{booking.status === 'confirmed' ? <CheckCircle2 /> : <XCircle />}{upcoming ? 'Confirmed' : booking.status === 'confirmed' ? 'Completed' : 'Expired'}</span><strong>{duration === 120 ? '2 hours' : `${duration} minutes`}</strong>{upcoming && <button type="button" className="account-history-reschedule" onClick={() => void openReschedule(booking)}><CalendarDays />Reschedule</button>}</div>
+      <div className={`account-history-payment${upcoming ? ' upcoming' : ''}`}><span className={`account-status ${booking.status}`}>{booking.status === 'confirmed' ? <CheckCircle2 /> : <XCircle />}{upcoming ? 'Confirmed' : booking.status === 'confirmed' ? 'Completed' : 'Expired'}</span><strong>{duration === 120 ? '2 hours' : `${duration} minutes`}</strong>{upcoming && <button type="button" className="account-history-reschedule" onClick={() => void openReschedule(booking)}><CalendarDays />Reschedule</button>}</div>
     </article>
   }
   const updateProfile = (field: keyof CustomerProfile, value: string) => setProfile(current => ({ ...current, [field]: value }))
