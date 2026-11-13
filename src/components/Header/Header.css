@@ -68,6 +68,7 @@
 .header-account-menu > summary { display: flex; gap: 7px; align-items: center; padding: 3px 5px 3px 3px; border-radius: 999px; color: var(--color-primary); cursor: pointer; list-style: none; }
 .header-account-menu > summary::-webkit-details-marker { display: none; }
 .header-account-menu > summary > span { display: grid; width: 38px; height: 38px; place-items: center; border: 1px solid #c9d8e8; border-radius: 50%; background: var(--color-accent-light); font-size: .75rem; font-weight: 800; letter-spacing: .03em; }
+.header-account-menu > summary > span img, .mobile-account-avatar img { width: 100%; height: 100%; border-radius: inherit; object-fit: cover; }
 .header-account-menu > summary > svg { width: 15px; transition: transform .18s ease; }
 .header-account-menu[open] > summary, .header-account-menu > summary:hover { background: #edf3fb; }
 .header-account-menu[open] > summary > svg { transform: rotate(180deg); }

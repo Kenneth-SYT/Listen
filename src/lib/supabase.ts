@@ -37,6 +37,7 @@ export type Slot = { id: string; listener_id: string; starts_at: string; ends_at
 export type Quote = { rate_code: string; label: string; amount_cents: number; duration_minutes: number }
 export type Testimonial = { id: string; quote: string; display_name: string; context: string; sort_order: number; image_path?: string | null; published?: boolean; created_at?: string; updated_at?: string }
 export const testimonialImageUrl = (path?: string | null) => path ? getSupabase().storage.from('testimonial-images').getPublicUrl(path).data.publicUrl : ''
+export const customerProfileImageUrl = (path?: string | null) => path ? getSupabase().storage.from('customer-profile-images').getPublicUrl(path).data.publicUrl : ''
 export type BookingSelection = { listener: Listener; slot: Slot; quote: Quote; holdToken: string; holdExpiresAt: string; useCredit?: boolean }
 export type BundleProduct = { code: string; label: string; session_count: number; amount_cents: number }
 export type CreditSummary = { standard_credits: number; eligible_for_bundles: boolean }
@@ -71,6 +72,20 @@ export async function cancelCheckout(bookingId: string) {
     throw new Error(message)
   }
   return data
+}
+
+export async function rescheduleAppointment(bookingId: string, slotId: string) {
+  const { data, error } = await getSupabase().functions.invoke('reschedule-appointment', { body: { booking_id: bookingId, slot_id: slotId } })
+  if (error) {
+    let message = error.message
+    if ('context' in error && error.context instanceof Response) {
+      const body = await error.context.json().catch(() => null)
+      message = body?.error || message
+    }
+    throw new Error(message)
+  }
+  if (!data?.booking) throw new Error('The appointment could not be rescheduled. Please try again.')
+  return data as { booking: Appointment; email_sent: boolean }
 }
 
 export async function createBundleCheckout(productCode: string) {

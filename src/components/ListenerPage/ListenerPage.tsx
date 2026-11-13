@@ -22,6 +22,9 @@ const listenerImagePath = (url: string) => {
 
 function ListenerPage() {
   const { session, loading } = useSession()
+  const [access, setAccess] = useState<'checking' | 'allowed' | 'denied'>('checking')
+  const [accessUserId, setAccessUserId] = useState('')
+  const [accessMessage, setAccessMessage] = useState('Checking listener access…')
   const [view, setView] = useState<View>('sessions')
   const [listener, setListener] = useState<Listener | null>(null)
   const [bookings, setBookings] = useState<Appointment[]>([])
@@ -54,6 +57,34 @@ function ListenerPage() {
   useEffect(() => {
     if (!session?.user.id) return
     let active = true
+    const userId = session.user.id
+    const checkAccess = async () => {
+      try {
+        const { data, error } = await getSupabase().rpc('is_admin')
+        if (!active) return
+        if (error) throw error
+        setAccessUserId(userId)
+        if (data) {
+          setAccess('denied')
+          setAccessMessage('Administrator accounts cannot access the listener dashboard.')
+          window.location.replace('/admin')
+          return
+        }
+        setAccess('allowed')
+        setAccessMessage('')
+      } catch (error) {
+        if (!active) return
+        setAccessUserId(userId)
+        setAccess('denied')
+        setAccessMessage(errorMessage(error))
+      }
+    }
+    void checkAccess()
+    return () => { active = false }
+  }, [session?.user.id])
+  useEffect(() => {
+    if (!session?.user.id || access !== 'allowed' || accessUserId !== session.user.id) return
+    let active = true
     const load = async () => {
       const client = getSupabase()
       const account = await client.from('listener_accounts').select('listener_id').eq('user_id', session.user.id).maybeSingle()
@@ -72,7 +103,7 @@ function ListenerPage() {
     }
     void load().catch(error => { if (active) setMessage(errorMessage(error)) })
     return () => { active = false }
-  }, [session?.user.id, refresh])
+  }, [access, accessUserId, session?.user.id, refresh])
   useEffect(() => {
     if (!session?.user.id || !listener?.id) return
     let active = true
@@ -144,6 +175,8 @@ function ListenerPage() {
   }
   if (loading) return <p role="status">Checking your account…</p>
   if (!session) return <LoginPage />
+  if (accessUserId !== session.user.id) return <section className="account-page listener-dashboard"><p className="listener-notice" role="status">Checking listener access…</p></section>
+  if (access !== 'allowed') return <section className="account-page listener-dashboard"><p className="listener-notice" role={access === 'denied' ? 'alert' : 'status'}>{accessMessage}</p></section>
   const upcomingBookings = bookings.filter(booking => Date.parse(booking.starts_at) >= openedAt).sort((a, b) => Date.parse(a.starts_at) - Date.parse(b.starts_at))
   const supportContacts = Array.from(new Set(bookings.map(booking => booking.user_id))).map(userId => { const profile = profiles.find(item => item.id === userId); return { listenerId: listener?.id || '', userId, name: profile?.preferred_name || profile?.first_name || 'Customer' } satisfies SupportContact })
   return <section className="account-page listener-dashboard"><header><span className="listener-kicker">Listener workspace</span><h1>{listener?.name || 'My listener dashboard'}</h1><p>Manage your public profile, availability and confirmed sessions.</p></header><div className="listener-dashboard-layout">

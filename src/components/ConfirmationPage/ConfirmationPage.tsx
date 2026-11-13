@@ -27,7 +27,7 @@ function ConfirmationPage() {
         setBooking(data as Appointment)
         const { data: listener } = await getSupabase().from('listeners').select('name').eq('id', data.listener_id).maybeSingle()
         if (active && listener?.name) setListenerName(listener.name)
-        setMessage(data.status === 'confirmed' ? data.paid_with_credit ? 'Your session credit was applied. Your appointment is confirmed.' : 'Payment verified. Your appointment is confirmed.' : data.status === 'expired' ? 'This checkout expired without a confirmed payment.' : 'Payment confirmation is still pending. You can check again or view My appointments.')
+        setMessage(data.status === 'confirmed' ? data.paid_with_credit ? 'Your session credit was applied. Your appointment is confirmed.' : 'Payment verified. Your appointment is confirmed.' : data.status === 'expired' ? 'This checkout expired without a confirmed payment.' : 'Payment confirmation is still pending. You can check again or view Appointments.')
         if (data.status === 'pending' && ++attempts < 12) timer = setTimeout(read, 2500)
       } catch (error) { if (active) setMessage(errorMessage(error)) }
     }
@@ -52,10 +52,10 @@ function ConfirmationPage() {
         <div><UserRound aria-hidden="true" /><span>Listener</span><strong>{listenerName}</strong></div>
         <div><CreditCard aria-hidden="true" /><span>{booking.paid_with_credit ? 'Bundle' : confirmed ? 'Paid' : 'Amount'}</span><strong>{booking.paid_with_credit ? '1 session credit' : `${money(booking.amount_cents)} AUD`}</strong></div>
       </div>
-      {confirmed && <div className="confirmation-note"><CheckCircle2 aria-hidden="true" /><p>Your session now appears in My appointments. We’ll use your saved contact details if we need to reach you.</p></div>}
+      {confirmed && <div className="confirmation-note"><CheckCircle2 aria-hidden="true" /><p>Your booking now appears in Appointments. We’ll use your saved contact details if we need to reach you.</p></div>}
       <p className="confirmation-reference">Booking reference: {booking.id}</p>
     </>}
-    <div className="confirmation-actions"><a className="confirmation-primary" href="/account">View my appointments <ArrowRight size={17} /></a>{confirmed ? <a className="confirmation-secondary" href="/get-matched?repeat=previous">Book another session</a> : !expired && <button type="button" className="confirmation-secondary" onClick={() => setRefresh(value => value + 1)}>Check payment again</button>}</div>
+    <div className="confirmation-actions"><a className="confirmation-primary" href="/account?view=history">View my appointments <ArrowRight size={17} /></a>{confirmed ? <a className="confirmation-secondary" href="/get-matched?repeat=previous">Book another session</a> : !expired && <button type="button" className="confirmation-secondary" onClick={() => setRefresh(value => value + 1)}>Check payment again</button>}</div>
     <p className="confirmation-caveat">Listen provides peer support and is not an emergency or crisis service.</p>
   </div></section>
 }

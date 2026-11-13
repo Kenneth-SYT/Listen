@@ -66,7 +66,7 @@ function LoginPage({ embedded = false }: { embedded?: boolean }) {
   }
   if (loading) return <p role="status">Checking your account…</p>
   if (session && !embedded && mode !== 'update') return <section className="login-page"><div className="login-redirect" role="status"><LoaderCircle aria-hidden="true" /><p>{redirectError || 'Opening your account…'}</p>{redirectError && <a href="/account">Open my account</a>}</div></section>
-  if (session && mode !== 'update') return <section className="login-page"><div className="login-panel"><h1>You’re signed in.</h1><p>{session.user.email || session.user.phone}</p><a href="/account">View my appointments</a><a href="/get-matched">Book a session</a><button onClick={async () => { try { const { error } = await getSupabase().auth.signOut(); if (error) throw error } catch (error) { setMessage(errorMessage(error)) } }}>Sign out</button>{message && <p role="status">{message}</p>}</div></section>
+  if (session && mode !== 'update') return <section className="login-page"><div className="login-panel"><h1>You’re signed in.</h1><p>{session.user.email || session.user.phone}</p><a href="/account?view=history">View my appointments</a><a href="/get-matched">Book a session</a><button onClick={async () => { try { const { error } = await getSupabase().auth.signOut(); if (error) throw error } catch (error) { setMessage(errorMessage(error)) } }}>Sign out</button>{message && <p role="status">{message}</p>}</div></section>
   return <section className={embedded ? 'login-embedded' : 'login-page'} aria-labelledby="login-heading">
     <form className="login-panel" onSubmit={submit}>
       <span className="login-icon"><LockKeyhole size={24} aria-hidden="true" /></span>

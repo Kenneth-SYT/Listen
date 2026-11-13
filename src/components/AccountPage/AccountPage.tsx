@@ -1,6 +1,6 @@
-import { ArrowRight, BookOpen, CalendarDays, CheckCircle2, Clock3, HeartHandshake, HelpCircle, History, Home, KeyRound, Layers3, ListChecks, MessageCircle, Save, ShieldCheck, Trash2, UserRound, X, XCircle } from 'lucide-react'
+import { ArrowRight, BookOpen, CalendarDays, CheckCircle2, Clock3, HeartHandshake, HelpCircle, Home, ImagePlus, KeyRound, Layers3, ListChecks, MessageCircle, Save, ShieldCheck, Trash2, UserRound, X, XCircle } from 'lucide-react'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { cancelCheckout, createCheckout, errorMessage, getSupabase, money, reconcileBundleCheckout, verifyCurrentPassword, type Appointment, type CreditSummary } from '../../lib/supabase'
+import { cancelCheckout, createCheckout, customerProfileImageUrl, errorMessage, getSupabase, money, reconcileBundleCheckout, rescheduleAppointment, verifyCurrentPassword, type Appointment, type CreditSummary, type Slot } from '../../lib/supabase'
 import { useSession } from '../../lib/useSession'
 import LoginPage from '../LoginPage/LoginPage'
 import SupportWorkspace, { type SupportContact } from '../SupportWorkspace/SupportWorkspace'
@@ -12,11 +12,11 @@ const holdDeadline = (createdAt: string, checkoutExpiresAt: string) => new Date(
   Date.parse(checkoutExpiresAt),
   Date.parse(createdAt) + fifteenMinutes,
 )).toISOString()
-type CustomerProfile = { first_name: string; last_name: string; preferred_name: string; date_of_birth: string; mobile: string; contact_email: string; gender: string }
+type CustomerProfile = { first_name: string; last_name: string; preferred_name: string; date_of_birth: string; mobile: string; contact_email: string; gender: string; profile_image_path: string }
 type CreditAnimation = { from: number; added: number; to: number; phase: 'add' | 'merge' }
-type AccountView = 'home' | 'bookings' | 'messages' | 'todos' | 'between' | 'history' | 'profile'
-const accountViews: AccountView[] = ['home', 'bookings', 'messages', 'todos', 'between', 'history', 'profile']
-const emptyProfile: CustomerProfile = { first_name: '', last_name: '', preferred_name: '', date_of_birth: '', mobile: '', contact_email: '', gender: '' }
+type AccountView = 'home' | 'messages' | 'todos' | 'between' | 'history' | 'profile'
+const accountViews: AccountView[] = ['home', 'messages', 'todos', 'between', 'history', 'profile']
+const emptyProfile: CustomerProfile = { first_name: '', last_name: '', preferred_name: '', date_of_birth: '', mobile: '', contact_email: '', gender: '', profile_image_path: '' }
 
 function ListenerMark() {
   return <img className="account-listener-mark" src="/favicon-transparent-512x512.png" alt="" aria-hidden="true" />
@@ -56,6 +56,11 @@ function AccountPage() {
   const [creditAnimation, setCreditAnimation] = useState<CreditAnimation | null>(null)
   const [profile, setProfile] = useState<CustomerProfile>(emptyProfile)
   const [savingProfile, setSavingProfile] = useState(false)
+  const [profilePhoto, setProfilePhoto] = useState<File | null>(null)
+  const [profilePhotoPreview, setProfilePhotoPreview] = useState('')
+  const [removeProfilePhoto, setRemoveProfilePhoto] = useState(false)
+  const [profilePhotoError, setProfilePhotoError] = useState('')
+  const profilePhotoInput = useRef<HTMLInputElement>(null)
   const [passwordModalOpen, setPasswordModalOpen] = useState(false)
   const [changingPassword, setChangingPassword] = useState(false)
   const [passwordMessage, setPasswordMessage] = useState('')
@@ -63,22 +68,29 @@ function AccountPage() {
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
   const [deletingAccount, setDeletingAccount] = useState(false)
   const [deleteMessage, setDeleteMessage] = useState('')
+  const [rescheduleBooking, setRescheduleBooking] = useState<Appointment | null>(null)
+  const [rescheduleSlots, setRescheduleSlots] = useState<Slot[]>([])
+  const [rescheduleSlotId, setRescheduleSlotId] = useState('')
+  const [rescheduleLoading, setRescheduleLoading] = useState(false)
+  const [rescheduleError, setRescheduleError] = useState('')
   const [unreadSupport, setUnreadSupport] = useState({ messages: 0, todos: 0 })
   const [supportNotificationRefresh, setSupportNotificationRefresh] = useState(0)
   const [refresh, setRefresh] = useState(0)
   const bundleReconciliationStarted = useRef(false)
   const [openedAt] = useState(() => Date.now())
   const [activeView, setActiveView] = useState<AccountView>(() => {
-    const requestedView = new URLSearchParams(location.search).get('view') as AccountView | null
-    return requestedView && accountViews.includes(requestedView) ? requestedView : 'home'
+    const requestedView = new URLSearchParams(location.search).get('view')
+    if (requestedView === 'bookings') return 'history'
+    return requestedView && accountViews.includes(requestedView as AccountView) ? requestedView as AccountView : 'home'
   })
+  const [sessionsTab, setSessionsTab] = useState<'upcoming' | 'past'>(() => new URLSearchParams(location.search).get('tab') === 'past' ? 'past' : 'upcoming')
   const userId = session?.user.id
   const userEmail = session?.user.email || ''
   useEffect(() => {
     if (!userId) return
     let active = true
     const client = getSupabase()
-    void Promise.all([client.from('appointments').select('*').eq('user_id', userId).order('starts_at', { ascending: false }), client.from('listeners').select('id,name'), client.rpc('is_admin'), client.from('profiles').select('first_name,last_name,preferred_name,date_of_birth,mobile,contact_email,gender').eq('id', userId).maybeSingle(), client.from('listener_accounts').select('listener_id').eq('user_id', userId).maybeSingle()])
+    void Promise.all([client.from('appointments').select('*').eq('user_id', userId).order('starts_at', { ascending: false }), client.from('listeners').select('id,name'), client.rpc('is_admin'), client.from('profiles').select('first_name,last_name,preferred_name,date_of_birth,mobile,contact_email,gender,profile_image_path').eq('id', userId).maybeSingle(), client.from('listener_accounts').select('listener_id').eq('user_id', userId).maybeSingle()])
       .then(([bookings, people, role, profileResult, listenerResult]) => {
         if (!active) return
         if (bookings.error || people.error || role.error || profileResult.error || listenerResult.error) throw bookings.error || people.error || role.error || profileResult.error || listenerResult.error
@@ -98,6 +110,7 @@ function AccountPage() {
     })
     return () => { active = false }
   }, [userId, userEmail, refresh, bundleResult])
+  useEffect(() => () => { if (profilePhotoPreview) URL.revokeObjectURL(profilePhotoPreview) }, [profilePhotoPreview])
   useEffect(() => {
     if (!userId) return
     let active = true
@@ -225,6 +238,41 @@ function AccountPage() {
       setCancellingId('')
     }
   }
+  const openReschedule = async (booking: Appointment) => {
+    setRescheduleBooking(booking)
+    setRescheduleSlots([])
+    setRescheduleSlotId('')
+    setRescheduleError('')
+    setRescheduleLoading(true)
+    try {
+      const { data, error } = await getSupabase().rpc('available_slots')
+      if (error) throw error
+      const duration = Date.parse(booking.ends_at) - Date.parse(booking.starts_at)
+      const options = (data as Slot[]).filter(slot => slot.listener_id === booking.listener_id && slot.id !== booking.slot_id && Date.parse(slot.ends_at) - Date.parse(slot.starts_at) >= duration)
+      setRescheduleSlots(options)
+      if (options[0]) setRescheduleSlotId(options[0].id)
+    } catch (error) {
+      setRescheduleError(errorMessage(error))
+    } finally {
+      setRescheduleLoading(false)
+    }
+  }
+  const submitReschedule = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    if (!rescheduleBooking || !rescheduleSlotId) return
+    setRescheduleLoading(true)
+    setRescheduleError('')
+    try {
+      const result = await rescheduleAppointment(rescheduleBooking.id, rescheduleSlotId)
+      setAppointments(current => current.map(booking => booking.id === result.booking.id ? result.booking : booking))
+      setRescheduleBooking(null)
+      setMessage(result.email_sent ? 'Your appointment was rescheduled and your listener was notified by email.' : 'Your appointment was rescheduled, but the listener email could not be sent. Please contact support so we can follow up.')
+    } catch (error) {
+      setRescheduleError(errorMessage(error))
+    } finally {
+      setRescheduleLoading(false)
+    }
+  }
   const customerBookings = appointments.filter(booking => booking.user_id === userId)
   const pendingBookings = customerBookings.filter(booking => booking.status === 'pending')
   const upcomingBookings = customerBookings.filter(booking => booking.status === 'confirmed' && Date.parse(booking.starts_at) >= openedAt).sort((a, b) => Date.parse(a.starts_at) - Date.parse(b.starts_at))
@@ -235,24 +283,71 @@ function AccountPage() {
   const bookingCard = (booking: Appointment, featured = false, showPayment = true) => {
     const startsAt = new Date(booking.starts_at)
     const duration = Math.round((Date.parse(booking.ends_at) - Date.parse(booking.starts_at)) / 60000)
+    const canReschedule = booking.status === 'confirmed' && Date.parse(booking.starts_at) > openedAt
     return <article key={booking.id} className={`account-card ${featured ? 'featured' : ''} ${booking.status}`}>
       <div className="account-card-top"><span className={`account-status ${booking.status}`}>{booking.status === 'confirmed' ? <CheckCircle2 /> : booking.status === 'pending' ? <Clock3 /> : <XCircle />}{booking.status}</span>{booking.status === 'pending' && <PendingCountdown expiresAt={holdDeadline(booking.created_at, booking.checkout_expires_at)} onExpired={() => void cancelBooking(booking.id, false)} />}</div>
       <div className="account-card-date"><strong>{startsAt.toLocaleDateString('en-AU', { day: 'numeric' })}</strong><span>{startsAt.toLocaleDateString('en-AU', { month: 'short' })}</span></div>
       <div className="account-card-content"><span className="account-card-label">{featured ? 'Your next session' : booking.status === 'pending' ? 'Time held for you' : 'Previous booking'}</span><h3>{names[booking.listener_id] || 'Your listener'}</h3>
         <div className="account-card-meta"><span><CalendarDays />{startsAt.toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</span><span><Clock3 />{startsAt.toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })} · {duration === 120 ? '2 hours' : `${duration} minutes`}</span><span><HeartHandshake />{booking.rate_code === 'intro' ? 'Introductory chat' : booking.rate_code === 'extended' ? 'Extended support session' : 'Support session'}</span></div>
-        {(showPayment || booking.status === 'pending') && <div className="account-card-footer">{showPayment && <strong>{booking.paid_with_credit ? 'Session credit used' : `${money(booking.amount_cents)} AUD`}</strong>}{booking.status === 'pending' && <div className="account-card-actions"><button disabled={busy || Boolean(cancellingId)} onClick={() => resume(booking.slot_id)}>{busy ? 'Opening Stripe…' : <>Continue payment <ArrowRight size={16} /></>}</button><button type="button" className="account-cancel" disabled={busy || Boolean(cancellingId)} onClick={() => cancelBooking(booking.id)}>{cancellingId === booking.id ? 'Cancelling…' : 'Cancel booking'}</button></div>}</div>}
+        {(showPayment || booking.status === 'pending' || canReschedule) && <div className="account-card-footer">{showPayment && <strong>{booking.paid_with_credit ? 'Session credit used' : `${money(booking.amount_cents)} AUD`}</strong>}<div className="account-card-actions">{booking.status === 'pending' && <><button disabled={busy || Boolean(cancellingId)} onClick={() => resume(booking.slot_id)}>{busy ? 'Opening Stripe…' : <>Continue payment <ArrowRight size={16} /></>}</button><button type="button" className="account-cancel" disabled={busy || Boolean(cancellingId)} onClick={() => cancelBooking(booking.id)}>{cancellingId === booking.id ? 'Cancelling…' : 'Cancel booking'}</button></>}{canReschedule && <button type="button" className="account-reschedule" onClick={() => void openReschedule(booking)}><CalendarDays />Reschedule</button>}</div></div>}
       </div>
     </article>
   }
+  const compactAppointmentRow = (booking: Appointment, upcoming = false) => {
+    const startsAt = new Date(booking.starts_at)
+    const duration = Math.round((Date.parse(booking.ends_at) - Date.parse(booking.starts_at)) / 60000)
+    const sessionName = booking.rate_code === 'intro' ? 'Introductory chat' : booking.rate_code === 'extended' ? 'Extended support session' : 'Support session'
+    return <article className="account-history-row" key={booking.id}>
+      <time dateTime={booking.starts_at}><strong>{startsAt.toLocaleDateString('en-AU', { day: 'numeric' })}</strong><span>{startsAt.toLocaleDateString('en-AU', { month: 'short', year: 'numeric' })}</span></time>
+      <div className="account-history-main"><span>{sessionName}</span><h3>{names[booking.listener_id] || 'Your listener'}</h3><p>{startsAt.toLocaleDateString('en-AU', { weekday: 'long' })} at {startsAt.toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })}</p></div>
+      <div className="account-history-payment"><span className={`account-status ${booking.status}`}>{booking.status === 'confirmed' ? <CheckCircle2 /> : <XCircle />}{upcoming ? 'Confirmed' : booking.status === 'confirmed' ? 'Completed' : 'Expired'}</span><strong>{duration === 120 ? '2 hours' : `${duration} minutes`}</strong>{upcoming && <button type="button" className="account-history-reschedule" onClick={() => void openReschedule(booking)}><CalendarDays />Reschedule</button>}</div>
+    </article>
+  }
   const updateProfile = (field: keyof CustomerProfile, value: string) => setProfile(current => ({ ...current, [field]: value }))
+  const chooseProfilePhoto = (file?: File) => {
+    if (!file) return
+    const allowed = ['image/jpeg', 'image/png', 'image/webp']
+    if (!allowed.includes(file.type)) { setProfilePhotoError('Choose a JPG, PNG or WebP image.'); return }
+    if (file.size > 5 * 1024 * 1024) { setProfilePhotoError('The photo must be 5 MB or smaller.'); return }
+    if (profilePhotoPreview) URL.revokeObjectURL(profilePhotoPreview)
+    setProfilePhoto(file)
+    setProfilePhotoPreview(URL.createObjectURL(file))
+    setRemoveProfilePhoto(false)
+    setProfilePhotoError('')
+  }
+  const clearProfilePhoto = () => {
+    if (profilePhotoPreview) URL.revokeObjectURL(profilePhotoPreview)
+    setProfilePhoto(null)
+    setProfilePhotoPreview('')
+    setRemoveProfilePhoto(true)
+    setProfilePhotoError('')
+    if (profilePhotoInput.current) profilePhotoInput.current.value = ''
+  }
   const saveProfile = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault(); setSavingProfile(true); setMessage('')
+    const currentImagePath = profile.profile_image_path
+    let nextImagePath = removeProfilePhoto ? '' : currentImagePath
+    let uploadedPath = ''
     try {
-      const { error } = await getSupabase().from('profiles').update({ first_name: profile.first_name.trim(), last_name: profile.last_name.trim(), preferred_name: profile.preferred_name.trim(), date_of_birth: profile.date_of_birth, mobile: profile.mobile.trim(), gender: profile.gender || null }).eq('id', userId)
+      const client = getSupabase()
+      if (profilePhoto && userId) {
+        const extensions: Record<string, string> = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }
+        uploadedPath = `${userId}/${crypto.randomUUID()}.${extensions[profilePhoto.type]}`
+        const upload = await client.storage.from('customer-profile-images').upload(uploadedPath, profilePhoto, { contentType: profilePhoto.type, cacheControl: '31536000' })
+        if (upload.error) throw upload.error
+        nextImagePath = uploadedPath
+      }
+      const { error } = await client.from('profiles').update({ first_name: profile.first_name.trim(), last_name: profile.last_name.trim(), preferred_name: profile.preferred_name.trim(), date_of_birth: profile.date_of_birth, mobile: profile.mobile.trim(), gender: profile.gender || null, profile_image_path: nextImagePath || null }).eq('id', userId)
       if (error) throw error
-      setProfile(current => ({ ...current, first_name: current.first_name.trim(), last_name: current.last_name.trim(), preferred_name: current.preferred_name.trim() }))
+      if (currentImagePath && currentImagePath !== nextImagePath) await client.storage.from('customer-profile-images').remove([currentImagePath])
+      setProfile(current => ({ ...current, first_name: current.first_name.trim(), last_name: current.last_name.trim(), preferred_name: current.preferred_name.trim(), profile_image_path: nextImagePath }))
+      setProfilePhoto(null); setProfilePhotoPreview(''); setRemoveProfilePhoto(false); setProfilePhotoError('')
+      window.dispatchEvent(new CustomEvent('profile-image-updated', { detail: nextImagePath }))
       setMessage('Your profile details have been updated.')
-    } catch (error) { setMessage(errorMessage(error)) } finally { setSavingProfile(false) }
+    } catch (error) {
+      if (uploadedPath) await getSupabase().storage.from('customer-profile-images').remove([uploadedPath])
+      setProfilePhotoError(errorMessage(error)); setMessage(errorMessage(error))
+    } finally { setSavingProfile(false) }
   }
   const changePassword = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -320,45 +415,46 @@ function AccountPage() {
   }
   const navItems = [
     { id: 'home' as const, label: 'Home', icon: Home },
-    { id: 'bookings' as const, label: 'Appointments', icon: CalendarDays },
+    { id: 'history' as const, label: 'Appointments', icon: CalendarDays },
     { id: 'messages' as const, label: 'Messages', icon: MessageCircle },
     { id: 'todos' as const, label: 'To-dos', icon: ListChecks },
     { id: 'between' as const, label: 'Between sessions', icon: BookOpen },
-    { id: 'history' as const, label: 'Past sessions', icon: History },
     { id: 'profile' as const, label: 'Profile', icon: UserRound },
   ]
+  const visibleProfilePhoto = profilePhotoPreview || (!removeProfilePhoto ? customerProfileImageUrl(profile.profile_image_path) : '')
   const profileForm = () => <form className="account-settings-form account-profile-form" onSubmit={saveProfile}>
+    <section className="account-profile-photo"><div className="account-profile-photo-preview">{visibleProfilePhoto ? <img src={visibleProfilePhoto} alt="Profile preview" /> : <UserRound />}</div><div><span>Profile picture <small>Optional</small></span><small>JPG, PNG or WebP · Maximum 5 MB</small><div><button type="button" onClick={() => profilePhotoInput.current?.click()}><ImagePlus />{visibleProfilePhoto ? 'Replace picture' : 'Choose picture'}</button>{visibleProfilePhoto && <button type="button" className="remove" onClick={clearProfilePhoto}>Remove</button>}</div></div><input ref={profilePhotoInput} type="file" accept="image/jpeg,image/png,image/webp" onChange={event => chooseProfilePhoto(event.target.files?.[0])} /></section>
+    {profilePhotoError && <p className="account-password-message" role="alert">{profilePhotoError}</p>}
     <div className="account-settings-row"><label><span>First name</span><input value={profile.first_name} onChange={event => updateProfile('first_name', event.target.value)} maxLength={100} autoComplete="given-name" required /></label><label><span>Last name</span><input value={profile.last_name} onChange={event => updateProfile('last_name', event.target.value)} maxLength={100} autoComplete="family-name" required /></label></div>
-    <div className="account-settings-row"><label><span>Preferred name <small>Optional</small></span><input value={profile.preferred_name} onChange={event => updateProfile('preferred_name', event.target.value)} maxLength={100} autoComplete="nickname" /></label><label><span>Account email</span><input type="email" value={profile.contact_email || session.user.email || ''} readOnly aria-describedby="account-email-help" /></label></div>
+    <div className="account-settings-row"><label><span>Preferred name <small>Optional</small></span><input value={profile.preferred_name} onChange={event => updateProfile('preferred_name', event.target.value)} maxLength={100} autoComplete="nickname" /></label><label><span>Account email</span><input type="email" value={profile.contact_email || session.user.email || ''} readOnly /></label></div>
     <div className="account-settings-row"><label><span>Mobile number</span><input type="tel" inputMode="numeric" value={profile.mobile} onChange={event => updateProfile('mobile', event.target.value.replace(/\D/g, '').slice(0, 10))} pattern="04[0-9]{8}" title="Enter 10 digits starting with 04" autoComplete="tel" required /></label><label><span>Date of birth</span><input type="date" value={profile.date_of_birth} onChange={event => updateProfile('date_of_birth', event.target.value)} max={new Date().toISOString().slice(0, 10)} autoComplete="bday" required /></label></div>
     <label><span>Gender <small>Optional</small></span><select value={profile.gender} onChange={event => updateProfile('gender', event.target.value)}><option value="">Prefer not to say</option><option value="male">Male</option><option value="female">Female</option><option value="other">Other</option></select></label>
-    <small id="account-email-help" className="account-field-help">Your verified sign-in email cannot be changed here.</small>
     <div className="account-settings-actions"><button type="button" className="account-delete-link" onClick={() => { setDeleteMessage(''); setDeleteModalOpen(true) }}><Trash2 />Delete account</button><div className="account-profile-actions"><div className="account-password-action">{passwordSuccess && <span className="account-password-success" role="status">{passwordSuccess}</span>}<button type="button" className="account-change-password" onClick={() => { setMessage(''); setPasswordMessage(''); setPasswordSuccess(''); setPasswordModalOpen(true) }}><KeyRound />Change password</button></div><button type="submit" className="account-save-profile" disabled={savingProfile}><Save />{savingProfile ? 'Saving…' : 'Save changes'}</button></div></div>
   </form>
   const noBookings = <section className="account-empty"><div><HeartHandshake /></div><h2>No upcoming bookings</h2><p>You do not have any sessions scheduled. When you’re ready, complete a new check-in and choose a listener and time that works for you.</p><a href="/get-matched?fresh=1">Start a new check-in <ArrowRight /></a></section>
   const creditCard = (className = '') => <div className={`account-rail-credit ${className}`.trim()}><div className="account-rail-credit-label"><Layers3 /><span>Standard-session credits</span></div><strong className={creditAnimation ? `account-credit-value ${creditAnimation.phase}` : 'account-credit-value'} aria-label={`${credits.standard_credits} session credits`}><b>{creditAnimation?.phase === 'add' ? creditAnimation.from : credits.standard_credits}</b>{creditAnimation && <em aria-hidden="true">+{creditAnimation.added}</em>}</strong><p>50-minute standard sessions</p><div className="account-credit-actions">{credits.standard_credits > 0 && <a href={repeatMatchHref}>Book a session <ArrowRight /></a>}<a className="account-credit-topup" href="/pricing">Top up credits</a></div></div>
   return <main className="account-page">
     <div className={`account-dashboard-grid ${activeView === 'home' ? '' : 'account-dashboard-grid-wide'}`}>
-      <div className="account-sidebar-column"><aside className="account-sidebar" aria-label="Account navigation"><nav>{navItems.map(item => { const Icon = item.icon; const count = item.id === 'messages' ? unreadSupport.messages : item.id === 'todos' ? unreadSupport.todos : 0; return <button key={item.id} type="button" className={activeView === item.id ? 'active' : ''} onClick={() => changeView(item.id)}><Icon /><span>{item.label}</span>{count > 0 && <span className="account-nav-badge" aria-label={`${count} unread ${item.label.toLowerCase()}`}>{count > 99 ? '99+' : count}</span>}</button> })}</nav>{(listenerAccount || admin === userId) && <a href="/listener"><ListenerMark />Listener dashboard</a>}{admin === userId && <a href="/admin"><ShieldCheck />Admin dashboard</a>}</aside></div>
+      <div className="account-sidebar-column"><aside className="account-sidebar" aria-label="Account navigation"><nav>{navItems.map(item => { const Icon = item.icon; const count = item.id === 'messages' ? unreadSupport.messages : item.id === 'todos' ? unreadSupport.todos : 0; return <button key={item.id} type="button" className={activeView === item.id ? 'active' : ''} onClick={() => changeView(item.id)}><Icon /><span>{item.label}</span>{count > 0 && <span className="account-nav-badge" aria-label={`${count} unread ${item.label.toLowerCase()}`}>{count > 99 ? '99+' : count}</span>}</button> })}</nav>{listenerAccount && admin !== userId && <a href="/listener"><ListenerMark />Listener dashboard</a>}{admin === userId && <a href="/admin"><ShieldCheck />Admin dashboard</a>}</aside></div>
       <div className="account-dashboard-main">
         {new URLSearchParams(location.search).has('checkout') && <div className="account-checkout-return" role="status"><Clock3 /><div><h2>Your payment wasn’t completed</h2><p>Your details are saved and the selected time remains held until the countdown ends.</p></div></div>}
         {message && <p className="account-message" role="status">{message}</p>}
         {activeView === 'home' && <>
           <section className="account-listener-overview"><div><span className="account-card-label">My listener</span><h2>{primaryListener ? names[primaryListener.listener_id] || 'Your listener' : 'Find someone who feels right for you'}</h2><p>{primaryListener ? 'Your chosen listener will support your upcoming conversation.' : 'Complete the matching questions to receive a listener recommendation based on what you want to talk about.'}</p></div>{creditCard('account-listener-credit')}</section>
           {pendingBookings.length > 0 && <section className="account-section"><div className="account-section-heading"><div><span>Action needed</span><h2>Complete your booking</h2></div><p>Your appointment is held for 15 minutes while you finish payment.</p></div><div className="account-list">{pendingBookings.map(booking => bookingCard(booking))}</div></section>}
-          <section className="account-section account-home-upcoming"><div className="account-section-heading"><div><span>Coming up</span><h2>Upcoming booking</h2></div></div>{upcomingBookings.length ? <div className="account-list">{upcomingBookings.slice(0, 1).map(booking => bookingCard(booking, true))}</div> : noBookings}</section>
+          <section className="account-section account-home-upcoming"><div className="account-section-heading"><div><h2>Upcoming booking</h2></div></div>{upcomingBookings.length ? <div className="account-list">{upcomingBookings.slice(0, 1).map(booking => bookingCard(booking, true))}</div> : noBookings}</section>
         </>}
-        {activeView === 'bookings' && <section className="account-section account-section-first"><div className="account-section-heading"><div><span>Your schedule</span><h2>Appointments</h2></div></div>{pendingBookings.length || upcomingBookings.length ? <div className="account-list">{[...pendingBookings, ...upcomingBookings].map((booking, index) => bookingCard(booking, booking.status === 'confirmed' && index === pendingBookings.length))}</div> : noBookings}</section>}
         {activeView === 'messages' && <SupportWorkspace role="customer" mode="messages" currentUserId={session.user.id} contacts={supportContacts} onUnreadChange={() => setSupportNotificationRefresh(value => value + 1)} />}
         {activeView === 'todos' && <SupportWorkspace role="customer" mode="todos" currentUserId={session.user.id} contacts={supportContacts} onUnreadChange={() => setSupportNotificationRefresh(value => value + 1)} />}
         {activeView === 'between' && <section className="account-simple-panel account-between-page"><header><div className="account-feature-icon"><BookOpen /></div><div><span className="account-card-label">Continued support</span><h2>Between sessions</h2><p>Keep helpful resources from your listener together in one place.</p></div></header><div className="account-between-empty"><div className="account-between-empty-icon"><BookOpen /></div><div><strong>No resources have been shared yet</strong><span>Reflections, worksheets and useful links will appear here when your listener sends them.</span></div><button type="button" onClick={() => changeView('messages')}>View messages <ArrowRight /></button></div></section>}
-        {activeView === 'history' && <section className="account-section account-section-first account-history"><div className="account-section-heading"><div><span>Your records</span><h2>Past sessions</h2></div><p>Previous and expired booking records are kept here.</p></div>{historyBookings.length ? <div className="account-list">{historyBookings.map(booking => bookingCard(booking, false, false))}</div> : noBookings}</section>}
+        {activeView === 'history' && <section className="account-section account-section-first account-sessions"><div className="account-section-heading"><div><span>Your schedule</span><h2>Appointments</h2></div><a className="account-book-session" href={repeatMatchHref}>Book a session <ArrowRight /></a></div><div className="account-session-tabs" role="tablist" aria-label="Appointment records"><button type="button" role="tab" aria-selected={sessionsTab === 'upcoming'} className={sessionsTab === 'upcoming' ? 'active' : ''} onClick={() => setSessionsTab('upcoming')}>Upcoming <span>{pendingBookings.length + upcomingBookings.length}</span></button><button type="button" role="tab" aria-selected={sessionsTab === 'past'} className={sessionsTab === 'past' ? 'active' : ''} onClick={() => setSessionsTab('past')}>Past <span>{historyBookings.length}</span></button></div>{sessionsTab === 'upcoming' ? pendingBookings.length || upcomingBookings.length ? <>{pendingBookings.length > 0 && <div className="account-list account-pending-list">{pendingBookings.map(booking => bookingCard(booking))}</div>}{upcomingBookings.length > 0 && <div className="account-history-list">{upcomingBookings.map(booking => compactAppointmentRow(booking, true))}</div>}</> : noBookings : historyBookings.length ? <div className="account-history-list">{historyBookings.map(booking => compactAppointmentRow(booking))}</div> : <section className="account-empty account-history-empty"><div><CalendarDays /></div><h2>No past sessions yet</h2><p>Your completed and expired sessions will appear here.</p></section>}</section>}
         {activeView === 'profile' && <section className="account-simple-panel"><span className="account-card-label">Your details</span><h2>My information</h2>{profileForm()}</section>}
       </div>
       {activeView === 'home' && <aside className="account-dashboard-rail">{creditCard()}<section className="account-assistance"><div className="account-help-icon"><HelpCircle /></div><h2>Need assistance?</h2><p>Have a question about choosing a listener, your booking, or payment? We’re here to help.</p><a href="/contact">Contact us <ArrowRight /></a><hr /><span>Listen offers peer support</span><small>For immediate danger or a crisis, call 000 or Lifeline on 13 11 14.</small></section></aside>}
     </div>
     {passwordModalOpen && <div className="account-password-backdrop" onMouseDown={event => { if (event.target === event.currentTarget && !changingPassword) { setPasswordModalOpen(false); setPasswordMessage('') } }}><section className="account-password-modal" role="dialog" aria-modal="true" aria-labelledby="account-password-title"><header><div><span className="account-card-label">Account security</span><h2 id="account-password-title">Change password</h2></div><button type="button" aria-label="Close password dialog" disabled={changingPassword} onClick={() => { setPasswordModalOpen(false); setPasswordMessage('') }}><X /></button></header><form onSubmit={changePassword}><label><span>Current password</span><input type="password" name="current_password" autoComplete="current-password" required autoFocus /></label><label><span>New password</span><input type="password" name="new_password" autoComplete="new-password" minLength={8} required /></label><label><span>Confirm new password</span><input type="password" name="confirm_password" autoComplete="new-password" minLength={8} required /></label><small>Use at least 8 characters.</small>{passwordMessage && <p className="account-password-message" role="alert">{passwordMessage}</p>}<div><button type="button" className="account-password-cancel" disabled={changingPassword} onClick={() => { setPasswordModalOpen(false); setPasswordMessage('') }}>Cancel</button><button type="submit" className="account-password-submit" disabled={changingPassword}>{changingPassword ? 'Changing…' : 'Change password'}</button></div></form></section></div>}
     {deleteModalOpen && <div className="account-password-backdrop" onMouseDown={event => { if (event.target === event.currentTarget && !deletingAccount) { setDeleteModalOpen(false); setDeleteMessage('') } }}><section className="account-password-modal account-delete-modal" role="dialog" aria-modal="true" aria-labelledby="account-delete-title"><header><div><span className="account-card-label">Permanent action</span><h2 id="account-delete-title">Delete your account?</h2></div><button type="button" aria-label="Close delete account dialog" disabled={deletingAccount} onClick={() => { setDeleteModalOpen(false); setDeleteMessage('') }}><X /></button></header><form onSubmit={deleteAccount}><p>This permanently removes your profile, appointments, messages, to-dos and unused credits. This action cannot be undone.</p><label><span>Type DELETE to confirm</span><input name="delete_confirmation" autoComplete="off" spellCheck={false} required autoFocus /></label>{deleteMessage && <p className="account-password-message" role="alert">{deleteMessage}</p>}<div><button type="button" className="account-password-cancel" disabled={deletingAccount} onClick={() => { setDeleteModalOpen(false); setDeleteMessage('') }}>Cancel</button><button type="submit" className="account-delete-confirm" disabled={deletingAccount}>{deletingAccount ? 'Deleting…' : 'Delete account'}</button></div></form></section></div>}
+    {rescheduleBooking && <div className="account-password-backdrop" onMouseDown={event => { if (event.target === event.currentTarget && !rescheduleLoading) setRescheduleBooking(null) }}><section className="account-password-modal account-reschedule-modal" role="dialog" aria-modal="true" aria-labelledby="account-reschedule-title"><header><div><span className="account-card-label">Change appointment</span><h2 id="account-reschedule-title">Choose a new time</h2></div><button type="button" aria-label="Close reschedule dialog" disabled={rescheduleLoading} onClick={() => setRescheduleBooking(null)}><X /></button></header><form onSubmit={submitReschedule}><div className="account-reschedule-current"><span>Current appointment</span><strong>{new Date(rescheduleBooking.starts_at).toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long' })} at {new Date(rescheduleBooking.starts_at).toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })}</strong></div>{rescheduleLoading && !rescheduleSlots.length ? <p role="status">Loading available times…</p> : rescheduleSlots.length ? <fieldset><legend>Available times with {names[rescheduleBooking.listener_id] || 'your listener'}</legend><div className="account-reschedule-slots">{rescheduleSlots.map(slot => { const start = new Date(slot.starts_at); return <label className={rescheduleSlotId === slot.id ? 'selected' : ''} key={slot.id}><input type="radio" name="new_slot" value={slot.id} checked={rescheduleSlotId === slot.id} onChange={() => setRescheduleSlotId(slot.id)} /><span><strong>{start.toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short' })}</strong><small>{start.toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })}</small></span></label> })}</div></fieldset> : !rescheduleLoading && <p>No alternative times are currently available with this listener.</p>}{rescheduleError && <p className="account-password-message" role="alert">{rescheduleError}</p>}<p className="account-reschedule-note">Your listener will receive an email with the previous and updated appointment times.</p><div><button type="button" className="account-password-cancel" disabled={rescheduleLoading} onClick={() => setRescheduleBooking(null)}>Keep current time</button><button type="submit" className="account-password-submit" disabled={rescheduleLoading || !rescheduleSlotId}>{rescheduleLoading ? 'Updating…' : 'Confirm new time'}</button></div></form></section></div>}
   </main>
 }
 export default AccountPage

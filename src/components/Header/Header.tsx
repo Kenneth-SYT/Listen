@@ -4,14 +4,14 @@ import logoImage from '../../assets/images/LMH_sideways-transparent.png'
 import Navigation from '../Navigation/Navigation'
 import './Header.css'
 import { useSession } from '../../lib/useSession'
-import { getSupabase } from '../../lib/supabase'
+import { customerProfileImageUrl, getSupabase } from '../../lib/supabase'
 
 function Header() {
   const { session } = useSession()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const [workspace, setWorkspace] = useState<'admin' | 'listener' | null>(null)
-  const [identity, setIdentity] = useState<{ first_name?: string; last_name?: string; preferred_name?: string } | null>(null)
+  const [identity, setIdentity] = useState<{ first_name?: string; last_name?: string; preferred_name?: string; profile_image_path?: string | null } | null>(null)
   const accountMenu = useRef<HTMLDetailsElement>(null)
   useEffect(() => {
     const updateShadow = () => setScrolled(window.scrollY > 4)
@@ -25,10 +25,15 @@ function Header() {
     void Promise.all([
       getSupabase().rpc('is_admin'),
       getSupabase().from('listener_accounts').select('listener_id').eq('user_id', session.user.id).maybeSingle(),
-      getSupabase().from('profiles').select('first_name,last_name,preferred_name').eq('id', session.user.id).maybeSingle(),
+      getSupabase().from('profiles').select('first_name,last_name,preferred_name,profile_image_path').eq('id', session.user.id).maybeSingle(),
     ]).then(([admin, listener, profile]) => { if (active) { setWorkspace(admin.data ? 'admin' : listener.data ? 'listener' : null); setIdentity(profile.data) } })
     return () => { active = false }
   }, [session?.user.id])
+  useEffect(() => {
+    const updateImage = (event: Event) => setIdentity(current => current ? { ...current, profile_image_path: (event as CustomEvent<string>).detail } : current)
+    window.addEventListener('profile-image-updated', updateImage)
+    return () => window.removeEventListener('profile-image-updated', updateImage)
+  }, [])
   useEffect(() => {
     const closeMenu = (event: PointerEvent) => {
       if (accountMenu.current?.open && !accountMenu.current.contains(event.target as Node)) accountMenu.current.open = false
@@ -42,6 +47,7 @@ function Header() {
   }, [])
   const fullName: string = identity?.preferred_name || [identity?.first_name, identity?.last_name].filter(Boolean).join(' ') || String(session?.user.user_metadata?.full_name || '') || session?.user.email?.split('@')[0] || 'My account'
   const initials = fullName.split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]).join('').toUpperCase()
+  const profileImage = customerProfileImageUrl(identity?.profile_image_path)
   const signOut = async () => {
     const { error } = await getSupabase().auth.signOut()
     if (!error) window.location.assign('/')
@@ -70,23 +76,23 @@ function Header() {
           {session ? <>
             {workspace && <a className="login-button workspace-button" href={workspace === 'admin' ? '/admin' : '/listener'}>{workspace === 'admin' ? 'Admin' : 'Listener dashboard'}</a>}
             <details className="header-account-menu" ref={accountMenu}>
-              <summary aria-label={`Open account menu for ${fullName}`}><span>{initials}</span><ChevronDown aria-hidden="true" /></summary>
+              <summary aria-label={`Open account menu for ${fullName}`}><span>{profileImage ? <img src={profileImage} alt="" /> : initials}</span><ChevronDown aria-hidden="true" /></summary>
               <div className="header-account-dropdown">
                 <header><strong>{fullName}</strong><small>{session.user.email}</small></header>
-                <nav aria-label="Account menu"><a href="/account?view=profile"><UserRound />Profile settings</a><a href="/account?view=bookings"><CalendarDays />Appointments</a><a href="/account?view=messages"><MessageCircle />Messages</a></nav>
+                <nav aria-label="Account menu"><a href="/account?view=profile"><UserRound />Profile settings</a><a href="/account?view=history"><CalendarDays />Appointments</a><a href="/account?view=messages"><MessageCircle />Messages</a></nav>
                 <button type="button" onClick={() => void signOut()}><LogOut />Sign out</button>
               </div>
             </details>
             <section className="mobile-account-panel" aria-label="Account shortcuts">
               <header>
-                <span className="mobile-account-avatar" aria-hidden="true">{initials}</span>
+                <span className="mobile-account-avatar" aria-hidden="true">{profileImage ? <img src={profileImage} alt="" /> : initials}</span>
                 <div><strong>{fullName}</strong><a href="/account?view=profile">View profile</a></div>
                 <button type="button" onClick={() => void signOut()}><LogOut aria-hidden="true" />Sign out</button>
               </header>
               <nav aria-label="Mobile account menu">
                 {workspace && <a href={workspace === 'admin' ? '/admin' : '/listener'}><UserRound aria-hidden="true" /><span>{workspace === 'admin' ? 'Admin dashboard' : 'Listener dashboard'}</span></a>}
                 <a href="/account?view=profile"><UserRound aria-hidden="true" /><span>Profile settings</span></a>
-                <a href="/account?view=bookings"><CalendarDays aria-hidden="true" /><span>Appointments</span></a>
+                <a href="/account?view=history"><CalendarDays aria-hidden="true" /><span>Appointments</span></a>
                 <a href="/account?view=messages"><MessageCircle aria-hidden="true" /><span>Messages</span></a>
               </nav>
             </section>
