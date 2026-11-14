@@ -2,20 +2,10 @@ import { useEffect, useState } from 'react'
 import { getSupabase, testimonialImageUrl, type Testimonial } from '../../lib/supabase'
 import './testimonial-v2.css'
 
-// Keep the current illustrative content available while the database migration
-// is being deployed. A successful empty database response intentionally shows
-// the empty state instead of restoring these examples.
-const examples: Testimonial[] = [
-  { id: 'example-1', quote: 'It helped to have a little space to talk through everything on my mind.', display_name: 'Example student story', context: 'Illustrative quote · not a real review', sort_order: 10 },
-  { id: 'example-2', quote: 'I liked being able to start at my own pace, without needing all the right words.', display_name: 'Example student story', context: 'Illustrative quote · not a real review', sort_order: 20 },
-  { id: 'example-3', quote: 'Having someone listen made a busy week feel a little less lonely.', display_name: 'Example student story', context: 'Illustrative quote · not a real review', sort_order: 30 },
-  { id: 'example-4', quote: 'Talking things through helped me think about what I wanted to do next.', display_name: 'Example student story', context: 'Illustrative quote · not a real review', sort_order: 40 },
-]
-
 const initials = (name: string) => name.split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]).join('').toUpperCase() || 'S'
 
 export default function TestimonialsColumn() {
-  const [reviews, setReviews] = useState<Testimonial[]>(examples)
+  const [reviews, setReviews] = useState<Testimonial[]>([])
 
   useEffect(() => {
     let active = true
@@ -23,7 +13,7 @@ export default function TestimonialsColumn() {
       try {
         const { data, error } = await getSupabase().rpc('public_testimonials')
         if (active && !error) setReviews((data || []) as Testimonial[])
-      } catch { /* The illustrative fallback remains visible. */ }
+      } catch { /* Keep the empty state visible when reviews cannot be loaded. */ }
     }
     void load()
     return () => { active = false }

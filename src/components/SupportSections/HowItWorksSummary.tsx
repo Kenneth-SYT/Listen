@@ -1,7 +1,7 @@
 import './HowItWorksSummary.css'
 
 const steps = [
-  { title: 'Check in', text: 'Answer a few questions about how you’re feeling.' },
+  { title: 'Questionnaire', text: 'Answer a few questions about how you’re feeling.' },
   { title: 'Find your listener', text: 'Get matched with someone who fits your needs.' },
   { title: 'Start talking', text: 'Choose a time and talk at your own pace.' },
 ]

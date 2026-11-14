@@ -161,10 +161,10 @@ function MatchPage() {
   const canContinue = isLong
     ? step === 0 ? answers.adult === true
       : step === 1 ? true
-        : step === 2 ? !!answers.listenerGender && !!answers.long.preferenceImportance && answers.long.sharedExperiences.length > 0 && !!answers.long.matchingPriority
-          : step === 3 ? answers.topics.length > 0
-            : step === 4 ? true
-              : step === 5 ? k10Score(answers) !== null && answers.long.impact !== null
+        : step === 2 ? answers.topics.length > 0
+          : step === 3 ? true
+            : step === 4 ? k10Score(answers) !== null && answers.long.impact !== null
+              : step === 5 ? !!answers.listenerGender && !!answers.long.preferenceImportance && answers.long.sharedExperiences.length > 0 && !!answers.long.matchingPriority
                 : true
     : step === 0 ? answers.adult === true
       : step === 1 ? !!answers.listenerGender
@@ -279,22 +279,22 @@ function MatchPage() {
         {field('What languages do you speak?', 'languages')}{field('Which language would you prefer during sessions?', 'preferredLanguage')}
         <label className="match-field match-field-wide"><span>Is there cultural background or experience you would like your listener to understand?<small>Optional</small></span><textarea value={answers.long.culturalContext} onChange={event => updateLong({ culturalContext: event.target.value })} maxLength={1000} /></label>
       </div></>}
-      {isLong && step === 2 && <><h1 id="match-heading">Finding the right listener</h1><p>Your answers guide the recommendation. You can still choose any available listener.</p>
+      {isLong && step === 5 && <><h1 id="match-heading">Finding the right listener</h1><p>Your answers guide the recommendation. You can still choose any available listener.</p>
         <h2>Do you have a listener gender preference?</h2>{choices('Listener gender preference', ['No preference', 'Woman', 'Man', 'Non-binary or another gender'], answers.listenerGender, value => update({ listenerGender: value }))}
         <h2>How important is this preference?</h2>{choices('Preference importance', ['Essential', 'Strong preference', 'Slight preference', 'No preference'], answers.long.preferenceImportance, value => updateLong({ preferenceImportance: value }))}
         <h2>Would shared experience help?</h2>{checks('Shared experiences', sharedExperiences, answers.long.sharedExperiences, values => updateLong({ sharedExperiences: values }), 'None in particular')}
         <h2>What matters most in the match?</h2>{choices('Matching priority', ['Similar life experiences', 'Similar cultural background', 'Speaking my preferred language', 'My gender preference', 'Similar age', 'Similar university or student experience', 'Just match me with someone suitable'], answers.long.matchingPriority, value => updateLong({ matchingPriority: value }))}
       </>}
-      {isLong && step === 3 && <><h1 id="match-heading">What has been going on?</h1><p>Share only what feels useful. The topic selection is required for matching; the written context is optional.</p>
+      {isLong && step === 2 && <><h1 id="match-heading">What has been going on?</h1><p>Share only what feels useful. The topic selection is required for matching; the written context is optional.</p>
         <label className="match-note-label" htmlFor="whats-going-on">What’s been going on lately? <small>Optional</small></label><textarea id="whats-going-on" maxLength={2000} value={answers.long.whatsGoingOn} onChange={event => updateLong({ whatsGoingOn: event.target.value })} />
-        <h2>What would you most like to talk about?</h2>{checks('Support topics', longSupportTopics, answers.topics, values => update({ topics: values }), 'I’m not sure — I just want someone to talk to')}
+        <h2>What would you most like to talk about?</h2><p className="match-multi-select-hint">Select all that apply. <span aria-label="Required">*</span></p>{checks('Support topics', longSupportTopics, answers.topics, values => update({ topics: values }), 'I’m not sure — I just want someone to talk to')}
       </>}
-      {isLong && step === 4 && <><h1 id="match-heading">What would help you?</h1><p>All questions on this page are optional.</p><div className="match-fields">
+      {isLong && step === 3 && <><h1 id="match-heading">What would help you?</h1><p>All questions on this page are optional.</p><div className="match-fields">
         {field('When something is difficult, what usually helps most?', 'supportStyle', supportStyles)}
         {field('What would you like to get out of your sessions?', 'sessionGoal')}
         {field('Is there anything you would prefer your listener not to do?', 'listenerAvoid')}
       </div></>}
-      {isLong && step === 5 && <><h1 id="match-heading">Wellbeing check-in</h1><p>Thinking about the past two weeks, choose one answer for each item. The K10 total gives your listener a clearer picture; it is a screening score, not a diagnosis or crisis assessment.</p>
+      {isLong && step === 4 && <><h1 id="match-heading">Wellbeing check-in</h1><p>Thinking about the past two weeks, choose one answer for each item. The K10 total gives your listener a clearer picture; it is a screening score, not a diagnosis or crisis assessment.</p>
         <div className="match-k6" role="group" aria-label="K10 wellbeing check-in">{k10Questions.map((question, index) => <fieldset key={question}><legend>{index + 1}. {question}</legend><div className="match-k6-options">{k10Options.map((label, offset) => { const value = offset + 1; return <label key={label} className={answers.k10[index] === value ? 'selected' : ''}><input type="radio" name={`k10-${index}`} checked={answers.k10[index] === value} onChange={() => update({ k10: answers.k10.map((current, position) => position === index ? value : current) })} /><span>{label}</span></label> })}</div></fieldset>)}</div>
         <h2>How much are these feelings affecting everyday life?</h2>{choices('Everyday impact', ['Not at all', 'A little', 'A fair bit', 'A lot', 'A huge amount'], answers.long.impact === null ? '' : ['Not at all', 'A little', 'A fair bit', 'A lot', 'A huge amount'][answers.long.impact], value => updateLong({ impact: ['Not at all', 'A little', 'A fair bit', 'A lot', 'A huge amount'].indexOf(value) }))}
       </>}
