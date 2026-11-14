@@ -275,8 +275,8 @@ function AccountPage() {
   }
   const customerBookings = appointments.filter(booking => booking.user_id === userId)
   const pendingBookings = customerBookings.filter(booking => booking.status === 'pending')
-  const upcomingBookings = customerBookings.filter(booking => booking.status === 'confirmed' && Date.parse(booking.starts_at) >= openedAt).sort((a, b) => Date.parse(a.starts_at) - Date.parse(b.starts_at))
-  const historyBookings = customerBookings.filter(booking => booking.status === 'expired' || (booking.status === 'confirmed' && Date.parse(booking.starts_at) < openedAt))
+  const upcomingBookings = customerBookings.filter(booking => booking.status === 'confirmed' && !booking.completed_at && Date.parse(booking.starts_at) >= openedAt).sort((a, b) => Date.parse(a.starts_at) - Date.parse(b.starts_at))
+  const historyBookings = customerBookings.filter(booking => booking.status === 'expired' || Boolean(booking.completed_at) || (booking.status === 'confirmed' && Date.parse(booking.starts_at) < openedAt))
   const primaryListener = upcomingBookings[0] || customerBookings.find(booking => booking.status === 'confirmed')
   const repeatMatchHref = primaryListener ? `/get-matched?repeat=previous&listener=${encodeURIComponent(primaryListener.listener_id)}` : '/get-matched?fresh=1'
   const supportContacts = Array.from(new Set(customerBookings.filter(booking => booking.status === 'confirmed').map(booking => booking.listener_id))).map(listenerId => ({ listenerId, userId: session.user.id, name: names[listenerId] || 'Your listener' } satisfies SupportContact))

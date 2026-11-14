@@ -146,6 +146,207 @@
   font-size: .94rem;
   line-height: 1.55;
 }
+.listener-sessions-card {
+  overflow: hidden;
+  border: 1px solid #d2e1ed;
+  border-radius: 24px;
+  background: #fff;
+  box-shadow: 0 12px 34px rgba(31, 65, 110, .055);
+}
+.listener-sessions-card > .listener-section-heading { border-bottom: 1px solid #e0eaf3; }
+.listener-session-list { display: grid; overflow: hidden; margin: 0 24px 24px; border: 1px solid #d7e3ea; border-radius: 18px; background: #fff; }
+.listener-session-record-tabs { position: relative; z-index: 1; display: inline-flex; width: max-content; margin: 22px 0 -1px 40px; padding: 0; border: 0; background: transparent; }
+.listener-session-record-tabs button { display: inline-flex; gap: 9px; align-items: center; min-height: 46px; margin-right: -1px; padding: 0 19px; border: 1px solid #d7e3ea; border-radius: 11px 11px 0 0; background: #f3f7fa; color: #526b85; cursor: pointer; font: inherit; font-size: .84rem; font-weight: 800; }
+.listener-session-record-tabs button:hover { color: #173d78; }
+.listener-session-record-tabs button.active { z-index: 1; border-bottom-color: #fff; background: #fff; color: #173d78; box-shadow: 0 -3px 10px rgb(0 28 85 / .05); }
+.listener-session-record-tabs button span { display: grid; min-width: 23px; height: 23px; place-items: center; border-radius: 999px; background: #dfeaf2; color: #46627f; font-size: .72rem; }
+.listener-session-record-tabs button.active span { background: #e7f1fa; color: #173d78; }
+.listener-session-row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr) auto;
+  gap: 22px;
+  align-items: start;
+  padding: 24px 28px;
+  border-bottom: 1px solid #e3ebf2;
+}
+.listener-session-row:last-child { border-bottom: 0; }
+.listener-session-date {
+  display: grid;
+  min-height: 82px;
+  box-sizing: border-box;
+  place-content: center;
+  justify-items: center;
+  padding: 9px;
+  border-radius: 14px;
+  background: #edf4f8;
+  color: #173d78;
+  line-height: 1;
+  text-transform: uppercase;
+}
+.listener-session-date strong { font-size: 1.8rem; }
+.listener-session-date span { margin-top: 6px; font-size: .7rem; font-weight: 850; letter-spacing: .06em; }
+.listener-session-date small { margin-top: 4px; color: #657b93; font-size: .65rem; font-weight: 750; }
+.listener-session-main { min-width: 0; }
+.listener-session-type { color: #536f92; font-size: .72rem; font-weight: 850; letter-spacing: .08em; text-transform: uppercase; }
+.listener-session-main h3 { margin: 5px 0 9px; color: #173d78; font-size: 1.25rem; line-height: 1.2; }
+.listener-session-meta { display: flex; flex-wrap: wrap; gap: 8px 20px; color: #526d8b; font-size: .84rem; }
+.listener-session-meta span,
+.listener-session-summary span { display: inline-flex; gap: 7px; align-items: center; }
+.listener-session-meta svg,
+.listener-session-summary svg { flex: 0 0 auto; width: 16px; height: 16px; color: #315f9c; }
+.listener-session-info {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #174b87;
+  cursor: pointer;
+  font: inherit;
+  font-size: .8rem;
+  font-weight: 800;
+}
+.listener-session-info:hover,
+.listener-session-info:focus-visible { color: #2671bd; text-decoration: underline; text-underline-offset: 3px; }
+.listener-session-info svg { width: 16px; height: 16px; }
+.listener-session-actions { display: grid; gap: 10px; justify-items: end; }
+.listener-session-status {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  padding: 7px 11px;
+  border-radius: 999px;
+  background: #e7f6ee;
+  color: #08764f;
+  font-size: .73rem;
+  font-weight: 850;
+  white-space: nowrap;
+}
+.listener-session-status svg { width: 15px; height: 15px; }
+.listener-session-status.awaiting { background: #fff4d8; color: #876000; }
+.listener-session-status.missed { background: #fde9eb; color: #b42335; }
+.listener-session-status.completed { background: #e7f6ee; color: #08764f; }
+.listener-session-reschedule {
+  display: inline-flex;
+  gap: 7px;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid #b9cede;
+  border-radius: 999px;
+  background: #fff;
+  color: #173d78;
+  cursor: pointer;
+  font: inherit;
+  font-size: .75rem;
+  font-weight: 850;
+}
+.listener-session-reschedule:hover,
+.listener-session-reschedule:focus-visible { border-color: #315f9c; background: #edf5fb; }
+.listener-session-reschedule svg { width: 15px; height: 15px; }
+.listener-session-complete { display: inline-flex; gap: 7px; align-items: center; min-height: 36px; padding: 0 12px; border: 1px solid #aed8c6; border-radius: 999px; background: #f3fbf7; color: #08764f; cursor: pointer; font: inherit; font-size: .75rem; font-weight: 850; }
+.listener-session-complete:hover:not(:disabled),
+.listener-session-complete:focus-visible:not(:disabled) { border-color: #45a079; background: #e4f5ec; }
+.listener-session-complete:disabled { cursor: not-allowed; opacity: .48; }
+.listener-session-complete svg { width: 15px; height: 15px; }
+.listener-session-intake { display: grid; gap: 12px; margin-top: 18px; padding-top: 16px; border-top: 1px solid #e6edf3; }
+.listener-session-summary { display: flex; flex-wrap: wrap; gap: 8px 18px; color: #385879; font-size: .8rem; font-weight: 700; }
+.listener-session-topics { display: flex; flex-wrap: wrap; gap: 7px; }
+.listener-session-topics span { padding: 6px 9px; border: 1px solid #cfe0ec; border-radius: 999px; background: #f3f8fc; color: #294f7d; font-size: .72rem; font-weight: 750; }
+.listener-session-note { display: grid; gap: 5px; margin: 0; padding: 12px 14px; border-left: 3px solid #7dacd5; border-radius: 0 10px 10px 0; background: #f4f8fc; color: #526982; font-size: .82rem; line-height: 1.5; overflow-wrap: anywhere; }
+.listener-session-note strong { color: #173d78; font-size: .73rem; letter-spacing: .04em; text-transform: uppercase; }
+.listener-sessions-empty { display: grid; justify-items: center; padding: 58px 24px; text-align: center; }
+.listener-sessions-empty > span { display: grid; width: 58px; height: 58px; place-items: center; border-radius: 50%; background: #e6f1fa; color: #173d78; }
+.listener-sessions-empty h3 { margin: 16px 0 6px; color: #173d78; }
+.listener-sessions-empty p { margin: 0; color: #61758d; }
+.listener-modal-backdrop {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgb(9 32 65 / .5);
+  backdrop-filter: blur(3px);
+}
+.listener-modal {
+  width: min(620px, 100%);
+  max-height: min(760px, calc(100vh - 40px));
+  overflow: auto;
+  border: 1px solid #cfdeea;
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: 0 28px 70px rgb(0 28 85 / .25);
+}
+.listener-modal > header { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; padding: 24px 27px; border-bottom: 1px solid #dce7f0; background: #f4f8fc; }
+.listener-modal > header span { color: #31568f; font-size: .7rem; font-weight: 850; letter-spacing: .1em; text-transform: uppercase; }
+.listener-modal > header h2 { margin: 5px 0 0; color: #173d78; font-size: 1.5rem; }
+.listener-modal > header > button { display: grid; flex: 0 0 auto; width: 36px; height: 36px; place-items: center; border: 1px solid #c8d7e4; border-radius: 10px; background: #fff; color: #173d78; cursor: pointer; }
+.listener-modal > header > button:hover { background: #eaf2f8; }
+.listener-modal > header > button svg { width: 18px; }
+.listener-intake-modal-content { display: grid; gap: 22px; padding: 26px 27px 29px; }
+.listener-intake-modal-content dl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 0; }
+.listener-intake-modal-content dl > div { min-width: 0; padding: 13px; border: 1px solid #d8e5ef; border-radius: 12px; background: #f8fbfd; }
+.listener-intake-modal-content dt { margin-bottom: 5px; color: #647b94; font-size: .68rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; }
+.listener-intake-modal-content dd { margin: 0; color: #173d78; font-size: .82rem; font-weight: 750; overflow-wrap: anywhere; }
+.listener-wellbeing-summary button { margin-top: 10px; padding: 0; border: 0; background: transparent; color: #1d5297; font: inherit; font-size: .75rem; font-weight: 800; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.listener-wellbeing-summary button:hover { color: #0c326c; }
+.listener-wellbeing-responses { padding: 18px; border: 1px solid #d8e5ef; border-radius: 14px; background: #f8fbfd; }
+.listener-wellbeing-responses h3 { margin: 0 0 13px; color: #173d78; font-size: .9rem; }
+.listener-wellbeing-responses ol { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; counter-reset: wellbeing-response; }
+.listener-wellbeing-responses li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: center; padding: 11px 0; border-top: 1px solid #e1eaf1; counter-increment: wellbeing-response; }
+.listener-wellbeing-responses li:first-child { padding-top: 0; border-top: 0; }
+.listener-wellbeing-responses li:last-child { padding-bottom: 0; }
+.listener-wellbeing-responses li span { color: #365575; font-size: .82rem; line-height: 1.4; }
+.listener-wellbeing-responses li span::before { content: counter(wellbeing-response) ". "; color: #173d78; font-weight: 800; }
+.listener-wellbeing-responses li strong { max-width: 145px; color: #173d78; font-size: .76rem; line-height: 1.35; text-align: right; }
+.listener-intake-modal-content > div > strong { display: block; margin-bottom: 9px; color: #173d78; font-size: .8rem; }
+.listener-modal-empty { margin: 0; padding: 34px 27px; color: #61758d; }
+.listener-reschedule-modal form { display: grid; gap: 20px; padding: 25px 27px 27px; }
+.listener-reschedule-current { display: grid; gap: 5px; padding: 14px 16px; border-radius: 12px; background: #edf5fb; }
+.listener-reschedule-current span { color: #647b94; font-size: .72rem; font-weight: 800; text-transform: uppercase; }
+.listener-reschedule-current strong { color: #173d78; font-size: .9rem; }
+.listener-reschedule-modal fieldset { margin: 0; padding: 0; border: 0; }
+.listener-reschedule-modal legend { margin-bottom: 11px; color: #173d78; font-size: .85rem; font-weight: 850; }
+.listener-reschedule-schedule { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(170px, .75fr); gap: 15px; }
+.listener-reschedule-calendar { padding: 14px; border: 1px solid #d5e2ec; border-radius: 14px; background: #f8fbfd; }
+.listener-reschedule-calendar-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; color: #173d78; }
+.listener-reschedule-calendar-toolbar > div { display: flex; gap: 6px; }
+.listener-reschedule-calendar-toolbar button { display: grid; width: 31px; height: 31px; place-items: center; padding: 0; border: 1px solid #c8d8e5; border-radius: 50%; background: #fff; color: #173d78; cursor: pointer; }
+.listener-reschedule-calendar-toolbar button:disabled { cursor: not-allowed; opacity: .35; }
+.listener-reschedule-calendar-toolbar svg { width: 17px; }
+.listener-reschedule-weekdays,
+.listener-reschedule-calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.listener-reschedule-weekdays { margin-bottom: 6px; }
+.listener-reschedule-weekdays span { color: #70849a; font-size: .62rem; font-weight: 800; text-align: center; text-transform: uppercase; }
+.listener-reschedule-calendar-grid > span,
+.listener-reschedule-calendar-grid > button { aspect-ratio: 1; min-width: 0; }
+.listener-reschedule-calendar-grid > button { display: grid; place-items: center; padding: 0; border: 1px solid transparent; border-radius: 50%; background: #fff; color: #173d78; cursor: pointer; font: inherit; font-size: .73rem; font-weight: 800; }
+.listener-reschedule-calendar-grid > button:hover:not(:disabled) { border-color: #315f9c; background: #eaf3fa; }
+.listener-reschedule-calendar-grid > button.selected { border-color: #173d78; background: #173d78; color: #fff; box-shadow: 0 5px 12px rgb(23 61 120 / .2); }
+.listener-reschedule-calendar-grid > button:disabled { background: transparent; color: #b4c0ca; cursor: not-allowed; font-weight: 500; }
+.listener-reschedule-time-panel { display: grid; align-content: start; gap: 10px; padding: 14px; border: 1px solid #d5e2ec; border-radius: 14px; background: #fff; }
+.listener-reschedule-time-panel > strong { display: flex; gap: 7px; align-items: center; color: #173d78; font-size: .82rem; }
+.listener-reschedule-time-panel > strong svg { width: 16px; }
+.listener-reschedule-time-panel > span { color: #647b94; font-size: .72rem; line-height: 1.35; }
+.listener-reschedule-time-panel > div { display: grid; gap: 7px; }
+.listener-reschedule-time-panel button { min-height: 38px; padding: 7px 10px; border: 1px solid #c8d8e5; border-radius: 10px; background: #f8fbfd; color: #173d78; cursor: pointer; font: inherit; font-size: .78rem; font-weight: 800; }
+.listener-reschedule-time-panel button:hover { border-color: #315f9c; background: #edf5fb; }
+.listener-reschedule-time-panel button.selected { border-color: #173d78; background: #173d78; color: #fff; }
+.listener-modal-error { margin: 0; color: #a32f36; font-size: .84rem; font-weight: 700; }
+.listener-reschedule-note { margin: 0; color: #61758d; font-size: .8rem; line-height: 1.5; }
+.listener-reschedule-modal footer { display: flex; justify-content: flex-end; gap: 10px; }
+.listener-reschedule-modal footer button { min-height: 42px; padding: 0 16px; border: 0; border-radius: 999px; background: #173d78; color: #fff; cursor: pointer; font: inherit; font-size: .82rem; font-weight: 850; }
+.listener-reschedule-modal footer button.secondary { border: 1px solid #b9cede; background: #fff; color: #173d78; }
+.listener-reschedule-modal footer button:disabled { cursor: not-allowed; opacity: .55; }
+.listener-complete-content { display: grid; gap: 20px; padding: 25px 27px 27px; }
+.listener-complete-content > p { margin: 0; color: #526b85; line-height: 1.55; }
+.listener-complete-content footer { display: flex; justify-content: flex-end; gap: 10px; }
+.listener-complete-content footer button { min-height: 42px; padding: 0 16px; border: 0; border-radius: 999px; background: #08764f; color: #fff; cursor: pointer; font: inherit; font-size: .82rem; font-weight: 850; }
+.listener-complete-content footer button.secondary { border: 1px solid #b9cede; background: #fff; color: #173d78; }
+.listener-complete-content footer button:disabled { cursor: not-allowed; opacity: .55; }
 .listener-hours-layout {
   display: grid;
   grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr);
@@ -479,6 +680,23 @@
   .listener-day-panel { padding: 18px 16px; }
   .listener-section-heading h2 { font-size: 1.35rem; }
   .listener-section-heading p { font-size: .84rem; }
+  .listener-session-record-tabs { display: grid; grid-template-columns: 1fr 1fr; width: auto; margin: 16px 16px -1px; }
+  .listener-session-record-tabs button { justify-content: center; padding-inline: 12px; }
+  .listener-session-list { margin: 0 16px 16px; border-radius: 14px; }
+  .listener-session-row { grid-template-columns: 62px minmax(0, 1fr); gap: 14px; padding: 18px 16px; }
+  .listener-session-date { min-height: 70px; }
+  .listener-session-date strong { font-size: 1.5rem; }
+  .listener-session-status { grid-column: 2; grid-row: 2; justify-self: start; }
+  .listener-session-actions { grid-column: 2; grid-row: 2; display: flex; flex-wrap: wrap; justify-items: initial; justify-content: flex-start; }
+  .listener-session-intake { margin-top: 14px; }
+  .listener-session-meta { display: grid; gap: 7px; }
+  .listener-intake-modal-content dl { grid-template-columns: 1fr; }
+  .listener-reschedule-schedule { grid-template-columns: 1fr; }
+  .listener-wellbeing-responses li { grid-template-columns: 1fr; gap: 4px; }
+  .listener-wellbeing-responses li strong { max-width: none; text-align: left; }
+  .listener-reschedule-slots { grid-template-columns: 1fr; }
+  .listener-reschedule-modal footer { align-items: stretch; flex-direction: column-reverse; }
+  .listener-reschedule-modal footer button { width: 100%; }
   .listener-hours-layout,
   .listener-calendar-layout { border-radius: 0; }
   .listener-panel-heading { min-height: 0; }

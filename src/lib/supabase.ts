@@ -46,6 +46,7 @@ export type Appointment = {
   amount_cents: number; rate_code: string; status: 'pending' | 'confirmed' | 'expired'; created_at: string
   checkout_expires_at: string
   paid_with_credit?: boolean
+  completed_at?: string | null
 }
 export async function createCheckout(slotId: string, holdToken?: string, rateCode?: string) {
   const { data, error } = await getSupabase().functions.invoke('create-checkout', { body: { slot_id: slotId, hold_token: holdToken, rate_code: rateCode } })
