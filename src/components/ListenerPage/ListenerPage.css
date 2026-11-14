@@ -211,8 +211,11 @@
 .listener-session-info:hover,
 .listener-session-info:focus-visible { color: #2671bd; text-decoration: underline; text-underline-offset: 3px; }
 .listener-session-info svg { width: 16px; height: 16px; }
-.listener-session-actions { display: grid; gap: 10px; justify-items: end; }
+.listener-session-actions { display: grid; grid-template-columns: auto auto; gap: 9px; align-items: center; justify-content: end; }
+.listener-session-actions.upcoming { grid-template-columns: auto; gap: 11px; justify-items: end; }
 .listener-session-status {
+  grid-column: 1 / -1;
+  justify-self: end;
   display: inline-flex;
   gap: 6px;
   align-items: center;
@@ -686,8 +689,10 @@
   .listener-session-row { grid-template-columns: 62px minmax(0, 1fr); gap: 14px; padding: 18px 16px; }
   .listener-session-date { min-height: 70px; }
   .listener-session-date strong { font-size: 1.5rem; }
-  .listener-session-status { grid-column: 2; grid-row: 2; justify-self: start; }
+  .listener-session-status { grid-column: 1 / -1; grid-row: auto; justify-self: start; }
   .listener-session-actions { grid-column: 2; grid-row: 2; display: flex; flex-wrap: wrap; justify-items: initial; justify-content: flex-start; }
+  .listener-session-actions .listener-session-status { flex-basis: 100%; }
+  .listener-session-actions.upcoming { align-items: flex-start; flex-direction: column; gap: 9px; }
   .listener-session-intake { margin-top: 14px; }
   .listener-session-meta { display: grid; gap: 7px; }
   .listener-intake-modal-content dl { grid-template-columns: 1fr; }

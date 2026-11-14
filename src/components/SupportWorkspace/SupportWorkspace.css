@@ -30,6 +30,10 @@
 .support-conversation-heading > div { display: grid; gap: 1px; }
 .support-conversation-heading strong { color: #173d78; font-size: .9rem; }
 .support-conversation-heading span:not(.support-contact-avatar) { color: #71849a; font-size: .71rem; }
+.support-heading-add-todo { display: inline-flex; flex: 0 0 auto; align-items: center; justify-content: center; gap: 5px; min-height: 34px; margin-left: auto; padding: 0 12px; border: 1px solid #bfd0df; border-radius: 999px; background: #fff; color: #173d78; cursor: pointer; font: inherit; font-size: .76rem; font-weight: 800; }
+.support-heading-add-todo:hover,
+.support-heading-add-todo:focus-visible { border-color: #315f9c; background: #edf5fb; }
+.support-heading-add-todo svg { width: 15px; height: 15px; }
 .support-inbox .support-thread { min-height: 330px; max-height: 440px; }
 .support-workspace-messages .support-thread { height: auto; min-height: 0; max-height: none; }
 .support-inbox .support-composer { border-top: 1px solid #dce7f0; background: #fff; }
@@ -106,6 +110,7 @@
   .support-contact-list > button { flex-basis: 180px; min-height: 72px; padding: 10px; }
   .support-contact-avatar { width: 34px; height: 34px; }
   .support-conversation-heading { min-height: 51px; padding: 8px 15px; }
+  .support-heading-add-todo { min-height: 32px; padding-inline: 10px; font-size: .72rem; }
   .support-inbox .support-thread { height: min(48vh, 390px); min-height: 280px; max-height: 390px; padding: 17px 14px; }
   .support-thread article { max-width: 84%; padding: 11px 13px; }
   .support-composer { padding: 12px; }
