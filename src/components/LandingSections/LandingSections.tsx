@@ -225,7 +225,8 @@ function LandingSections() {
     <>
       <section className="trust-band" aria-labelledby="trust-heading">
         <div className="trust-band-inner" data-home-reveal="scale">
-          <h2 id="trust-heading">Support designed around student life.</h2>
+          <h2 id="trust-heading">Peer Based</h2>
+          <p className="trust-band-subtitle">Comfortable and friendly support</p>
           <div className="trust-highlights">
             {highlights.map((item) => {
               const Icon = item.icon

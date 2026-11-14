@@ -1,4 +1,4 @@
-import { ChartNoAxesCombined, ClipboardCheck, UsersRound } from 'lucide-react'
+import { ClipboardCheck, Milestone, UsersRound } from 'lucide-react'
 import './About.css'
 
 const aboutCards = [
@@ -13,9 +13,9 @@ const aboutCards = [
     text: 'Space to talk openly, feel heard, and work through what’s on your mind.',
   },
   {
-    icon: ChartNoAxesCombined,
-    title: 'Track your progress',
-    text: 'Notice your mood patterns and small steps forward over time.',
+    icon: Milestone,
+    title: 'Goal focused',
+    text: 'Progress towards your goal with applicable strategies tailored to you.',
   },
 ]
 
@@ -30,9 +30,8 @@ function About() {
       <div className="about-heading" data-home-reveal>
         <h2 id="about-heading">A space to talk. Someone to listen.</h2>
         <p>
-          Listen Mental Health offers peer support for university students. Whether it’s study
-          pressure, feeling disconnected, or simply a difficult week, you can talk things through
-          with a supportive listener.
+          Whether it’s study pressure, feeling disconnected, or anything you need help with, you
+          can talk it through with a supportive listener.
         </p>
       </div>
 
