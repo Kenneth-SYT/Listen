@@ -84,14 +84,20 @@ function HowItWorksPage() {
       if (mobileMovingDot?.parentElement) {
         const mobileFlow = mobileMovingDot.parentElement
         const firstCard = mobileFlow.querySelector<HTMLElement>('.how-card-main')
+        const finalCard = mobileFlow.querySelector<HTMLElement>('.how-cta')
         const lineStart = firstCard
           ? firstCard.offsetTop + firstCard.offsetHeight / 2
           : 42
-        const lineEnd = Math.max(mobileFlow.offsetHeight - 34, lineStart)
+        const lineEnd = Math.max(
+          finalCard ? finalCard.offsetTop + finalCard.offsetHeight / 2 : mobileFlow.offsetHeight - 34,
+          lineStart,
+        )
 
         mobileFlow.style.setProperty('--mobile-line-start', `${lineStart}px`)
-        mobileMovingDot.style.setProperty('--mobile-trail-one', `${-9 * progress}px`)
-        mobileMovingDot.style.setProperty('--mobile-trail-two', `${-18 * progress}px`)
+        mobileFlow.style.setProperty('--mobile-line-end', `${lineEnd}px`)
+        const trailSeparation = Math.sin(Math.PI * progress)
+        mobileMovingDot.style.setProperty('--mobile-trail-one', `${-9 * trailSeparation}px`)
+        mobileMovingDot.style.setProperty('--mobile-trail-two', `${-18 * trailSeparation}px`)
         mobileMovingDot.style.top = `${lineStart + (lineEnd - lineStart) * progress}px`
       }
 

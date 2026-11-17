@@ -351,9 +351,9 @@
     content: '';
     position: absolute;
     top: var(--mobile-line-start, 42px);
-    bottom: 34px;
     left: 24px;
     width: 3px;
+    height: calc(var(--mobile-line-end, 100%) - var(--mobile-line-start, 42px));
     border-radius: 999px;
     background: var(--color-sage-strong);
     transform: translateX(-50%);
@@ -362,7 +362,7 @@
   .how-flow::after {
     content: '';
     position: absolute;
-    bottom: 34px;
+    top: var(--mobile-line-end, calc(100% - 34px));
     left: 24px;
     z-index: 5;
     width: 15px;
@@ -370,7 +370,7 @@
     border: 5px solid var(--color-cream);
     border-radius: 50%;
     background: var(--color-primary);
-    transform: translate(-50%, 50%);
+    transform: translate(-50%, -50%);
   }
 
   .how-path { display: none; }
@@ -437,7 +437,8 @@
     gap: 14px;
   }
 
-  .how-feature img { width: min(210px, 76%); margin: 0 auto; }
+  .how-feature img { width: min(210px, 76%); margin: 0 auto -12px; }
+  .how-feature-final img { margin-bottom: -20px; }
   .how-feature::before { display: none; }
   .how-feature-copy { position: relative; padding: 20px; }
   .how-feature-copy h3 { font-size: 1.25rem; }
