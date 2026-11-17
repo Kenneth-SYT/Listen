@@ -1,4 +1,4 @@
-import { BadgeDollarSign, CalendarDays, ChevronLeft, ChevronRight, ShieldCheck } from 'lucide-react'
+import { BadgeDollarSign, ChevronLeft, ChevronRight, ShieldCheck, UsersRound } from 'lucide-react'
 import { type AnimationEvent, useCallback, useEffect, useRef, useState } from 'react'
 import { errorMessage, getSupabase, money, type Listener, type Quote } from '../../lib/supabase'
 import './LandingSections.css'
@@ -22,7 +22,7 @@ function LandingSections() {
   const canAnimate = listeners.length >= 3
   const canNavigate = listeners.length > 1
   const highlights = [
-    { icon: CalendarDays, value: '7 days', label: 'support available each week' },
+    { icon: UsersRound, value: 'Peer Based', label: 'Comfortable and friendly support' },
     { icon: BadgeDollarSign, value: introPrice, label: 'for your introductory chat' },
     { icon: ShieldCheck, value: 'Private', label: 'respectful and confidential' },
   ]
@@ -223,10 +223,8 @@ function LandingSections() {
 
   return (
     <>
-      <section className="trust-band" aria-labelledby="trust-heading">
+      <section className="trust-band" aria-label="Peer support benefits">
         <div className="trust-band-inner" data-home-reveal="scale">
-          <h2 id="trust-heading">Peer Based</h2>
-          <p className="trust-band-subtitle">Comfortable and friendly support</p>
           <div className="trust-highlights">
             {highlights.map((item) => {
               const Icon = item.icon

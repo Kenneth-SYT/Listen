@@ -91,8 +91,8 @@
   .how-preview-track { top: 48px; bottom: 48px; left: 23px; width: 3px; transform: none; }
   .how-preview-journey { gap: 18px; }
   .how-preview-journey li { grid-template-columns: 52px minmax(0, 1fr); gap: 14px; }
-  .how-preview-node { grid-column: 1; justify-self: start; width: 48px; height: 48px; border-width: 5px; font-size: 1rem; }
-  .how-preview-journey li > div { grid-column: 2; grid-row: 1; padding: 16px 18px; border-radius: 8px 24px 24px; }
+  .how-preview-node { grid-column: 1; grid-row: 1; align-self: center; justify-self: start; width: 48px; height: 48px; border-width: 5px; font-size: 1rem; }
+  .how-preview-journey li > div { grid-column: 2; grid-row: 1; align-self: center; padding: 16px 18px; border-radius: 8px 24px 24px; }
   .how-preview-journey strong { font-size: .95rem; }
   .how-preview-journey p { font-size: .78rem; }
   .how-summary-steps li { grid-template-columns: 48px 1fr; gap: 16px; }
