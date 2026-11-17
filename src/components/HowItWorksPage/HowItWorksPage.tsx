@@ -11,6 +11,7 @@ function HowItWorksPage() {
   const lowerPathRef = useRef<SVGPathElement>(null)
   const movingDotRef = useRef<SVGCircleElement>(null)
   const trailDotRefs = useRef<Array<SVGCircleElement | null>>([])
+  const mobileMovingDotRef = useRef<HTMLSpanElement>(null)
 
   useEffect(() => {
     let animationFrame = 0
@@ -70,16 +71,32 @@ function HowItWorksPage() {
       const topPath = topPathRef.current
       const lowerPath = lowerPathRef.current
       const movingDot = movingDotRef.current
+      const mobileMovingDot = mobileMovingDotRef.current
 
-      if (!section || !topPath || !lowerPath || !movingDot) {
-        return  
-      }
+      if (!section) return
 
       const sectionTop = section.offsetTop
       const progressStart = Math.max(sectionTop - 120, 0)
       const progressEnd = sectionTop + section.offsetHeight - window.innerHeight * 0.45
       const progressRange = Math.max((progressEnd - progressStart) * 0.8, 1)
       const progress = Math.min(Math.max((window.scrollY - progressStart) / progressRange, 0), 1)
+
+      if (mobileMovingDot?.parentElement) {
+        const mobileFlow = mobileMovingDot.parentElement
+        const firstCard = mobileFlow.querySelector<HTMLElement>('.how-card-main')
+        const lineStart = firstCard
+          ? firstCard.offsetTop + firstCard.offsetHeight / 2
+          : 42
+        const lineEnd = Math.max(mobileFlow.offsetHeight - 34, lineStart)
+
+        mobileFlow.style.setProperty('--mobile-line-start', `${lineStart}px`)
+        mobileMovingDot.style.setProperty('--mobile-trail-one', `${-9 * progress}px`)
+        mobileMovingDot.style.setProperty('--mobile-trail-two', `${-18 * progress}px`)
+        mobileMovingDot.style.top = `${lineStart + (lineEnd - lineStart) * progress}px`
+      }
+
+      if (!topPath || !lowerPath || !movingDot) return
+
       const point = getPointFromProgress(progress, topPath, lowerPath)
 
       movingDot.setAttribute('cx', `${point.x}`)
@@ -146,6 +163,7 @@ function HowItWorksPage() {
           ))}
           <circle className="moving-dot" cx="633" cy="30" r="8" ref={movingDotRef} />
         </svg>
+        <span className="how-mobile-moving-dot" aria-hidden="true" ref={mobileMovingDotRef}></span>
 
         <article className="how-card how-card-main">
           <h3>
