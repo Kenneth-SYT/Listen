@@ -1,4 +1,4 @@
-import { ArrowRight, BookOpen, CalendarDays, CheckCircle2, Clock3, HeartHandshake, HelpCircle, Home, ImagePlus, KeyRound, Layers3, ListChecks, MessageCircle, Save, ShieldCheck, Trash2, UserRound, X, XCircle } from 'lucide-react'
+import { ArrowRight, BookOpen, CalendarDays, CheckCircle2, Clock3, Download, HeartHandshake, HelpCircle, Home, ImagePlus, KeyRound, Layers3, ListChecks, MessageCircle, Save, ShieldCheck, Trash2, UserRound, X, XCircle } from 'lucide-react'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { cancelCheckout, createCheckout, customerProfileImageUrl, errorMessage, getSupabase, money, reconcileBundleCheckout, rescheduleAppointment, verifyCurrentPassword, type Appointment, type CreditSummary, type Slot } from '../../lib/supabase'
 import { useSession } from '../../lib/useSession'
@@ -12,6 +12,8 @@ const holdDeadline = (createdAt: string, checkoutExpiresAt: string) => new Date(
   Date.parse(checkoutExpiresAt),
   Date.parse(createdAt) + fifteenMinutes,
 )).toISOString()
+const calendarTimestamp = (value: string | Date) => new Date(value).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z')
+const calendarText = (value: string) => value.replace(/\\/g, '\\\\').replace(/\r?\n/g, '\\n').replace(/;/g, '\\;').replace(/,/g, '\\,')
 type CustomerProfile = { first_name: string; last_name: string; preferred_name: string; date_of_birth: string; mobile: string; contact_email: string; gender: string; profile_image_path: string }
 type CreditAnimation = { from: number; added: number; to: number; phase: 'add' | 'merge' }
 type AccountView = 'home' | 'messages' | 'todos' | 'between' | 'history' | 'profile'
@@ -280,6 +282,45 @@ function AccountPage() {
   const primaryListener = upcomingBookings[0] || customerBookings.find(booking => booking.status === 'confirmed')
   const repeatMatchHref = primaryListener ? `/get-matched?repeat=previous&listener=${encodeURIComponent(primaryListener.listener_id)}` : '/get-matched?fresh=1'
   const supportContacts = Array.from(new Set(customerBookings.filter(booking => booking.status === 'confirmed').map(booking => booking.listener_id))).map(listenerId => ({ listenerId, userId: session.user.id, name: names[listenerId] || 'Your listener' } satisfies SupportContact))
+  const sessionNameFor = (booking: Appointment) => booking.rate_code === 'intro' ? 'Introductory chat' : booking.rate_code === 'extended' ? 'Extended support session' : 'Support session'
+  const downloadUpcomingCalendar = () => {
+    const host = window.location.hostname || 'listen-mental-health'
+    const events = upcomingBookings.flatMap(booking => {
+      const listenerName = names[booking.listener_id] || 'Your listener'
+      const sessionName = sessionNameFor(booking)
+      return [
+        'BEGIN:VEVENT',
+        `UID:appointment-${booking.id}@${host}`,
+        `DTSTAMP:${calendarTimestamp(new Date())}`,
+        `DTSTART:${calendarTimestamp(booking.starts_at)}`,
+        `DTEND:${calendarTimestamp(booking.ends_at)}`,
+        `SUMMARY:${calendarText(`Listen Mental Health — ${sessionName}`)}`,
+        `DESCRIPTION:${calendarText(`${sessionName} with ${listenerName}.`)}`,
+        'STATUS:CONFIRMED',
+        'TRANSP:OPAQUE',
+        `URL:${window.location.origin}/account?view=history`,
+        'END:VEVENT',
+      ]
+    })
+    const calendar = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//Listen Mental Health//Appointment Calendar//EN',
+      'CALSCALE:GREGORIAN',
+      'METHOD:PUBLISH',
+      ...events,
+      'END:VCALENDAR',
+      '',
+    ].join('\r\n')
+    const url = URL.createObjectURL(new Blob([calendar], { type: 'text/calendar;charset=utf-8' }))
+    const link = document.createElement('a')
+    link.href = url
+    link.download = 'listen-upcoming-appointments.ics'
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.setTimeout(() => URL.revokeObjectURL(url), 0)
+  }
   const bookingCard = (booking: Appointment, featured = false, showPayment = true) => {
     const startsAt = new Date(booking.starts_at)
     const duration = Math.round((Date.parse(booking.ends_at) - Date.parse(booking.starts_at)) / 60000)
@@ -291,6 +332,16 @@ function AccountPage() {
         <div className="account-card-meta"><span><CalendarDays />{startsAt.toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</span><span><Clock3 />{startsAt.toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })} · {duration === 120 ? '2 hours' : `${duration} minutes`}</span><span><HeartHandshake />{booking.rate_code === 'intro' ? 'Introductory chat' : booking.rate_code === 'extended' ? 'Extended support session' : 'Support session'}</span></div>
         {(showPayment || booking.status === 'pending' || canReschedule) && <div className="account-card-footer">{showPayment && <strong>{booking.paid_with_credit ? 'Session credit used' : `${money(booking.amount_cents)} AUD`}</strong>}<div className="account-card-actions">{booking.status === 'pending' && <><button disabled={busy || Boolean(cancellingId)} onClick={() => resume(booking.slot_id)}>{busy ? 'Opening Stripe…' : <>Continue payment <ArrowRight size={16} /></>}</button><button type="button" className="account-cancel" disabled={busy || Boolean(cancellingId)} onClick={() => cancelBooking(booking.id)}>{cancellingId === booking.id ? 'Cancelling…' : 'Cancel booking'}</button></>}{canReschedule && <button type="button" className="account-reschedule" onClick={() => void openReschedule(booking)}><CalendarDays />Reschedule</button>}</div></div>}
       </div>
+    </article>
+  }
+  const featuredBookingCard = (booking: Appointment) => {
+    const startsAt = new Date(booking.starts_at)
+    const duration = Math.round((Date.parse(booking.ends_at) - Date.parse(booking.starts_at)) / 60000)
+    const canReschedule = booking.status === 'confirmed' && Date.parse(booking.starts_at) > openedAt
+    return <article key={booking.id} className="account-featured-booking">
+      <time dateTime={booking.starts_at}><strong>{startsAt.toLocaleDateString('en-AU', { day: 'numeric' })}</strong><span>{startsAt.toLocaleDateString('en-AU', { month: 'short' })}</span><small>{startsAt.getFullYear()}</small></time>
+      <div className="account-featured-booking-main"><span>Your next session</span><h3>{names[booking.listener_id] || 'Your listener'}</h3><div><span><CalendarDays />{startsAt.toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long' })}</span><span><Clock3 />{startsAt.toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' })}</span><span><HeartHandshake />{booking.rate_code === 'intro' ? 'Introductory chat' : booking.rate_code === 'extended' ? 'Extended support session' : 'Support session'}</span></div></div>
+      <div className="account-featured-booking-actions"><span className={`account-status ${booking.status}`}><CheckCircle2 />{booking.status}</span><strong>{duration === 120 ? '2 hours' : `${duration} minutes`}</strong>{canReschedule && <button type="button" onClick={() => void openReschedule(booking)}><CalendarDays />Reschedule</button>}</div>
     </article>
   }
   const compactAppointmentRow = (booking: Appointment, upcoming = false) => {
@@ -432,7 +483,7 @@ function AccountPage() {
     <div className="account-settings-actions"><button type="button" className="account-delete-link" onClick={() => { setDeleteMessage(''); setDeleteModalOpen(true) }}><Trash2 />Delete account</button><div className="account-profile-actions"><div className="account-password-action">{passwordSuccess && <span className="account-password-success" role="status">{passwordSuccess}</span>}<button type="button" className="account-change-password" onClick={() => { setMessage(''); setPasswordMessage(''); setPasswordSuccess(''); setPasswordModalOpen(true) }}><KeyRound />Change password</button></div><button type="submit" className="account-save-profile" disabled={savingProfile}><Save />{savingProfile ? 'Saving…' : 'Save changes'}</button></div></div>
   </form>
   const noBookings = <section className="account-empty"><div><HeartHandshake /></div><h2>No upcoming bookings</h2><p>You do not have any sessions scheduled. When you’re ready, complete a new check-in and choose a listener and time that works for you.</p><a href="/get-matched?fresh=1">Start a new check-in <ArrowRight /></a></section>
-  const creditCard = (className = '') => <div className={`account-rail-credit ${className}`.trim()}><div className="account-rail-credit-label"><Layers3 /><span>Standard-session credits</span></div><strong className={creditAnimation ? `account-credit-value ${creditAnimation.phase}` : 'account-credit-value'} aria-label={`${credits.standard_credits} session credits`}><b>{creditAnimation?.phase === 'add' ? creditAnimation.from : credits.standard_credits}</b>{creditAnimation && <em aria-hidden="true">+{creditAnimation.added}</em>}</strong><p>50-minute standard sessions</p><div className="account-credit-actions">{credits.standard_credits > 0 && <a href={repeatMatchHref}>Book a session <ArrowRight /></a>}<a className="account-credit-topup" href="/pricing">Top up credits</a></div></div>
+  const creditCard = (className = '') => <div className={`account-rail-credit ${className}`.trim()}><div className="account-rail-credit-label"><Layers3 /><span>Standard-session credits</span></div><strong className={creditAnimation ? `account-credit-value ${creditAnimation.phase}` : 'account-credit-value'} aria-label={`${credits.standard_credits} session credits`}><b>{creditAnimation?.phase === 'add' ? creditAnimation.from : credits.standard_credits}</b>{creditAnimation && <em aria-hidden="true">+{creditAnimation.added}</em>}</strong><p>50-minute standard sessions</p><div className="account-credit-actions"><a href={repeatMatchHref}>Book a session <ArrowRight /></a><a className="account-credit-topup" href="/pricing">Top up credits</a></div></div>
   return <main className="account-page">
     <div className={`account-dashboard-grid ${activeView === 'home' ? '' : 'account-dashboard-grid-wide'}`}>
       <div className="account-sidebar-column"><aside className="account-sidebar" aria-label="Account navigation"><nav>{navItems.map(item => { const Icon = item.icon; const count = item.id === 'messages' ? unreadSupport.messages : item.id === 'todos' ? unreadSupport.todos : 0; return <button key={item.id} type="button" className={activeView === item.id ? 'active' : ''} onClick={() => changeView(item.id)}><Icon /><span>{item.label}</span>{count > 0 && <span className="account-nav-badge" aria-label={`${count} unread ${item.label.toLowerCase()}`}>{count > 99 ? '99+' : count}</span>}</button> })}</nav>{listenerAccount && admin !== userId && <a href="/listener"><ListenerMark />Listener dashboard</a>}{admin === userId && <a href="/admin"><ShieldCheck />Admin dashboard</a>}</aside></div>
@@ -442,12 +493,12 @@ function AccountPage() {
         {activeView === 'home' && <>
           <section className="account-listener-overview"><div><span className="account-card-label">My listener</span><h2>{primaryListener ? names[primaryListener.listener_id] || 'Your listener' : 'Find someone who feels right for you'}</h2><p>{primaryListener ? 'Your chosen listener will support your upcoming conversation.' : 'Complete the matching questions to receive a listener recommendation based on what you want to talk about.'}</p></div><a className="account-listener-book" href={repeatMatchHref}>Book a session <ArrowRight /></a>{creditCard('account-listener-credit')}</section>
           {pendingBookings.length > 0 && <section className="account-section"><div className="account-section-heading"><div><span>Action needed</span><h2>Complete your booking</h2></div><p>Your appointment is held for 15 minutes while you finish payment.</p></div><div className="account-list">{pendingBookings.map(booking => bookingCard(booking))}</div></section>}
-          <section className="account-section account-home-upcoming"><div className="account-section-heading"><div><h2>Upcoming booking</h2></div></div>{upcomingBookings.length ? <div className="account-list">{upcomingBookings.slice(0, 1).map(booking => bookingCard(booking, true))}</div> : noBookings}</section>
+          <section className="account-section account-home-upcoming"><div className="account-section-heading"><div><h2>Upcoming booking</h2></div></div>{upcomingBookings.length ? <div className="account-list">{upcomingBookings.slice(0, 1).map(featuredBookingCard)}</div> : noBookings}</section>
         </>}
         {activeView === 'messages' && <SupportWorkspace role="customer" mode="messages" currentUserId={session.user.id} contacts={supportContacts} onUnreadChange={() => setSupportNotificationRefresh(value => value + 1)} />}
         {activeView === 'todos' && <SupportWorkspace role="customer" mode="todos" currentUserId={session.user.id} contacts={supportContacts} onUnreadChange={() => setSupportNotificationRefresh(value => value + 1)} />}
         {activeView === 'between' && <section className="account-simple-panel account-between-page"><header><div className="account-feature-icon"><BookOpen /></div><div><span className="account-card-label">Continued support</span><h2>Between sessions</h2><p>Keep helpful resources from your listener together in one place.</p></div></header><div className="account-between-empty"><div className="account-between-empty-icon"><BookOpen /></div><div><strong>No resources have been shared yet</strong><span>Reflections, worksheets and useful links will appear here when your listener sends them.</span></div><button type="button" onClick={() => changeView('messages')}>View messages <ArrowRight /></button></div></section>}
-        {activeView === 'history' && <section className="account-section account-section-first account-sessions"><div className="account-section-heading"><div><span>Your schedule</span><h2>Appointments</h2></div><a className="account-book-session" href={repeatMatchHref}>Book a session <ArrowRight /></a></div><div className="account-session-tabs" role="tablist" aria-label="Appointment records"><button type="button" role="tab" aria-selected={sessionsTab === 'upcoming'} className={sessionsTab === 'upcoming' ? 'active' : ''} onClick={() => setSessionsTab('upcoming')}>Upcoming <span>{pendingBookings.length + upcomingBookings.length}</span></button><button type="button" role="tab" aria-selected={sessionsTab === 'past'} className={sessionsTab === 'past' ? 'active' : ''} onClick={() => setSessionsTab('past')}>Past <span>{historyBookings.length}</span></button></div>{sessionsTab === 'upcoming' ? pendingBookings.length || upcomingBookings.length ? <>{pendingBookings.length > 0 && <div className="account-list account-pending-list">{pendingBookings.map(booking => bookingCard(booking))}</div>}{upcomingBookings.length > 0 && <div className="account-history-list">{upcomingBookings.map(booking => compactAppointmentRow(booking, true))}</div>}</> : noBookings : historyBookings.length ? <div className="account-history-list">{historyBookings.map(booking => compactAppointmentRow(booking))}</div> : <section className="account-empty account-history-empty"><div><CalendarDays /></div><h2>No past sessions yet</h2><p>Your completed and expired sessions will appear here.</p></section>}</section>}
+        {activeView === 'history' && <section className="account-section account-section-first account-sessions"><div className="account-section-heading"><div><span>Your schedule</span><h2>Appointments</h2></div><div className="account-section-heading-actions"><button type="button" className="account-calendar-all" disabled={upcomingBookings.length === 0} title={upcomingBookings.length === 0 ? 'No upcoming appointments to add' : 'Download all upcoming appointments'} onClick={downloadUpcomingCalendar}><Download />Add to calendar</button><a className="account-book-session" href={repeatMatchHref}>Book a session <ArrowRight /></a></div></div><div className="account-session-tabs" role="tablist" aria-label="Appointment records"><button type="button" role="tab" aria-selected={sessionsTab === 'upcoming'} className={sessionsTab === 'upcoming' ? 'active' : ''} onClick={() => setSessionsTab('upcoming')}>Upcoming <span>{pendingBookings.length + upcomingBookings.length}</span></button><button type="button" role="tab" aria-selected={sessionsTab === 'past'} className={sessionsTab === 'past' ? 'active' : ''} onClick={() => setSessionsTab('past')}>Past <span>{historyBookings.length}</span></button></div>{sessionsTab === 'upcoming' ? pendingBookings.length || upcomingBookings.length ? <>{pendingBookings.length > 0 && <div className="account-list account-pending-list">{pendingBookings.map(booking => bookingCard(booking))}</div>}{upcomingBookings.length > 0 && <div className="account-history-list">{upcomingBookings.map(booking => compactAppointmentRow(booking, true))}</div>}</> : noBookings : historyBookings.length ? <div className="account-history-list">{historyBookings.map(booking => compactAppointmentRow(booking))}</div> : <section className="account-empty account-history-empty"><div><CalendarDays /></div><h2>No past sessions yet</h2><p>Your completed and expired sessions will appear here.</p></section>}</section>}
         {activeView === 'profile' && <section className="account-simple-panel"><span className="account-card-label">Your details</span><h2>My information</h2>{profileForm()}</section>}
       </div>
       {activeView === 'home' && <aside className="account-dashboard-rail">{creditCard()}<section className="account-assistance"><div className="account-help-icon"><HelpCircle /></div><h2>Need assistance?</h2><p>Have a question about choosing a listener, your booking, or payment? We’re here to help.</p><a href="/contact">Contact us <ArrowRight /></a><hr /><span>Listen offers peer support</span><small>For immediate danger or a crisis, call 000 or Lifeline on 13 11 14.</small></section></aside>}
