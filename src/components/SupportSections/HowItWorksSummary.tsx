@@ -1,9 +1,9 @@
 import './HowItWorksSummary.css'
 
 const previewSteps = [
-  { title: 'Questionnaire', text: 'Tell us what support would help' },
-  { title: 'Your match', text: 'Meet a listener suited to you' },
-  { title: 'Choose a time', text: 'Book a session that fits' },
+  { title: 'Check in', text: 'Answer a few questions about how you’re feeling.' },
+  { title: 'Find your listener', text: 'Get matched with someone who fits your needs.' },
+  { title: 'Start talking', text: 'Choose a time and talk at your own pace.' },
 ]
 
 function HowItWorksSummary() {
