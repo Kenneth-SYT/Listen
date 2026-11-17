@@ -3,8 +3,6 @@ import { useState } from 'react'
 
 const aboutItems = [
   { label: 'Who we are', href: '/about' },
-  { label: 'Our strategy', href: '/strategy' },
-  { label: 'Our services', href: '/services' },
 ]
 
 type AboutDropdownProps = {

@@ -9,7 +9,7 @@ import HowItWorksSummary from './components/SupportSections/HowItWorksSummary'
 import './App.css'
 import Footer from './components/Footer/Footer'
 import MatchPage from './components/MatchPage/MatchPage'
-import { AboutPage, ServicesPage, StrategyPage } from './components/InfoPages/InfoPages'
+import { AboutPage } from './components/InfoPages/InfoPages'
 import LandingSections from './components/LandingSections/LandingSections'
 import ConfirmationPage from './components/ConfirmationPage/ConfirmationPage'
 import LoginPage from './components/LoginPage/LoginPage'
@@ -94,9 +94,7 @@ function App() {
   const isOurTherapistPage = path === '/our-listeners' || path === '/our-therapist'
   const isHowItWorksPage = path === '/how-it-works'
   const isMatchPage = path === '/get-matched'
-  const isServicesPage = path === '/services'
   const isAboutPage = path === '/about'
-  const isStrategyPage = path === '/strategy'
   const isConfirmationPage = path === '/booking-confirmation'
   const isLoginPage = path === '/login'
   const isDashboard = path === '/admin' || path === '/listener'
@@ -120,12 +118,8 @@ function App() {
         <HowItWorksPage />
       ) : isMatchPage ? (
         <MatchPage />
-      ) : isServicesPage ? (
-        <ServicesPage />
       ) : isAboutPage ? (
         <AboutPage />
-      ) : isStrategyPage ? (
-        <StrategyPage />
       ) : (
         <HomeMotion>
           <Hero />

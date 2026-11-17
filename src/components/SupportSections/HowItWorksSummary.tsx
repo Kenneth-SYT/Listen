@@ -8,11 +8,7 @@ const previewSteps = [
 
 function HowItWorksSummary() {
   return (
-    <section className="how-summary" id="how-it-works" data-nav-section="how-it-works" aria-labelledby="how-summary-heading">
-      <div className="how-summary-heading" data-home-reveal>
-        <h2 id="how-summary-heading">How it works</h2>
-        <p>A few simple steps to a conversation that’s about you.</p>
-      </div>
+    <section className="how-summary" id="how-it-works" data-nav-section="how-it-works" aria-label="How it works">
       <div className="how-summary-layout">
         <div className="how-product-preview" aria-label="Preview of the check-in and matching experience" data-home-reveal>
           <div className="how-preview-track" aria-hidden="true"></div>

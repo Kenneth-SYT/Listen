@@ -18,8 +18,6 @@ function Footer() {
         <nav className="footer-links" aria-label="About navigation">
           <h2>About us</h2>
           <a href="/about">Who we are</a>
-          <a href="/strategy">Our strategy</a>
-          <a href="/services">Our services</a>
         </nav>
         <div className="footer-contact">
           <h2>Questions are welcome.</h2>

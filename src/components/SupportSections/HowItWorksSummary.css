@@ -1,8 +1,8 @@
-.how-summary { padding: 72px clamp(24px, 5vw, 64px) 76px; background: var(--color-cream); color: var(--color-ink); overflow-x: clip; }
+.how-summary { padding: 24px clamp(24px, 5vw, 64px) 76px; background: var(--color-cream); color: var(--color-ink); overflow-x: clip; }
 .how-summary-heading { text-align: center; }
 .how-summary-heading h2 { margin: 0; font-size: clamp(2.2rem, 4vw, 3.4rem); line-height: 1.1; }
 .how-summary-heading p { margin: 16px auto 0; color: var(--color-muted); font-size: 1.08rem; line-height: 1.6; }
-.how-summary-layout { display: grid; justify-items: center; width: min(1040px, 100%); margin: 38px auto 0; }
+.how-summary-layout { display: grid; justify-items: center; width: min(1040px, 100%); margin: 0 auto; }
 .how-product-preview { position: relative; width: 100%; min-height: 450px; box-sizing: border-box; padding: 24px 0; overflow: hidden; }
 .how-preview-track { position: absolute; top: 82px; bottom: 82px; left: calc(18% + 73px); width: 4px; border-radius: 999px; background: var(--color-sage-strong); transform: translateX(-50%); }
 .how-preview-journey { position: relative; z-index: 1; display: grid; gap: 14px; margin: 0; padding: 0; list-style: none; }

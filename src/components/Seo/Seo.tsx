@@ -39,14 +39,6 @@ const publicPages: Record<string, PageSeo> = {
     title: 'Contact Listen Mental Health',
     description: 'Contact Listen Mental Health with questions about peer listeners, matching, sessions, bookings or the support we provide.',
   },
-  '/services': {
-    title: 'Student Peer Support Services | Listen Mental Health',
-    description: 'Explore approachable peer support for university stress, study pressure, relationships, confidence and everyday student life.',
-  },
-  '/strategy': {
-    title: 'Our Approach | Listen Mental Health',
-    description: 'Read about Listen Mental Health’s accessible, human and practical approach to peer support for university students.',
-  },
 }
 
 const privateRoutes = ['/account', '/admin', '/listener', '/login', '/get-matched', '/booking-confirmation']
